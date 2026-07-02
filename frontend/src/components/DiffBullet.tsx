@@ -20,9 +20,9 @@ type DiffBulletProps = {
 type DiffView = 'diff' | 'original' | 'tailored'
 
 const borderColorByDecision: Record<ChangeDecision, string> = {
-  pending: 'var(--mantine-color-indigo-4)',
-  accepted: 'var(--mantine-color-green-5)',
-  rejected: 'var(--mantine-color-red-4)',
+  pending: 'var(--mantine-primary-color-filled)',
+  accepted: 'var(--mantine-color-green-6)',
+  rejected: 'var(--mantine-color-red-6)',
 }
 
 const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => {
@@ -52,8 +52,8 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
               <span
                 key={index}
                 style={{
-                  backgroundColor: 'var(--mantine-color-green-1)',
-                  color: 'var(--mantine-color-green-9)',
+                  backgroundColor: 'rgba(64, 192, 87, 0.16)',
+                  color: 'var(--mantine-color-green-3)',
                   borderRadius: 3,
                   padding: '1px 2px',
                 }}
@@ -67,8 +67,8 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
               <span
                 key={index}
                 style={{
-                  backgroundColor: 'var(--mantine-color-red-1)',
-                  color: 'var(--mantine-color-red-9)',
+                  backgroundColor: 'rgba(250, 82, 82, 0.14)',
+                  color: 'var(--mantine-color-red-3)',
                   textDecoration: 'line-through',
                   borderRadius: 3,
                   padding: '1px 2px',

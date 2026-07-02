@@ -63,7 +63,7 @@ const ResultsPanel = ({ status, result }: ResultsPanelProps) => {
       <Card withBorder shadow="xs" padding="xl" h="100%">
         <Center h="100%" mih={360}>
           <Stack align="center" gap="xs">
-            <IconSparkles size={40} color="var(--mantine-color-indigo-4)" />
+            <IconSparkles size={40} color="var(--mantine-primary-color-filled)" />
             <Title order={4}>Your tailored resume will appear here</Title>
             <Text size="sm" c="dimmed" ta="center" maw={360}>
               Attach your base resume, paste a job description, and click

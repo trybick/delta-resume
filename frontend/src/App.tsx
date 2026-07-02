@@ -69,8 +69,8 @@ const App = () => {
         component="header"
         py="md"
         px="xl"
-        bg="white"
-        style={{ borderBottom: '1px solid var(--mantine-color-gray-3)' }}
+        bg="dark.7"
+        style={{ borderBottom: '1px solid var(--mantine-color-dark-4)' }}
       >
         <Group gap="sm">
           <ThemeIcon variant="light" size="lg" radius="md">

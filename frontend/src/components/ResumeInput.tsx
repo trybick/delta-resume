@@ -95,10 +95,10 @@ const ResumeInput = ({
         </Group>
 
         {mode === 'upload' && attachedFile && (
-          <Paper withBorder p="sm" radius="md" bg="indigo.0">
+          <Paper withBorder p="sm" radius="md" bg="dark.5">
             <Group justify="space-between" wrap="nowrap">
               <Group gap="sm" wrap="nowrap">
-                <IconFileText size={22} color="var(--mantine-color-indigo-6)" />
+                <IconFileText size={22} color="var(--mantine-primary-color-filled)" />
                 <div>
                   <Text size="sm" fw={600} lineClamp={1}>
                     {attachedFile.name}
@@ -130,7 +130,7 @@ const ResumeInput = ({
               loading={isParsing}
             >
               <Stack align="center" gap={6} py="md" style={{ pointerEvents: 'none' }}>
-                <IconFileUpload size={32} color="var(--mantine-color-indigo-5)" />
+                <IconFileUpload size={32} color="var(--mantine-primary-color-filled)" />
                 <Text size="sm" fw={500}>
                   {isParsing ? 'Reading your resume…' : 'Drop your resume here or click to browse'}
                 </Text>
