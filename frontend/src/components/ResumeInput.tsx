@@ -16,7 +16,7 @@ import {
   IconFileUpload,
   IconX,
 } from '@tabler/icons-react'
-import { SAMPLE_RESUME } from '../lib/mockTailor'
+import { parseResumeFile, ResumeParseError } from '../lib/parseResumeFile'
 
 type AttachedFile = {
   name: string
@@ -33,7 +33,6 @@ type ResumeInputProps = {
 
 type InputMode = 'upload' | 'paste'
 
-const TEXT_EXTENSIONS = ['txt', 'md']
 const ACCEPTED_MIME_TYPES = [
   'text/plain',
   'text/markdown',
@@ -56,18 +55,27 @@ const ResumeInput = ({
   onClear,
 }: ResumeInputProps) => {
   const [mode, setMode] = useState<InputMode>('upload')
+  const [isParsing, setIsParsing] = useState(false)
+  const [parseError, setParseError] = useState<string | null>(null)
 
   const handleDrop = async (files: File[]) => {
     const file = files[0]
     if (!file) return
-    const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
     const attached = { name: file.name, size: file.size }
-    if (TEXT_EXTENSIONS.includes(extension)) {
-      const text = await file.text()
+    setIsParsing(true)
+    setParseError(null)
+    try {
+      const text = await parseResumeFile(file)
       onFileAttach(attached, text)
-      return
+    } catch (error) {
+      setParseError(
+        error instanceof ResumeParseError
+          ? error.message
+          : 'Could not read this file. Try another format or paste your resume text.',
+      )
+    } finally {
+      setIsParsing(false)
     }
-    onFileAttach(attached, SAMPLE_RESUME)
   }
 
   return (
@@ -113,22 +121,30 @@ const ResumeInput = ({
         )}
 
         {mode === 'upload' && !attachedFile && (
-          <Dropzone
-            onDrop={handleDrop}
-            accept={ACCEPTED_MIME_TYPES}
-            maxFiles={1}
-            multiple={false}
-          >
-            <Stack align="center" gap={6} py="md" style={{ pointerEvents: 'none' }}>
-              <IconFileUpload size={32} color="var(--mantine-color-indigo-5)" />
-              <Text size="sm" fw={500}>
-                Drop your resume here or click to browse
+          <Stack gap="xs">
+            <Dropzone
+              onDrop={handleDrop}
+              accept={ACCEPTED_MIME_TYPES}
+              maxFiles={1}
+              multiple={false}
+              loading={isParsing}
+            >
+              <Stack align="center" gap={6} py="md" style={{ pointerEvents: 'none' }}>
+                <IconFileUpload size={32} color="var(--mantine-color-indigo-5)" />
+                <Text size="sm" fw={500}>
+                  {isParsing ? 'Reading your resume…' : 'Drop your resume here or click to browse'}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  .txt, .md, .pdf, or .docx
+                </Text>
+              </Stack>
+            </Dropzone>
+            {parseError && (
+              <Text size="sm" c="red">
+                {parseError}
               </Text>
-              <Text size="xs" c="dimmed">
-                .txt, .md, .pdf, or .docx
-              </Text>
-            </Stack>
-          </Dropzone>
+            )}
+          </Stack>
         )}
 
         {mode === 'paste' && (
