@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <RestoreSuccess Condition=" '$(RestoreSuccess)' == '' ">True</RestoreSuccess>
+    <RestoreTool Condition=" '$(RestoreTool)' == '' ">NuGet</RestoreTool>
+    <ProjectAssetsFile Condition=" '$(ProjectAssetsFile)' == '' ">$(MSBuildThisFileDirectory)project.assets.json</ProjectAssetsFile>
+    <NuGetPackageRoot Condition=" '$(NuGetPackageRoot)' == '' ">/Users/timr/.nuget/packages/</NuGetPackageRoot>
+    <NuGetPackageFolders Condition=" '$(NuGetPackageFolders)' == '' ">/Users/timr/.nuget/packages/</NuGetPackageFolders>
+    <NuGetProjectStyle Condition=" '$(NuGetProjectStyle)' == '' ">PackageReference</NuGetProjectStyle>
+    <NuGetToolVersion Condition=" '$(NuGetToolVersion)' == '' ">7.0.0</NuGetToolVersion>
+  </PropertyGroup>
+  <ItemGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <SourceRoot Include="/Users/timr/.nuget/packages/" />
+  </ItemGroup>
+  <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
+    <PkgSQLitePCLRaw_bundle_e_sqlite3 Condition=" '$(PkgSQLitePCLRaw_bundle_e_sqlite3)' == '' ">/Users/timr/.nuget/packages/sqlitepclraw.bundle_e_sqlite3/3.0.3</PkgSQLitePCLRaw_bundle_e_sqlite3>
+    <PkgMicrosoft_Data_Sqlite Condition=" '$(PkgMicrosoft_Data_Sqlite)' == '' ">/Users/timr/.nuget/packages/microsoft.data.sqlite/10.0.9</PkgMicrosoft_Data_Sqlite>
+    <PkgFSharp_Core Condition=" '$(PkgFSharp_Core)' == '' ">/Users/timr/.nuget/packages/fsharp.core/10.0.103</PkgFSharp_Core>
+    <PkgGiraffe Condition=" '$(PkgGiraffe)' == '' ">/Users/timr/.nuget/packages/giraffe/8.2.0</PkgGiraffe>
+    <PkgDapper Condition=" '$(PkgDapper)' == '' ">/Users/timr/.nuget/packages/dapper/2.1.79</PkgDapper>
+  </PropertyGroup>
+</Project>

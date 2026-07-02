@@ -1,0 +1,47 @@
+namespace ResumeTailor.Application
+
+open System
+open System.Threading.Tasks
+open ResumeTailor.Domain
+
+type TailoringService(engine: TailoringEngine, repository: TailorRunRepository) =
+
+    member _.TailorResume(resumeText: string, jobDescription: string) : Task<Result<TailorRun, TailorError>> =
+        task {
+            if String.IsNullOrWhiteSpace resumeText then
+                return Error(InvalidInput "Resume text is required.")
+            elif String.IsNullOrWhiteSpace jobDescription then
+                return Error(InvalidInput "Job description is required.")
+            else
+                let bullets = Bullets.extract resumeText
+
+                if List.isEmpty bullets then
+                    return Error(InvalidInput "No bullet lines found in the resume. Use '-', '•', or '*' bullets.")
+                else
+                    let! engineResult = engine.ProposeChanges(bullets, jobDescription)
+
+                    match engineResult with
+                    | Error message -> return Error(EngineFailure message)
+                    | Ok proposals ->
+                        let changes = Bullets.toChanges bullets proposals
+
+                        let run =
+                            { Id = RunId(Guid.NewGuid())
+                              ResumeText = resumeText
+                              JobDescription = jobDescription
+                              CreatedAt = DateTimeOffset.UtcNow
+                              Changes = changes }
+
+                        do! repository.SaveRun run
+                        return Ok run
+        }
+
+    member _.RecordDecision(changeId: ChangeId, decision: Decision) : Task<Result<unit, TailorError>> =
+        task {
+            let! updated = repository.UpdateDecision(changeId, decision)
+
+            if updated then
+                return Ok()
+            else
+                return Error(NotFound "Change not found.")
+        }

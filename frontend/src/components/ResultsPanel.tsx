@@ -12,6 +12,7 @@ import {
 } from '@mantine/core'
 import { useClipboard } from '@mantine/hooks'
 import { IconCopy, IconCopyCheck, IconSparkles } from '@tabler/icons-react'
+import { patchDecision } from '../lib/api'
 import type { BulletChange, ChangeDecision, TailorResult, TailorStatus } from '../lib/types'
 import DiffBullet from './DiffBullet'
 
@@ -29,6 +30,7 @@ const ResultsPanel = ({ status, result }: ResultsPanelProps) => {
   const [decisions, setDecisions] = useState<Record<string, ChangeDecision>>(() =>
     buildDecisionMap(result),
   )
+  const [decisionError, setDecisionError] = useState<string | null>(null)
   const clipboard = useClipboard({ timeout: 1500 })
 
   const changesByLine = useMemo(() => {
@@ -37,7 +39,13 @@ const ResultsPanel = ({ status, result }: ResultsPanelProps) => {
   }, [result])
 
   const handleDecisionChange = (id: string, decision: ChangeDecision) => {
+    const previousDecision = decisions[id] ?? 'pending'
     setDecisions((current) => ({ ...current, [id]: decision }))
+    setDecisionError(null)
+    patchDecision(id, decision).catch(() => {
+      setDecisions((current) => ({ ...current, [id]: previousDecision }))
+      setDecisionError('Could not save your decision. Please try again.')
+    })
   }
 
   const handleCopy = () => {
@@ -115,6 +123,12 @@ const ResultsPanel = ({ status, result }: ResultsPanelProps) => {
             {clipboard.copied ? 'Copied' : 'Copy tailored resume'}
           </Button>
         </Group>
+
+        {decisionError && (
+          <Text size="xs" c="red">
+            {decisionError}
+          </Text>
+        )}
 
         <div>
           {lines.map((line, lineIndex) => {

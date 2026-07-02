@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import {
+  Alert,
   Box,
   Button,
   Container,
@@ -10,11 +11,11 @@ import {
   ThemeIcon,
   Title,
 } from '@mantine/core'
-import { IconSparkles } from '@tabler/icons-react'
+import { IconAlertCircle, IconSparkles } from '@tabler/icons-react'
 import ResumeInput from './components/ResumeInput'
 import JobDescriptionInput from './components/JobDescriptionInput'
 import ResultsPanel from './components/ResultsPanel'
-import { tailorResume } from './lib/mockTailor'
+import { ApiError, postTailor } from './lib/api'
 import type { TailorResult, TailorStatus } from './lib/types'
 
 type AttachedFile = {
@@ -29,6 +30,7 @@ const App = () => {
   const [status, setStatus] = useState<TailorStatus>('idle')
   const [result, setResult] = useState<TailorResult | null>(null)
   const [runCount, setRunCount] = useState(0)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const canTailor = resumeText.trim().length > 0 && jobDescription.trim().length > 0
 
@@ -45,10 +47,20 @@ const App = () => {
   const handleTailor = async () => {
     if (!canTailor) return
     setStatus('loading')
-    const tailorResult = await tailorResume(resumeText, jobDescription)
-    setResult(tailorResult)
-    setRunCount((count) => count + 1)
-    setStatus('done')
+    setErrorMessage(null)
+    try {
+      const tailorResult = await postTailor(resumeText, jobDescription)
+      setResult(tailorResult)
+      setRunCount((count) => count + 1)
+      setStatus('done')
+    } catch (error) {
+      setErrorMessage(
+        error instanceof ApiError
+          ? error.message
+          : 'Could not reach the server. Is the backend running?',
+      )
+      setStatus(result ? 'done' : 'idle')
+    }
   }
 
   return (
@@ -100,7 +112,20 @@ const App = () => {
             </Stack>
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 7 }}>
-            <ResultsPanel key={runCount} status={status} result={result} />
+            <Stack gap="md">
+              {errorMessage && (
+                <Alert
+                  color="red"
+                  icon={<IconAlertCircle size={18} />}
+                  title="Tailoring failed"
+                  withCloseButton
+                  onClose={() => setErrorMessage(null)}
+                >
+                  {errorMessage}
+                </Alert>
+              )}
+              <ResultsPanel key={runCount} status={status} result={result} />
+            </Stack>
           </Grid.Col>
         </Grid>
       </Container>
