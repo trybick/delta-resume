@@ -16,7 +16,7 @@ type TailoringService(engine: TailoringEngine, repository: TailorRunRepository) 
                 let bullets = Bullets.extract resumeText
 
                 if List.isEmpty bullets then
-                    return Error(InvalidInput "No bullet lines found in the resume. Use '-', '•', or '*' bullets.")
+                    return Error(InvalidInput "Could not find any tailorable content in the resume. Add a few sentences or bullet points describing your experience.")
                 else
                     let! engineResult = engine.ProposeChanges(bullets, jobDescription)
 

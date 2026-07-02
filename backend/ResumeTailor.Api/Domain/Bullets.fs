@@ -5,16 +5,38 @@ open System.Text.RegularExpressions
 
 module Bullets =
 
-    let private bulletPattern = Regex(@"^(\s*[-•*]\s+)(.*\S)\s*$", RegexOptions.Compiled)
+    let private bulletPattern =
+        Regex(@"^(\s*(?:[-–—•‣◦▪▫·∙●○*+>]|\d{1,2}[.)])\s+)(.*\S)\s*$", RegexOptions.Compiled)
+
+    let private sectionHeaderPattern =
+        Regex(@"^\s*[A-Z][A-Z\s&/-]{1,40}:?\s*$", RegexOptions.Compiled)
 
     let isBulletLine (line: string) : bool =
         bulletPattern.IsMatch line
 
+    let private isProseLine (line: string) : bool =
+        let trimmed = line.Trim()
+        let wordCount = trimmed.Split([| ' '; '\t' |], StringSplitOptions.RemoveEmptyEntries).Length
+
+        wordCount >= 4
+        && trimmed.Length >= 25
+        && not (sectionHeaderPattern.IsMatch trimmed)
+        && not (trimmed.Contains '@')
+
     let extract (resumeText: string) : BulletLine list =
-        resumeText.Split('\n')
-        |> Array.mapi (fun lineIndex line -> { LineIndex = lineIndex; Text = line })
-        |> Array.filter (fun bullet -> isBulletLine bullet.Text)
-        |> Array.toList
+        let allLines =
+            resumeText.Split('\n')
+            |> Array.mapi (fun lineIndex line -> { LineIndex = lineIndex; Text = line })
+
+        let markedBullets =
+            allLines |> Array.filter (fun bullet -> isBulletLine bullet.Text) |> Array.toList
+
+        if not (List.isEmpty markedBullets) then
+            markedBullets
+        else
+            allLines
+            |> Array.filter (fun bullet -> isProseLine bullet.Text)
+            |> Array.toList
 
     let private contentOf (line: string) : string =
         let markerMatch = bulletPattern.Match line

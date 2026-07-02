@@ -39,7 +39,7 @@ type AnthropicEngine(httpClient: HttpClient, options: AnthropicOptions) =
             |> String.concat "\n"
 
         sprintf
-            """You are a resume tailoring assistant. Given resume bullet lines and a job description, rewrite the 3-5 bullets most relevant to the job description so they better match its language, keywords, and priorities. Keep rewrites truthful to the original meaning; do not invent metrics that change the substance of the claim. Preserve the exact leading bullet marker and indentation of each line.
+            """You are a resume tailoring assistant. Given resume bullet lines and a job description, rewrite the 3-5 bullets most relevant to the job description so they better match its language, keywords, and priorities. Keep rewrites truthful to the original meaning; do not invent metrics that change the substance of the claim. If a line starts with a bullet marker, preserve that exact marker and indentation; if it does not, keep the line as plain text with the same indentation.
 
 Resume bullet lines (with their line indexes):
 %s
