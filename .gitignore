@@ -25,3 +25,4 @@ dist-ssr
 
 backend/bin
 backend/obj
+backend/data/resume-tailor.db
