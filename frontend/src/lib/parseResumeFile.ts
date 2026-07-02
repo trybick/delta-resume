@@ -1,4 +1,5 @@
 import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist'
+import type { TextItem } from 'pdfjs-dist/types/src/display/api'
 import mammoth from 'mammoth'
 
 GlobalWorkerOptions.workerSrc = new URL(
@@ -25,6 +26,31 @@ const readTextFile = async (file: File): Promise<string> => {
   return text
 }
 
+const buildPageText = (items: TextItem[]): string => {
+  const lines: string[] = []
+  let currentLine = ''
+  let lastY: number | null = null
+
+  const flushLine = () => {
+    const trimmed = currentLine.replace(/\s+/g, ' ').trim()
+    if (trimmed) lines.push(trimmed)
+    currentLine = ''
+  }
+
+  for (const item of items) {
+    const y = item.transform[5]
+    const startsNewLine = lastY !== null && Math.abs(y - lastY) > 2
+
+    if (startsNewLine) flushLine()
+    currentLine = currentLine ? `${currentLine} ${item.str}` : item.str
+    if (item.hasEOL) flushLine()
+    lastY = y
+  }
+
+  flushLine()
+  return lines.join('\n')
+}
+
 const readPdfFile = async (file: File): Promise<string> => {
   const arrayBuffer = await file.arrayBuffer()
   const pdf = await getDocument({ data: arrayBuffer }).promise
@@ -32,12 +58,12 @@ const readPdfFile = async (file: File): Promise<string> => {
   for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
     const page = await pdf.getPage(pageNumber)
     const content = await page.getTextContent()
-    const pageText = content.items
-      .map((item) => ('str' in item ? item.str : ''))
-      .join(' ')
-    pages.push(pageText)
+    const textItems = content.items.filter(
+      (item): item is TextItem => 'str' in item,
+    )
+    pages.push(buildPageText(textItems))
   }
-  const text = pages.join('\n').trim()
+  const text = pages.join('\n\n').trim()
   if (!text) {
     throw new ResumeParseError(
       'Could not extract text from this PDF. Try a text-based PDF or paste your resume instead.',
