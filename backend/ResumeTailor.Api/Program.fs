@@ -35,6 +35,11 @@ let main args =
 
     builder.Services.AddGiraffe() |> ignore
 
+    builder.Services.AddCors(fun options ->
+        options.AddDefaultPolicy(fun policy ->
+            policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod() |> ignore))
+    |> ignore
+
     let jsonOptions =
         JsonSerializerOptions(PropertyNamingPolicy = JsonNamingPolicy.CamelCase)
 
@@ -62,6 +67,7 @@ let main args =
 
     let app = builder.Build()
 
+    app.UseCors() |> ignore
     app.UseGiraffe webApp
 
     app.Run("http://localhost:5155")

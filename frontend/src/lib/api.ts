@@ -1,5 +1,7 @@
 import type { ChangeDecision, TailorResult } from './types'
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
+
 export type TailorResponse = TailorResult & {
   runId: string
 }
@@ -28,7 +30,7 @@ export const postTailor = async (
   resumeText: string,
   jobDescription: string,
 ): Promise<TailorResponse> => {
-  const response = await fetch('/api/tailor', {
+  const response = await fetch(`${API_BASE_URL}/api/tailor`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ resumeText, jobDescription }),
@@ -43,7 +45,7 @@ export const patchDecision = async (
   changeId: string,
   decision: ChangeDecision,
 ): Promise<void> => {
-  const response = await fetch(`/api/changes/${changeId}`, {
+  const response = await fetch(`${API_BASE_URL}/api/changes/${changeId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ decision }),
