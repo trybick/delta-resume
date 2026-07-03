@@ -23,8 +23,12 @@ dist-ssr
 *.sln
 *.sw?
 
-backend/bin
-backend/obj
-backend/ResumeTailor.Api/bin
-backend/ResumeTailor.Api/obj
-backend/data/resume-tailor.db
+# .NET build artifacts
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
+
+# Local SQLite database
+backend/data/
+*.db
