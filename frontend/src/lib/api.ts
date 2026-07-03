@@ -1,4 +1,6 @@
-import type { ChangeDecision, TailorResult } from './types'
+import type { ChangeDecision, CreditStatus, TailorResult } from './types'
+import { getAuthToken } from './authToken'
+import { getFingerprint } from './fingerprint'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
 
@@ -16,6 +18,26 @@ export class ApiError extends Error {
   }
 }
 
+export class CreditsExhaustedError extends ApiError {
+  readonly requiresAuth: boolean
+
+  constructor(message: string, requiresAuth: boolean) {
+    super(402, message)
+    this.name = 'CreditsExhaustedError'
+    this.requiresAuth = requiresAuth
+  }
+}
+
+const buildHeaders = async (): Promise<Record<string, string>> => {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+
+  const [token, fingerprint] = await Promise.all([getAuthToken(), getFingerprint()])
+  if (token) headers.Authorization = `Bearer ${token}`
+  if (fingerprint) headers['X-Guest-Fingerprint'] = fingerprint
+
+  return headers
+}
+
 const readErrorMessage = async (response: Response): Promise<string> => {
   try {
     const body = (await response.json()) as { message?: string }
@@ -26,17 +48,46 @@ const readErrorMessage = async (response: Response): Promise<string> => {
   return `Request failed with status ${response.status}.`
 }
 
+const throwApiError = async (response: Response): Promise<never> => {
+  if (response.status === 402) {
+    try {
+      const body = (await response.json()) as {
+        message?: string
+        requiresAuth?: boolean
+      }
+      throw new CreditsExhaustedError(
+        body.message ?? 'You are out of credits.',
+        body.requiresAuth ?? true,
+      )
+    } catch (error) {
+      if (error instanceof CreditsExhaustedError) throw error
+      throw new CreditsExhaustedError('You are out of credits.', true)
+    }
+  }
+  throw new ApiError(response.status, await readErrorMessage(response))
+}
+
+export const getCredits = async (): Promise<CreditStatus> => {
+  const response = await fetch(`${API_BASE_URL}/api/credits`, {
+    headers: await buildHeaders(),
+  })
+  if (!response.ok) {
+    return throwApiError(response)
+  }
+  return (await response.json()) as CreditStatus
+}
+
 export const postTailor = async (
   resumeText: string,
   jobDescription: string,
 ): Promise<TailorResponse> => {
   const response = await fetch(`${API_BASE_URL}/api/tailor`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await buildHeaders(),
     body: JSON.stringify({ resumeText, jobDescription }),
   })
   if (!response.ok) {
-    throw new ApiError(response.status, await readErrorMessage(response))
+    return throwApiError(response)
   }
   return (await response.json()) as TailorResponse
 }
@@ -47,10 +98,10 @@ export const patchDecision = async (
 ): Promise<void> => {
   const response = await fetch(`${API_BASE_URL}/api/changes/${changeId}`, {
     method: 'PATCH',
-    headers: { 'Content-Type': 'application/json' },
+    headers: await buildHeaders(),
     body: JSON.stringify({ decision }),
   })
   if (!response.ok) {
-    throw new ApiError(response.status, await readErrorMessage(response))
+    return throwApiError(response)
   }
 }

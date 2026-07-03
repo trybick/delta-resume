@@ -25,4 +25,6 @@ dist-ssr
 
 backend/bin
 backend/obj
+backend/ResumeTailor.Api/bin
+backend/ResumeTailor.Api/obj
 backend/data/resume-tailor.db

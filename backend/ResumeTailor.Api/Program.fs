@@ -6,6 +6,7 @@ open System.Net.Http
 open System.Text.Json
 open System.Text.Json.Serialization
 open Giraffe
+open Microsoft.AspNetCore.Authentication.JwtBearer
 open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
@@ -16,6 +17,7 @@ open ResumeTailor.Infrastructure
 let private webApp: HttpHandler =
     choose
         [ GET >=> route "/api/health" >=> Handlers.health
+          GET >=> route "/api/credits" >=> Handlers.credits
           POST >=> route "/api/tailor" >=> Handlers.tailor
           PATCH >=> routef "/api/changes/%s" Handlers.updateDecision
           setStatusCode 404 >=> json {| Message = "Not found" |} ]
@@ -31,9 +33,28 @@ let main args =
 
     Schema.init connectionString
 
+    let clerkAuthority =
+        Environment.GetEnvironmentVariable "CLERK_FRONTEND_API_URL"
+        |> Option.ofObj
+        |> Option.filter (String.IsNullOrWhiteSpace >> not)
+        |> Option.map (fun url -> url.TrimEnd '/')
+
     let builder = WebApplication.CreateBuilder(args)
 
     builder.Services.AddGiraffe() |> ignore
+
+    match clerkAuthority with
+    | Some authority ->
+        builder.Services
+            .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(fun options ->
+                options.Authority <- authority
+                options.MapInboundClaims <- false
+                options.TokenValidationParameters.ValidateAudience <- false
+                options.TokenValidationParameters.ValidIssuer <- authority)
+        |> ignore
+    | None ->
+        eprintfn "Warning: CLERK_FRONTEND_API_URL is not set; all requests are treated as guests."
 
     builder.Services.AddCors(fun options ->
         options.AddDefaultPolicy(fun policy ->
@@ -65,9 +86,20 @@ let main args =
 
     builder.Services.AddSingleton<TailoringService>() |> ignore
 
+    builder.Services.AddSingleton<CreditStore>(fun _ -> SqliteCreditStore(connectionString) :> CreditStore)
+    |> ignore
+
+    builder.Services.AddSingleton<CreditService>(fun provider ->
+        CreditService(provider.GetRequiredService<CreditStore>(), CreditServiceOptions.fromEnvironment ()))
+    |> ignore
+
     let app = builder.Build()
 
     app.UseCors() |> ignore
+
+    if Option.isSome clerkAuthority then
+        app.UseAuthentication() |> ignore
+
     app.UseGiraffe webApp
 
     app.Run("http://localhost:5155")

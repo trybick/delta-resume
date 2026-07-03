@@ -9,7 +9,9 @@
     <Compile Include="Domain/Bullets.fs" />
     <Compile Include="Application/Ports.fs" />
     <Compile Include="Application/TailoringService.fs" />
+    <Compile Include="Application/CreditService.fs" />
     <Compile Include="Infrastructure/SqliteRepository.fs" />
+    <Compile Include="Infrastructure/CreditStore.fs" />
     <Compile Include="Infrastructure/AnthropicEngine.fs" />
     <Compile Include="Api/Dtos.fs" />
     <Compile Include="Api/Handlers.fs" />
@@ -19,6 +21,7 @@
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.79" />
     <PackageReference Include="Giraffe" Version="8.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.9" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
   </ItemGroup>

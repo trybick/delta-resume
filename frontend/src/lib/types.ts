@@ -13,3 +13,10 @@ export type TailorResult = {
 }
 
 export type ChangeDecision = 'pending' | 'accepted' | 'rejected'
+
+export type CreditStatus = {
+  remaining: number
+  total: number
+  plan: string
+  isAuthenticated: boolean
+}

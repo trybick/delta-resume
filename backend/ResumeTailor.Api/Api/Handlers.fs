@@ -19,16 +19,43 @@ module Handlers =
 
     let health: HttpHandler = json {| Status = "ok" |}
 
+    let credits: HttpHandler =
+        fun next ctx ->
+            task {
+                let creditService = ctx.GetService<CreditService>()
+                let! status = creditService.GetStatus ctx
+                return! json status next ctx
+            }
+
+    let private creditsExhaustedResponse (status: CreditStatus) : HttpHandler =
+        setStatusCode StatusCodes.Status402PaymentRequired
+        >=> json
+                {| Code = "credits_exhausted"
+                   RequiresAuth = not status.IsAuthenticated
+                   Message =
+                    if status.IsAuthenticated then
+                        "You've used all your credits. Subscribe to Pro to keep tailoring."
+                    else
+                        "You've used your 3 free credits. Sign up to continue." |}
+
     let tailor: HttpHandler =
         fun next ctx ->
             task {
-                let service = ctx.GetService<TailoringService>()
-                let! request = ctx.BindJsonAsync<TailorRequestDto>()
-                let! result = service.TailorResume(request.ResumeText, request.JobDescription)
+                let creditService = ctx.GetService<CreditService>()
+                let! creditStatus = creditService.GetStatus ctx
 
-                match result with
-                | Ok run -> return! json (Mapping.toResponseDto run) next ctx
-                | Error error -> return! tailorErrorToResponse error next ctx
+                if creditStatus.Remaining <= 0 then
+                    return! creditsExhaustedResponse creditStatus next ctx
+                else
+                    let service = ctx.GetService<TailoringService>()
+                    let! request = ctx.BindJsonAsync<TailorRequestDto>()
+                    let! result = service.TailorResume(request.ResumeText, request.JobDescription)
+
+                    match result with
+                    | Ok run ->
+                        do! creditService.RecordSpend ctx
+                        return! json (Mapping.toResponseDto run) next ctx
+                    | Error error -> return! tailorErrorToResponse error next ctx
             }
 
     let updateDecision (changeId: string) : HttpHandler =

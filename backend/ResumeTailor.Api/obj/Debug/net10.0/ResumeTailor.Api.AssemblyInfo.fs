@@ -10,7 +10,7 @@ open System.Reflection
 [<assembly: System.Reflection.AssemblyCompanyAttribute("ResumeTailor.Api")>]
 [<assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")>]
 [<assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")>]
-[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5a808060bce0e109914c88f5737801e85de30e8f")>]
+[<assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bdaafa0bfb58cdcce3d246290a03670cac103dae")>]
 [<assembly: System.Reflection.AssemblyProductAttribute("ResumeTailor.Api")>]
 [<assembly: System.Reflection.AssemblyTitleAttribute("ResumeTailor.Api")>]
 [<assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")>]

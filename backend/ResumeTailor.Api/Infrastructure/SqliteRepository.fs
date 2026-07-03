@@ -35,6 +35,17 @@ module Schema =
                 tailored TEXT NOT NULL,
                 decision TEXT NOT NULL DEFAULT 'pending'
             );
+
+            CREATE TABLE IF NOT EXISTS credit_usage (
+                id TEXT PRIMARY KEY,
+                identity_key TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                period TEXT NOT NULL,
+                used_at TEXT NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_credit_usage_key_period
+                ON credit_usage (identity_key, period);
             """
         )
         |> ignore

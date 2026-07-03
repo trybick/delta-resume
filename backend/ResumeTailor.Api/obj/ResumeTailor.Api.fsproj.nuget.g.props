@@ -15,6 +15,7 @@
   <PropertyGroup Condition=" '$(ExcludeRestorePackageImports)' != 'true' ">
     <PkgSQLitePCLRaw_bundle_e_sqlite3 Condition=" '$(PkgSQLitePCLRaw_bundle_e_sqlite3)' == '' ">/Users/timr/.nuget/packages/sqlitepclraw.bundle_e_sqlite3/3.0.3</PkgSQLitePCLRaw_bundle_e_sqlite3>
     <PkgMicrosoft_Data_Sqlite Condition=" '$(PkgMicrosoft_Data_Sqlite)' == '' ">/Users/timr/.nuget/packages/microsoft.data.sqlite/10.0.9</PkgMicrosoft_Data_Sqlite>
+    <PkgMicrosoft_AspNetCore_Authentication_JwtBearer Condition=" '$(PkgMicrosoft_AspNetCore_Authentication_JwtBearer)' == '' ">/Users/timr/.nuget/packages/microsoft.aspnetcore.authentication.jwtbearer/10.0.9</PkgMicrosoft_AspNetCore_Authentication_JwtBearer>
     <PkgFSharp_Core Condition=" '$(PkgFSharp_Core)' == '' ">/Users/timr/.nuget/packages/fsharp.core/10.0.103</PkgFSharp_Core>
     <PkgGiraffe Condition=" '$(PkgGiraffe)' == '' ">/Users/timr/.nuget/packages/giraffe/8.2.0</PkgGiraffe>
     <PkgDapper Condition=" '$(PkgDapper)' == '' ">/Users/timr/.nuget/packages/dapper/2.1.79</PkgDapper>
