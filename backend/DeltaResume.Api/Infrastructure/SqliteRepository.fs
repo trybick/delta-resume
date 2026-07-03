@@ -1,11 +1,11 @@
-namespace ResumeTailor.Infrastructure
+namespace DeltaResume.Infrastructure
 
 open System.IO
 open System.Threading.Tasks
 open Dapper
 open Microsoft.Data.Sqlite
-open ResumeTailor.Application
-open ResumeTailor.Domain
+open DeltaResume.Application
+open DeltaResume.Domain
 
 module Schema =
     let init (connectionString: string) : unit =

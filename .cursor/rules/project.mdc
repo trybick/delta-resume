@@ -1,16 +1,16 @@
 ---
-description: Resume Tailor project overview and dev server workflow
+description: Delta Resume project overview and dev server workflow
 alwaysApply: true
 ---
 
-# Resume Tailor
+# Delta Resume
 
 Resume tailoring app: upload a base resume, paste a job description, review Claude-suggested bullet rewrites with inline diffs, accept/reject changes, copy the result. Runs and decisions persist to SQLite.
 
 ## Stack
 
 - **Frontend** (`frontend/`) — Vite + React + TypeScript + Mantine. Dev server: http://localhost:5173. Proxies `/api` to the backend.
-- **Backend** (`backend/ResumeTailor.Api/`) — F# + Giraffe + Dapper. API: http://localhost:5155. DDD layers: `Domain/`, `Application/`, `Infrastructure/`, `Api/`.
+- **Backend** (`backend/DeltaResume.Api/`) — F# + Giraffe + Dapper. API: http://localhost:5155. DDD layers: `Domain/`, `Application/`, `Infrastructure/`, `Api/`.
 - **Auth & billing** — Clerk (guest fingerprint + IP credits, free/pro plans). Key env vars: `ANTHROPIC_API_KEY`, `CLERK_FRONTEND_API_URL`, `VITE_CLERK_PUBLISHABLE_KEY`.
 
 ## Dev servers
@@ -28,7 +28,7 @@ Only start what is missing, and prefer telling the user to start it in their ext
 
 ```bash
 # Backend (from repo root)
-cd backend/ResumeTailor.Api && dotnet run
+cd backend/DeltaResume.Api && dotnet run
 
 # Frontend
 cd frontend && npm run dev

@@ -1,4 +1,4 @@
-namespace ResumeTailor.Application
+namespace DeltaResume.Application
 
 open System
 open System.Security.Claims
@@ -45,7 +45,7 @@ module CreditServiceOptions =
             Environment.GetEnvironmentVariable "IP_HASH_SALT"
             |> Option.ofObj
             |> Option.filter (String.IsNullOrWhiteSpace >> not)
-            |> Option.defaultValue "resume-tailor-default-salt"
+            |> Option.defaultValue "delta-resume-default-salt"
 
         let trustForwarded =
             Environment.GetEnvironmentVariable "TRUST_FORWARDED_HEADERS"

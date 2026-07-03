@@ -1,8 +1,6 @@
-# Resume Tailor
+# Delta Resume
 
 A single-page frontend for tailoring resume bullets to a job description. Attach a base resume, paste a job description, and review suggested bullet rewrites with an inline diff. Accept or reject each change, then copy the tailored resume.
-
-The tailoring logic is currently mocked in the frontend (`src/lib/mockTailor.ts`) — no backend is wired up yet.
 
 ## Stack
 
@@ -21,4 +19,4 @@ Then open the printed local URL (defaults to http://localhost:5173).
 
 ## Notes
 
-- `.txt` and `.md` uploads are read directly in the browser. PDF/DOCX uploads are accepted but load sample resume text for now; real parsing is deferred until a backend exists.
+- `.txt` and `.md` uploads are read directly in the browser. PDF/DOCX uploads are accepted but load sample resume text for now; real parsing is deferred.

@@ -1,10 +1,10 @@
-namespace ResumeTailor.Infrastructure
+namespace DeltaResume.Infrastructure
 
 open System
 open System.Threading.Tasks
 open Dapper
 open Microsoft.Data.Sqlite
-open ResumeTailor.Application
+open DeltaResume.Application
 
 type SqliteCreditStore(connectionString: string) =
 

@@ -1,4 +1,4 @@
-﻿module ResumeTailor.Program
+﻿module DeltaResume.Program
 
 open System
 open System.IO
@@ -10,9 +10,9 @@ open Microsoft.AspNetCore.Authentication.JwtBearer
 open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
-open ResumeTailor.Api
-open ResumeTailor.Application
-open ResumeTailor.Infrastructure
+open DeltaResume.Api
+open DeltaResume.Application
+open DeltaResume.Infrastructure
 
 let private webApp: HttpHandler =
     choose
@@ -27,7 +27,7 @@ let main args =
     let dbPath =
         Environment.GetEnvironmentVariable "DB_PATH"
         |> Option.ofObj
-        |> Option.defaultValue (Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "data", "resume-tailor.db"))
+        |> Option.defaultValue (Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "data", "delta-resume.db"))
 
     let connectionString = sprintf "Data Source=%s" (Path.GetFullPath dbPath)
 

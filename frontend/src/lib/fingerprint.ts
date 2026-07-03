@@ -1,6 +1,6 @@
 import FingerprintJS from '@fingerprintjs/fingerprintjs'
 
-const STORAGE_KEY = 'resume-tailor-visitor-id'
+const STORAGE_KEY = 'delta-resume-visitor-id'
 
 let cachedVisitorId: string | null = null
 

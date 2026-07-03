@@ -1,11 +1,11 @@
-# Resume Tailor
+# Delta Resume
 
 A resume tailoring service: attach a base resume, paste a job description, and review Claude-suggested bullet rewrites with an inline diff. Accept or reject each change, then copy the tailored resume. Runs and decisions are persisted to SQLite.
 
 ## Structure
 
 - `frontend/` — Vite + React + TypeScript + Mantine single-page UI
-- `backend/ResumeTailor.Api/` — F# + Giraffe + Dapper API with a DDD layering:
+- `backend/DeltaResume.Api/` — F# + Giraffe + Dapper API with a DDD layering:
   - `Domain/` — pure types, bullet extraction, change validation
   - `Application/` — ports (`TailoringEngine`, `TailorRunRepository`) and the `TailoringService` use cases
   - `Infrastructure/` — Dapper/SQLite repository and the Anthropic Claude engine
@@ -17,7 +17,7 @@ Backend (requires .NET SDK and an Anthropic API key):
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
-cd backend/ResumeTailor.Api
+cd backend/DeltaResume.Api
 dotnet run
 ```
 
@@ -25,7 +25,7 @@ The API listens on http://localhost:5155. Environment variables:
 
 - `ANTHROPIC_API_KEY` (required for tailoring)
 - `ANTHROPIC_MODEL` (optional, defaults to `claude-sonnet-4-5`)
-- `DB_PATH` (optional, defaults to `backend/data/resume-tailor.db`)
+- `DB_PATH` (optional, defaults to `backend/data/delta-resume.db`)
 - `CLERK_FRONTEND_API_URL` (required for auth; your Clerk Frontend API URL, e.g. `https://your-app.clerk.accounts.dev`. If unset, all requests are treated as guests.)
 - `IP_HASH_SALT` (optional; salt used when hashing guest IPs for credit tracking)
 - `TRUST_FORWARDED_HEADERS` (optional, set to `true` only when running behind a reverse proxy so `X-Forwarded-For` is used for guest IP resolution)

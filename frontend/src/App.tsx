@@ -136,7 +136,7 @@ const App = () => {
               <IconSparkles size={20} />
             </ThemeIcon>
             <div>
-              <Title order={3}>Resume Tailor</Title>
+              <Title order={3}>Delta Resume</Title>
               <Text size="xs" c="dimmed">
                 Optimize your resume bullets for any job description
               </Text>

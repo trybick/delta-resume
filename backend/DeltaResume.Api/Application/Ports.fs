@@ -1,7 +1,7 @@
-namespace ResumeTailor.Application
+namespace DeltaResume.Application
 
 open System.Threading.Tasks
-open ResumeTailor.Domain
+open DeltaResume.Domain
 
 type TailoringEngine =
     abstract member ProposeChanges:

@@ -1,10 +1,10 @@
-namespace ResumeTailor.Api
+namespace DeltaResume.Api
 
 open System
 open Giraffe
 open Microsoft.AspNetCore.Http
-open ResumeTailor.Application
-open ResumeTailor.Domain
+open DeltaResume.Application
+open DeltaResume.Domain
 
 module Handlers =
 

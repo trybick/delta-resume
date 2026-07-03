@@ -1,4 +1,4 @@
-namespace ResumeTailor.Domain
+namespace DeltaResume.Domain
 
 open System
 open System.Text.RegularExpressions

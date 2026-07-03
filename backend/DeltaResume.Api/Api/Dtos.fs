@@ -1,7 +1,7 @@
-namespace ResumeTailor.Api
+namespace DeltaResume.Api
 
 open System
-open ResumeTailor.Domain
+open DeltaResume.Domain
 
 [<CLIMutable>]
 type TailorRequestDto =

@@ -1,8 +1,8 @@
-namespace ResumeTailor.Application
+namespace DeltaResume.Application
 
 open System
 open System.Threading.Tasks
-open ResumeTailor.Domain
+open DeltaResume.Domain
 
 type TailoringService(engine: TailoringEngine, repository: TailorRunRepository) =
 

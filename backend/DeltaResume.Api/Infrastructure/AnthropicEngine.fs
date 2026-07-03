@@ -1,4 +1,4 @@
-namespace ResumeTailor.Infrastructure
+namespace DeltaResume.Infrastructure
 
 open System
 open System.Net.Http
@@ -6,8 +6,8 @@ open System.Net.Http.Headers
 open System.Text
 open System.Text.Json
 open System.Threading.Tasks
-open ResumeTailor.Application
-open ResumeTailor.Domain
+open DeltaResume.Application
+open DeltaResume.Domain
 
 type AnthropicOptions =
     { ApiKey: string option
@@ -39,7 +39,7 @@ type AnthropicEngine(httpClient: HttpClient, options: AnthropicOptions) =
             |> String.concat "\n"
 
         sprintf
-            """You are a resume tailoring assistant. Given resume bullet lines and a job description, rewrite the 3-5 bullets most relevant to the job description so they better match its language, keywords, and priorities. Keep rewrites truthful to the original meaning; do not invent metrics that change the substance of the claim. If a line starts with a bullet marker, preserve that exact marker and indentation; if it does not, keep the line as plain text with the same indentation.
+            """You are Delta Resume, a resume tailoring assistant. Given resume bullet lines and a job description, rewrite the 3-5 bullets most relevant to the job description so they better match its language, keywords, and priorities. Keep rewrites truthful to the original meaning; do not invent metrics that change the substance of the claim. If a line starts with a bullet marker, preserve that exact marker and indentation; if it does not, keep the line as plain text with the same indentation.
 
 Resume bullet lines (with their line indexes):
 %s
