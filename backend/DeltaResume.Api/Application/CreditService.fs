@@ -45,7 +45,7 @@ module CreditServiceOptions =
             Environment.GetEnvironmentVariable "IP_HASH_SALT"
             |> Option.ofObj
             |> Option.filter (String.IsNullOrWhiteSpace >> not)
-            |> Option.defaultValue "delta-resume-default-salt"
+            |> Option.defaultWith (fun () -> failwith "IP_HASH_SALT environment variable is required")
 
         let trustForwarded =
             Environment.GetEnvironmentVariable "TRUST_FORWARDED_HEADERS"
@@ -66,8 +66,7 @@ type CreditService(store: CreditStore, options: CreditServiceOptions) =
     let currentMonthPeriod () = DateTime.UtcNow.ToString "yyyy-MM"
 
     let hashWithSalt (value: string) : string =
-        Encoding.UTF8.GetBytes(options.IpHashSalt + value)
-        |> SHA256.HashData
+        HMACSHA256.HashData(Encoding.UTF8.GetBytes options.IpHashSalt, Encoding.UTF8.GetBytes value)
         |> Convert.ToHexString
 
     let sanitizeFingerprint (value: string) : string option =

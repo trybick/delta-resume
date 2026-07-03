@@ -17,6 +17,7 @@ Backend (requires .NET SDK and an Anthropic API key):
 
 ```bash
 export ANTHROPIC_API_KEY=sk-ant-...
+export IP_HASH_SALT=$(openssl rand -hex 32)
 cd backend/DeltaResume.Api
 dotnet run
 ```
@@ -25,7 +26,7 @@ The API listens on http://localhost:5155. Environment variables:
 
 - `ANTHROPIC_API_KEY` (required for tailoring)
 - `CLERK_FRONTEND_API_URL` (required for auth; your Clerk Frontend API URL, e.g. `https://your-app.clerk.accounts.dev`. If unset, all requests are treated as guests.)
-- `IP_HASH_SALT` (optional; salt used when hashing guest IPs for credit tracking)
+- `IP_HASH_SALT` (required; secret key for HMAC-SHA256 hashing of guest IPs for credit tracking)
 - `TRUST_FORWARDED_HEADERS` (optional, set to `true` only when running behind a reverse proxy so `X-Forwarded-For` is used for guest IP resolution)
 
 Frontend (proxies `/api` to the backend):
