@@ -1,0 +1,35 @@
+---
+description: Resume Tailor project overview and dev server workflow
+alwaysApply: true
+---
+
+# Resume Tailor
+
+Resume tailoring app: upload a base resume, paste a job description, review Claude-suggested bullet rewrites with inline diffs, accept/reject changes, copy the result. Runs and decisions persist to SQLite.
+
+## Stack
+
+- **Frontend** (`frontend/`) — Vite + React + TypeScript + Mantine. Dev server: http://localhost:5173. Proxies `/api` to the backend.
+- **Backend** (`backend/ResumeTailor.Api/`) — F# + Giraffe + Dapper. API: http://localhost:5155. DDD layers: `Domain/`, `Application/`, `Infrastructure/`, `Api/`.
+- **Auth & billing** — Clerk (guest fingerprint + IP credits, free/pro plans). Key env vars: `ANTHROPIC_API_KEY`, `CLERK_FRONTEND_API_URL`, `VITE_CLERK_PUBLISHABLE_KEY`.
+
+## Dev servers
+
+Frontend and backend usually run **outside Cursor** (e.g. iTerm, Terminal.app) — not in Cursor's integrated terminals. Do not assume they are down just because Cursor terminals are empty.
+
+Before starting either server, check whether it is already running:
+
+1. **Health checks** — `curl -s http://localhost:5155/api/health` (backend) and `curl -s -o /dev/null -w "%{http_code}" http://localhost:5173` (frontend; expect `200`).
+2. **Ports** — `lsof -i :5155` or `lsof -i :5173` if unsure.
+
+Do **not** start a second instance. If a server responds, reuse it and report the URL — do not restart it from Cursor.
+
+Only start what is missing, and prefer telling the user to start it in their external terminal unless they explicitly ask you to run it:
+
+```bash
+# Backend (from repo root)
+cd backend/ResumeTailor.Api && dotnet run
+
+# Frontend
+cd frontend && npm run dev
+```
