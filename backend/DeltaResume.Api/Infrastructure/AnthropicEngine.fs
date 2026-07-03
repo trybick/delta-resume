@@ -9,26 +9,14 @@ open System.Threading.Tasks
 open DeltaResume.Application
 open DeltaResume.Domain
 
-type AnthropicOptions =
-    { ApiKey: string option
-      Model: string }
+type AnthropicEngine(httpClient: HttpClient) =
 
-module AnthropicOptions =
-    let fromEnvironment () : AnthropicOptions =
-        let apiKey =
-            Environment.GetEnvironmentVariable "ANTHROPIC_API_KEY"
-            |> Option.ofObj
-            |> Option.filter (fun key -> not (String.IsNullOrWhiteSpace key))
+    let model = "claude-sonnet-4-5"
 
-        let model =
-            Environment.GetEnvironmentVariable "ANTHROPIC_MODEL"
-            |> Option.ofObj
-            |> Option.filter (fun value -> not (String.IsNullOrWhiteSpace value))
-            |> Option.defaultValue "claude-sonnet-4-5"
-
-        { ApiKey = apiKey; Model = model }
-
-type AnthropicEngine(httpClient: HttpClient, options: AnthropicOptions) =
+    let apiKey =
+        Environment.GetEnvironmentVariable "ANTHROPIC_API_KEY"
+        |> Option.ofObj
+        |> Option.filter (fun key -> not (String.IsNullOrWhiteSpace key))
 
     let jsonOptions = JsonSerializerOptions(PropertyNameCaseInsensitive = true)
 
@@ -99,11 +87,11 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
             (bullets: BulletLine list, jobDescription: string)
             : Task<Result<ProposedChange list, string>> =
             task {
-                match options.ApiKey with
+                match apiKey with
                 | None -> return Error "ANTHROPIC_API_KEY is not set on the server."
                 | Some apiKey ->
                     let requestBody =
-                        {| model = options.Model
+                        {| model = model
                            max_tokens = 2048
                            messages =
                             [| {| role = "user"

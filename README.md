@@ -24,8 +24,6 @@ dotnet run
 The API listens on http://localhost:5155. Environment variables:
 
 - `ANTHROPIC_API_KEY` (required for tailoring)
-- `ANTHROPIC_MODEL` (optional, defaults to `claude-sonnet-4-5`)
-- `DB_PATH` (optional, defaults to `backend/data/delta-resume.db`)
 - `CLERK_FRONTEND_API_URL` (required for auth; your Clerk Frontend API URL, e.g. `https://your-app.clerk.accounts.dev`. If unset, all requests are treated as guests.)
 - `IP_HASH_SALT` (optional; salt used when hashing guest IPs for credit tracking)
 - `TRUST_FORWARDED_HEADERS` (optional, set to `true` only when running behind a reverse proxy so `X-Forwarded-For` is used for guest IP resolution)

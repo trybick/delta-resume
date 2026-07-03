@@ -25,9 +25,7 @@ let private webApp: HttpHandler =
 [<EntryPoint>]
 let main args =
     let dbPath =
-        Environment.GetEnvironmentVariable "DB_PATH"
-        |> Option.ofObj
-        |> Option.defaultValue (Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "data", "delta-resume.db"))
+        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "data", "delta-resume.db")
 
     let connectionString = sprintf "Data Source=%s" (Path.GetFullPath dbPath)
 
@@ -72,16 +70,12 @@ let main args =
     builder.Services.AddSingleton<HttpClient>(fun _ -> new HttpClient(Timeout = TimeSpan.FromSeconds 120.0))
     |> ignore
 
-    builder.Services.AddSingleton<AnthropicOptions>(fun _ -> AnthropicOptions.fromEnvironment ())
-    |> ignore
-
     builder.Services.AddSingleton<TailorRunRepository>(fun _ ->
         SqliteTailorRunRepository(connectionString) :> TailorRunRepository)
     |> ignore
 
     builder.Services.AddSingleton<TailoringEngine>(fun provider ->
-        AnthropicEngine(provider.GetRequiredService<HttpClient>(), provider.GetRequiredService<AnthropicOptions>())
-        :> TailoringEngine)
+        AnthropicEngine(provider.GetRequiredService<HttpClient>()) :> TailoringEngine)
     |> ignore
 
     builder.Services.AddSingleton<TailoringService>() |> ignore
