@@ -24,6 +24,8 @@ let private webApp: HttpHandler =
 
 [<EntryPoint>]
 let main args =
+    DotNetEnv.Env.Load() |> ignore
+
     let dbPath =
         Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "data", "delta-resume.db")
 

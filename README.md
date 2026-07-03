@@ -17,14 +17,14 @@ A resume tailoring service: attach a base resume, paste a job description, and r
 
 Requires .NET SDK. Listens on http://localhost:5155.
 
-**Environment variables** (export in your shell, or set in your host's env config):
+**Environment variables**:
 
 | Variable | Required | Description |
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | Yes | Anthropic API key for tailoring |
 | `CLERK_FRONTEND_API_URL` | Yes | Clerk Frontend API URL (e.g. `https://your-app.clerk.accounts.dev`). If unset, all requests are treated as guests. |
 | `IP_HASH_SALT` | Yes | Secret key for HMAC-SHA256 hashing of guest IPs for credit tracking. Generate with `openssl rand -hex 32`. |
-| `TRUST_FORWARDED_HEADERS` | No | Set to `true` only when running behind a reverse proxy so `X-Forwarded-For` is used for guest IP resolution |
+| `TRUST_FORWARDED_HEADERS` | No | Set to `true` only when running behind a reverse proxy (production) so `X-Forwarded-For` is used for guest IP resolution |
 
 ```bash
 cd backend/DeltaResume.Api

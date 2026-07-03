@@ -32,3 +32,4 @@ dist-ssr
 # Local SQLite database
 backend/data/
 *.db
+backend/DeltaResume.Api/.env
