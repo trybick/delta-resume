@@ -15,6 +15,7 @@ import {
 } from '@mantine/core'
 import {
   SignInButton,
+  SignUpButton,
   SignedIn,
   SignedOut,
   UserButton,
@@ -171,6 +172,11 @@ const App = () => {
                     Sign in
                   </Button>
                 </SignInButton>
+                <SignUpButton mode="modal">
+                  <Button variant="outline" color="cyan">
+                    Sign up
+                  </Button>
+                </SignUpButton>
               </Group>
             </SignedOut>
             <SignedIn>
