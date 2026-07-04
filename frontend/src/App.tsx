@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type ComponentProps } from 'react'
 import {
   Alert,
   Badge,
@@ -39,6 +39,15 @@ type AttachedFile = {
   name: string
   size: number
 }
+
+type ClerkAuthButtonProps = ComponentProps<typeof Button> & {
+  component?: string
+  clerk?: unknown
+}
+
+const ClerkAuthButton = ({ component: _component, clerk: _clerk, ...props }: ClerkAuthButtonProps) => (
+  <Button {...props} />
+)
 
 const App = () => {
   const { isSignedIn, getToken } = useAuth()
@@ -159,23 +168,23 @@ const App = () => {
             <SignedOut>
               <Group gap="xs">
                 <SignInButton mode="modal">
-                  <Button
+                  <ClerkAuthButton
                     variant="white"
                     color="dark"
                     leftSection={<IconBrandGoogleFilled size={16} />}
                   >
                     Continue with Google
-                  </Button>
+                  </ClerkAuthButton>
                 </SignInButton>
                 <SignInButton mode="modal">
-                  <Button variant="subtle" color="gray">
+                  <ClerkAuthButton variant="subtle" color="gray">
                     Sign in
-                  </Button>
+                  </ClerkAuthButton>
                 </SignInButton>
                 <SignUpButton mode="modal">
-                  <Button variant="outline" color="cyan">
+                  <ClerkAuthButton variant="outline" color="cyan">
                     Sign up
-                  </Button>
+                  </ClerkAuthButton>
                 </SignUpButton>
               </Group>
             </SignedOut>
