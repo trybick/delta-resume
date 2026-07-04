@@ -1,6 +1,27 @@
 import { useEffect } from 'react'
-import { Center, Modal, Stack, Text, Title } from '@mantine/core'
+import { Modal, Stack, Text, Title } from '@mantine/core'
 import { PricingTable, SignUp, useAuth, useUser } from '@clerk/clerk-react'
+
+const embeddedSignUpAppearance = {
+  elements: {
+    rootBox: { width: '100%' },
+    cardBox: {
+      width: '100%',
+      border: 'none',
+      boxShadow: 'none',
+      background: 'transparent',
+    },
+    card: {
+      padding: 0,
+      boxShadow: 'none',
+      border: 'none',
+      background: 'transparent',
+    },
+    header: { display: 'none' },
+    footer: { background: 'none' },
+    footerItem: { background: 'none' },
+  },
+} as const
 
 export type PaywallReason = 'credits' | 'savedLimit'
 
@@ -44,10 +65,10 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
     <Modal
       opened={opened}
       onClose={onClose}
-      size="lg"
+      size={isSignedIn ? 'lg' : 'md'}
       centered
       withCloseButton
-      title={<Text fw={600}>{isSignedIn ? signedInTitle : 'Continue for free'}</Text>}
+      title={<Text fw={600}>{isSignedIn ? signedInTitle : 'Create account'}</Text>}
     >
       {isSignedIn ? (
         <Stack gap="md">
@@ -67,9 +88,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
               {signedOutDescription}
             </Text>
           </Stack>
-          <Center>
-            <SignUp routing="hash" />
-          </Center>
+          <SignUp routing="hash" appearance={embeddedSignUpAppearance} />
         </Stack>
       )}
     </Modal>
