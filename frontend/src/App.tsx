@@ -15,7 +15,6 @@ import {
 } from '@mantine/core'
 import {
   SignInButton,
-  SignUpButton,
   SignedIn,
   SignedOut,
   UserButton,
@@ -23,7 +22,6 @@ import {
 } from '@clerk/clerk-react'
 import {
   IconAlertCircle,
-  IconBrandGoogleFilled,
   IconCoins,
   IconSparkles,
 } from '@tabler/icons-react'
@@ -166,27 +164,11 @@ const App = () => {
               </Tooltip>
             )}
             <SignedOut>
-              <Group gap="xs">
-                <SignInButton mode="modal">
-                  <ClerkAuthButton
-                    variant="white"
-                    color="dark"
-                    leftSection={<IconBrandGoogleFilled size={16} />}
-                  >
-                    Continue with Google
-                  </ClerkAuthButton>
-                </SignInButton>
-                <SignInButton mode="modal">
-                  <ClerkAuthButton variant="subtle" color="gray">
-                    Sign in
-                  </ClerkAuthButton>
-                </SignInButton>
-                <SignUpButton mode="modal">
-                  <ClerkAuthButton variant="outline" color="cyan">
-                    Sign up
-                  </ClerkAuthButton>
-                </SignUpButton>
-              </Group>
+              <SignInButton mode="modal">
+                <ClerkAuthButton variant="outline" color="cyan">
+                  Sign in
+                </ClerkAuthButton>
+              </SignInButton>
             </SignedOut>
             <SignedIn>
               <UserButton />
