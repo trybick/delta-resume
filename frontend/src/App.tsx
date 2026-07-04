@@ -37,10 +37,18 @@ import ResumeInput from './components/ResumeInput'
 import JobDescriptionInput from './components/JobDescriptionInput'
 import ResultsPanel from './components/ResultsPanel'
 import PaywallModal from './components/PaywallModal'
-import { ApiError, CreditsExhaustedError, getCredits, postTailor } from './lib/api'
+import {
+  ApiError,
+  CreditsExhaustedError,
+  deleteSavedResume,
+  getCredits,
+  getSavedResumes,
+  postTailor,
+  renameSavedResume,
+} from './lib/api'
 import { SAMPLE_TAILOR_RESULT } from './lib/mockTailor'
 import { registerTokenGetter } from './lib/authToken'
-import type { CreditStatus, TailorResult, TailorStatus } from './lib/types'
+import type { CreditStatus, SavedResume, TailorResult, TailorStatus } from './lib/types'
 
 type AttachedFile = {
   name: string
@@ -57,6 +65,17 @@ const ClerkAuthButton = ({ component: _component, clerk: _clerk, ...props }: Cle
   <Button {...props} />
 )
 
+const formatDefaultResumeName = (date: Date): string => {
+  const month = date.getMonth() + 1
+  const day = date.getDate()
+  const year = String(date.getFullYear()).slice(-2)
+  const rawHours = date.getHours()
+  const suffix = rawHours >= 12 ? 'pm' : 'am'
+  const hours = rawHours % 12 || 12
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `Resume ${month}/${day}/${year} ${hours}:${minutes} ${suffix}`
+}
+
 const App = () => {
   const { isSignedIn, getToken } = useAuth()
   const { appTheme } = useAppTheme()
@@ -70,6 +89,7 @@ const App = () => {
   const [credits, setCredits] = useState<CreditStatus | null>(null)
   const [paywallOpened, setPaywallOpened] = useState(false)
   const [showingExample, setShowingExample] = useState(false)
+  const [savedResumes, setSavedResumes] = useState<SavedResume[]>([])
 
   const canTailor = resumeText.trim().length > 0 && jobDescription.trim().length > 0
   const outOfCredits = credits !== null && credits.remaining <= 0
@@ -91,9 +111,19 @@ const App = () => {
     }
   }, [])
 
+  const loadSavedResumes = useCallback(async () => {
+    try {
+      const resumes = await getSavedResumes()
+      setSavedResumes(resumes)
+    } catch {
+      setSavedResumes([])
+    }
+  }, [])
+
   useEffect(() => {
     void loadCredits()
-  }, [isSignedIn, loadCredits])
+    void loadSavedResumes()
+  }, [isSignedIn, loadCredits, loadSavedResumes])
 
   const handleFileAttach = (file: AttachedFile, text: string) => {
     setAttachedFile(file)
@@ -103,6 +133,31 @@ const App = () => {
   const handleClearResume = () => {
     setAttachedFile(null)
     setResumeText('')
+  }
+
+  const handleSelectSaved = (resume: SavedResume) => {
+    setAttachedFile(null)
+    setResumeText(resume.resumeText)
+  }
+
+  const handleRenameSaved = async (resumeId: string, name: string) => {
+    setSavedResumes((resumes) =>
+      resumes.map((resume) => (resume.id === resumeId ? { ...resume, name } : resume)),
+    )
+    try {
+      await renameSavedResume(resumeId, name)
+    } catch {
+      void loadSavedResumes()
+    }
+  }
+
+  const handleDeleteSaved = async (resumeId: string) => {
+    setSavedResumes((resumes) => resumes.filter((resume) => resume.id !== resumeId))
+    try {
+      await deleteSavedResume(resumeId)
+    } catch {
+      void loadSavedResumes()
+    }
   }
 
   const handleTailor = async () => {
@@ -115,11 +170,16 @@ const App = () => {
     setStatus('loading')
     setErrorMessage(null)
     try {
-      const tailorResult = await postTailor(resumeText, jobDescription)
+      const tailorResult = await postTailor(
+        resumeText,
+        jobDescription,
+        formatDefaultResumeName(new Date()),
+      )
       setResult(tailorResult)
       setRunCount((count) => count + 1)
       setStatus('done')
       void loadCredits()
+      void loadSavedResumes()
     } catch (error) {
       if (error instanceof CreditsExhaustedError) {
         setPaywallOpened(true)
@@ -208,9 +268,16 @@ const App = () => {
               <ResumeInput
                 resumeText={resumeText}
                 attachedFile={attachedFile}
+                savedResumes={savedResumes}
+                savedResumeLimit={credits?.plan === 'pro' ? 10 : 1}
+                isProPlan={credits?.plan === 'pro'}
                 onResumeTextChange={setResumeText}
                 onFileAttach={handleFileAttach}
                 onClear={handleClearResume}
+                onSelectSaved={handleSelectSaved}
+                onRenameSaved={handleRenameSaved}
+                onDeleteSaved={handleDeleteSaved}
+                onUpgradeClick={() => setPaywallOpened(true)}
               />
               <JobDescriptionInput
                 value={jobDescription}

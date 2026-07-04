@@ -54,8 +54,59 @@ module Handlers =
                     match result with
                     | Ok run ->
                         do! creditService.RecordSpend ctx
+
+                        try
+                            let savedResumeService = ctx.GetService<SavedResumeService>()
+                            do! savedResumeService.AutoSave(ctx, request.ResumeText, request.ResumeName)
+                        with ex ->
+                            eprintfn "Failed to auto-save resume: %s" ex.Message
+
                         return! json (Mapping.toResponseDto run) next ctx
                     | Error error -> return! tailorErrorToResponse error next ctx
+            }
+
+    let listResumes: HttpHandler =
+        fun next ctx ->
+            task {
+                let service = ctx.GetService<SavedResumeService>()
+                let! resumes = service.List ctx
+                return! json (resumes |> List.map Mapping.toSavedResumeDto) next ctx
+            }
+
+    let renameResume (resumeId: string) : HttpHandler =
+        fun next ctx ->
+            task {
+                let service = ctx.GetService<SavedResumeService>()
+                let! request = ctx.BindJsonAsync<RenameResumeRequestDto>()
+
+                match Guid.TryParse resumeId with
+                | false, _ -> return! errorResponse StatusCodes.Status400BadRequest "Invalid resume id." next ctx
+                | true, id ->
+                    if String.IsNullOrWhiteSpace request.Name then
+                        return! errorResponse StatusCodes.Status400BadRequest "Name is required." next ctx
+                    else
+                        let! renamed = service.Rename(ctx, SavedResumeId id, request.Name)
+
+                        if renamed then
+                            return! setStatusCode StatusCodes.Status204NoContent next ctx
+                        else
+                            return! errorResponse StatusCodes.Status404NotFound "Resume not found." next ctx
+            }
+
+    let deleteResume (resumeId: string) : HttpHandler =
+        fun next ctx ->
+            task {
+                let service = ctx.GetService<SavedResumeService>()
+
+                match Guid.TryParse resumeId with
+                | false, _ -> return! errorResponse StatusCodes.Status400BadRequest "Invalid resume id." next ctx
+                | true, id ->
+                    let! deleted = service.Delete(ctx, SavedResumeId id)
+
+                    if deleted then
+                        return! setStatusCode StatusCodes.Status204NoContent next ctx
+                    else
+                        return! errorResponse StatusCodes.Status404NotFound "Resume not found." next ctx
             }
 
     let updateDecision (changeId: string) : HttpHandler =

@@ -18,8 +18,11 @@ let private webApp: HttpHandler =
     choose
         [ GET >=> route "/api/health" >=> Handlers.health
           GET >=> route "/api/credits" >=> Handlers.credits
+          GET >=> route "/api/resumes" >=> Handlers.listResumes
           POST >=> route "/api/tailor" >=> Handlers.tailor
           PATCH >=> routef "/api/changes/%s" Handlers.updateDecision
+          PATCH >=> routef "/api/resumes/%s" Handlers.renameResume
+          DELETE >=> routef "/api/resumes/%s" Handlers.deleteResume
           setStatusCode 404 >=> json {| Message = "Not found" |} ]
 
 [<EntryPoint>]
@@ -85,8 +88,18 @@ let main args =
     builder.Services.AddSingleton<CreditStore>(fun _ -> SqliteCreditStore(connectionString) :> CreditStore)
     |> ignore
 
+    let identityOptions = IdentityOptions.fromEnvironment ()
+
     builder.Services.AddSingleton<CreditService>(fun provider ->
-        CreditService(provider.GetRequiredService<CreditStore>(), CreditServiceOptions.fromEnvironment ()))
+        CreditService(provider.GetRequiredService<CreditStore>(), identityOptions))
+    |> ignore
+
+    builder.Services.AddSingleton<SavedResumeRepository>(fun _ ->
+        SqliteSavedResumeRepository(connectionString) :> SavedResumeRepository)
+    |> ignore
+
+    builder.Services.AddSingleton<SavedResumeService>(fun provider ->
+        SavedResumeService(provider.GetRequiredService<SavedResumeRepository>(), identityOptions))
     |> ignore
 
     let app = builder.Build()

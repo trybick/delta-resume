@@ -6,10 +6,21 @@ open DeltaResume.Domain
 [<CLIMutable>]
 type TailorRequestDto =
     { ResumeText: string
-      JobDescription: string }
+      JobDescription: string
+      ResumeName: string option }
 
 [<CLIMutable>]
 type DecisionRequestDto = { Decision: string }
+
+[<CLIMutable>]
+type RenameResumeRequestDto = { Name: string }
+
+type SavedResumeDto =
+    { Id: Guid
+      Name: string
+      ResumeText: string
+      CreatedAt: DateTimeOffset
+      LastUsedAt: DateTimeOffset }
 
 type BulletChangeDto =
     { Id: Guid
@@ -39,3 +50,12 @@ module Mapping =
         { RunId = runId
           ResumeText = run.ResumeText
           Changes = run.Changes |> List.map toChangeDto }
+
+    let toSavedResumeDto (resume: SavedResume) : SavedResumeDto =
+        let (SavedResumeId id) = resume.Id
+
+        { Id = id
+          Name = resume.Name
+          ResumeText = resume.ResumeText
+          CreatedAt = resume.CreatedAt
+          LastUsedAt = resume.LastUsedAt }

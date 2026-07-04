@@ -1,22 +1,29 @@
 import { useState } from 'react'
 import {
   ActionIcon,
+  Badge,
+  Button,
   Card,
   Group,
   Paper,
   SegmentedControl,
   Stack,
   Text,
+  TextInput,
   Textarea,
   Title,
 } from '@mantine/core'
 import { Dropzone } from '@mantine/dropzone'
 import {
+  IconCheck,
   IconFileText,
   IconFileUpload,
+  IconPencil,
+  IconTrash,
   IconX,
 } from '@tabler/icons-react'
 import { parseResumeFile, ResumeParseError } from '../lib/parseResumeFile'
+import type { SavedResume } from '../lib/types'
 
 type AttachedFile = {
   name: string
@@ -26,12 +33,19 @@ type AttachedFile = {
 type ResumeInputProps = {
   resumeText: string
   attachedFile: AttachedFile | null
+  savedResumes: SavedResume[]
+  savedResumeLimit: number
+  isProPlan: boolean
   onResumeTextChange: (text: string) => void
   onFileAttach: (file: AttachedFile, text: string) => void
   onClear: () => void
+  onSelectSaved: (resume: SavedResume) => void
+  onRenameSaved: (resumeId: string, name: string) => void
+  onDeleteSaved: (resumeId: string) => void
+  onUpgradeClick: () => void
 }
 
-type InputMode = 'upload' | 'paste'
+type InputMode = 'upload' | 'paste' | 'saved'
 
 const ACCEPTED_MIME_TYPES = [
   'text/plain',
@@ -47,16 +61,37 @@ const formatFileSize = (bytes: number): string => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
+const formatLastUsed = (isoDate: string): string => {
+  const date = new Date(isoDate)
+  if (Number.isNaN(date.getTime())) return ''
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+}
+
 const ResumeInput = ({
   resumeText,
   attachedFile,
+  savedResumes,
+  savedResumeLimit,
+  isProPlan,
   onResumeTextChange,
   onFileAttach,
   onClear,
+  onSelectSaved,
+  onRenameSaved,
+  onDeleteSaved,
+  onUpgradeClick,
 }: ResumeInputProps) => {
   const [mode, setMode] = useState<InputMode>('upload')
   const [isParsing, setIsParsing] = useState(false)
   const [parseError, setParseError] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingName, setEditingName] = useState('')
+
+  const atSavedLimit = !isProPlan && savedResumes.length >= savedResumeLimit
 
   const handleDrop = async (files: File[]) => {
     const file = files[0]
@@ -78,6 +113,30 @@ const ResumeInput = ({
     }
   }
 
+  const handleStartRename = (resume: SavedResume) => {
+    setEditingId(resume.id)
+    setEditingName(resume.name)
+  }
+
+  const handleCancelRename = () => {
+    setEditingId(null)
+    setEditingName('')
+  }
+
+  const handleConfirmRename = () => {
+    if (!editingId) return
+    const trimmedName = editingName.trim()
+    if (trimmedName.length > 0) {
+      onRenameSaved(editingId, trimmedName)
+    }
+    handleCancelRename()
+  }
+
+  const handleRenameKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter') handleConfirmRename()
+    if (event.key === 'Escape') handleCancelRename()
+  }
+
   return (
     <Card withBorder shadow="xs" padding="lg">
       <Stack gap="sm">
@@ -90,6 +149,7 @@ const ResumeInput = ({
             data={[
               { label: 'Upload file', value: 'upload' },
               { label: 'Paste text', value: 'paste' },
+              { label: 'Saved', value: 'saved' },
             ]}
           />
         </Group>
@@ -157,6 +217,130 @@ const ResumeInput = ({
             maxRows={18}
             styles={{ input: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } }}
           />
+        )}
+
+        {mode === 'saved' && savedResumes.length === 0 && (
+          <Paper withBorder p="lg" radius="md">
+            <Stack align="center" gap={4}>
+              <IconFileText size={28} color="var(--mantine-primary-color-filled)" />
+              <Text size="sm" fw={500} ta="center">
+                No saved resumes yet
+              </Text>
+              <Text size="xs" c="dimmed" ta="center">
+                Your resumes are saved here automatically after you tailor.
+              </Text>
+            </Stack>
+          </Paper>
+        )}
+
+        {mode === 'saved' && savedResumes.length > 0 && (
+          <Stack gap="xs">
+            {savedResumes.map((resume) => {
+              const isSelected = resume.resumeText === resumeText
+              const isEditing = editingId === resume.id
+              return (
+                <Paper
+                  key={resume.id}
+                  withBorder
+                  p="sm"
+                  radius="md"
+                  style={{
+                    cursor: 'pointer',
+                    borderColor: isSelected
+                      ? 'var(--mantine-primary-color-filled)'
+                      : undefined,
+                  }}
+                  onClick={() => {
+                    if (!isEditing) onSelectSaved(resume)
+                  }}
+                >
+                  <Group justify="space-between" wrap="nowrap" align="flex-start">
+                    <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                      {isEditing ? (
+                        <TextInput
+                          size="xs"
+                          value={editingName}
+                          onChange={(event) => setEditingName(event.currentTarget.value)}
+                          onKeyDown={handleRenameKeyDown}
+                          onClick={(event) => event.stopPropagation()}
+                          autoFocus
+                          rightSection={
+                            <ActionIcon
+                              size="sm"
+                              variant="subtle"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                handleConfirmRename()
+                              }}
+                              aria-label="Save name"
+                            >
+                              <IconCheck size={14} />
+                            </ActionIcon>
+                          }
+                        />
+                      ) : (
+                        <Group gap={6} wrap="nowrap">
+                          <Text size="sm" fw={600} lineClamp={1}>
+                            {resume.name}
+                          </Text>
+                          {isSelected && (
+                            <Badge size="xs" variant="light">
+                              Selected
+                            </Badge>
+                          )}
+                        </Group>
+                      )}
+                      <Text size="xs" c="dimmed">
+                        Last used {formatLastUsed(resume.lastUsedAt)}
+                      </Text>
+                      <Text size="xs" c="dimmed" lineClamp={2}>
+                        {resume.resumeText}
+                      </Text>
+                    </Stack>
+                    <Group gap={4} wrap="nowrap">
+                      <ActionIcon
+                        variant="subtle"
+                        color="gray"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          handleStartRename(resume)
+                        }}
+                        aria-label="Rename saved resume"
+                      >
+                        <IconPencil size={16} />
+                      </ActionIcon>
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          onDeleteSaved(resume.id)
+                        }}
+                        aria-label="Delete saved resume"
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Group>
+                  </Group>
+                </Paper>
+              )
+            })}
+            {atSavedLimit && (
+              <Stack gap="xs" align="center">
+                <Text size="xs" c="dimmed" ta="center">
+                  You can save {savedResumeLimit === 1 ? 'one resume' : `${savedResumeLimit} resumes`}.
+                </Text>
+                <Button
+                  size="compact-xs"
+                  variant="light"
+                  w="fit-content"
+                  onClick={onUpgradeClick}
+                >
+                  Upgrade to save more
+                </Button>
+              </Stack>
+            )}
+          </Stack>
         )}
       </Stack>
     </Card>

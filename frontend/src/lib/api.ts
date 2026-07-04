@@ -1,4 +1,4 @@
-import type { ChangeDecision, CreditStatus, TailorResult } from './types'
+import type { ChangeDecision, CreditStatus, SavedResume, TailorResult } from './types'
 import { getAuthToken } from './authToken'
 import { getFingerprint } from './fingerprint'
 
@@ -80,16 +80,51 @@ export const getCredits = async (): Promise<CreditStatus> => {
 export const postTailor = async (
   resumeText: string,
   jobDescription: string,
+  resumeName: string,
 ): Promise<TailorResponse> => {
   const response = await fetch(`${API_BASE_URL}/api/tailor`, {
     method: 'POST',
     headers: await buildHeaders(),
-    body: JSON.stringify({ resumeText, jobDescription }),
+    body: JSON.stringify({ resumeText, jobDescription, resumeName }),
   })
   if (!response.ok) {
     return throwApiError(response)
   }
   return (await response.json()) as TailorResponse
+}
+
+export const getSavedResumes = async (): Promise<SavedResume[]> => {
+  const response = await fetch(`${API_BASE_URL}/api/resumes`, {
+    headers: await buildHeaders(),
+  })
+  if (!response.ok) {
+    return throwApiError(response)
+  }
+  return (await response.json()) as SavedResume[]
+}
+
+export const renameSavedResume = async (
+  resumeId: string,
+  name: string,
+): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/api/resumes/${resumeId}`, {
+    method: 'PATCH',
+    headers: await buildHeaders(),
+    body: JSON.stringify({ name }),
+  })
+  if (!response.ok) {
+    return throwApiError(response)
+  }
+}
+
+export const deleteSavedResume = async (resumeId: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/api/resumes/${resumeId}`, {
+    method: 'DELETE',
+    headers: await buildHeaders(),
+  })
+  if (!response.ok) {
+    return throwApiError(response)
+  }
 }
 
 export const patchDecision = async (

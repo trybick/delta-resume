@@ -48,6 +48,17 @@ type TailorRun =
       CreatedAt: DateTimeOffset
       Changes: BulletChange list }
 
+type SavedResumeId = SavedResumeId of Guid
+
+type SavedResume =
+    { Id: SavedResumeId
+      OwnerKey: string
+      Name: string
+      ResumeText: string
+      ContentHash: string
+      CreatedAt: DateTimeOffset
+      LastUsedAt: DateTimeOffset }
+
 type TailorError =
     | InvalidInput of message: string
     | EngineFailure of message: string

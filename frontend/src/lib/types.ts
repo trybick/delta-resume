@@ -20,3 +20,11 @@ export type CreditStatus = {
   plan: string
   isAuthenticated: boolean
 }
+
+export type SavedResume = {
+  id: string
+  name: string
+  resumeText: string
+  createdAt: string
+  lastUsedAt: string
+}
