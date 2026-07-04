@@ -1,15 +1,11 @@
 # Delta Resume
 
-A resume tailoring service: attach a base resume, paste a job description, and review Claude-suggested bullet rewrites with an inline diff. Accept or reject each change, then copy the tailored resume. Runs and decisions are persisted to SQLite.
+A resume tailoring service: attach a base resume, paste a job description, and review Claude-suggested bullet rewrites with an inline diff. Accept or reject each change, then copy the tailored resume.
 
 ## Structure
 
 - `frontend/` — Vite + React + TypeScript + Mantine single-page UI
-- `backend/DeltaResume.Api/` — F# + Giraffe + Dapper API with a DDD layering:
-  - `Domain/` — pure types, bullet extraction, change validation
-  - `Application/` — ports (`TailoringEngine`, `TailorRunRepository`) and the `TailoringService` use cases
-  - `Infrastructure/` — Dapper/SQLite repository and the Anthropic Claude engine
-  - `Api/` — DTOs and Giraffe handlers; `Program.fs` is the composition root
+- `backend/DeltaResume.Api/` — F# + Giraffe + Dapper API with a DDD layering
 
 ## Running
 
@@ -60,31 +56,3 @@ Authentication and billing are handled by [Clerk](https://clerk.com) (Clerk Bill
 - Pro subscribers ($7/month) get 100 credits per calendar month.
 - One credit is spent per successful tailor run. When credits run out the API returns `402 credits_exhausted` and the UI opens a paywall: sign-up (Google prominent) for guests, the Clerk `PricingTable` in-app checkout for signed-in users.
 
-### Clerk setup
-
-This project is linked to the Clerk application **Delta Resume** (`app_3G0NKfcHSgDD91PSS0dSebmFdsq`). With the [Clerk CLI](https://clerk.com/docs/cli) installed and authenticated (`clerk auth login`), pull keys into the frontend:
-
-```bash
-cd frontend
-clerk env pull --file .env.development.local
-```
-
-Set `CLERK_FRONTEND_API_URL` in `backend/DeltaResume.Api/.env` to the **Frontend API URL** from the Clerk Dashboard (**API keys** → **Advanced**). The backend uses it as the JWT issuer; it does not need `CLERK_SECRET_KEY`.
-
-In the [Clerk Dashboard](https://dashboard.clerk.com):
-
-1. Enable **Google** and **Email** as sign-in options (User & Authentication → SSO connections), and order Google first so it is the prominent option.
-2. Enable **Billing** (Billing → Settings). Development instances use Clerk's shared dev payment gateway, so no Stripe account is needed until production.
-3. Create a user plan with slug `pro` at **$7/month** (Billing → Plans → Plans for Users → Add Plan). The backend reads the `pla` claim from the session token to detect the plan.
-
-## API
-
-- `POST /api/tailor` — `{ resumeText, jobDescription }` → `{ runId, resumeText, changes: [{ id, lineIndex, original, tailored }] }`; returns `402` with `{ code: "credits_exhausted", requiresAuth }` when out of credits
-- `PATCH /api/changes/{changeId}` — `{ decision: "pending" | "accepted" | "rejected" }` → 204
-- `GET /api/credits` — `{ remaining, total, plan, isAuthenticated }` for the current user or guest
-- `GET /api/health` — liveness check
-
-## Notes
-
-- `.txt` and `.md` uploads are read directly in the browser. PDF/DOCX uploads are accepted but load sample resume text for now; real parsing is deferred.
-- SQLite is used for local development; persistence sits behind a repository port so a hosted Postgres (e.g. Railway) can be swapped in with a second repository implementation.
