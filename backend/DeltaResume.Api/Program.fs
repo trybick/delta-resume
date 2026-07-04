@@ -61,7 +61,7 @@ let main args =
 
     builder.Services.AddCors(fun options ->
         options.AddDefaultPolicy(fun policy ->
-            policy.WithOrigins("http://localhost:5173").AllowAnyHeader().AllowAnyMethod() |> ignore))
+            policy.WithOrigins("http://localhost:5200").AllowAnyHeader().AllowAnyMethod() |> ignore))
     |> ignore
 
     let jsonOptions =
@@ -111,5 +111,5 @@ let main args =
 
     app.UseGiraffe webApp
 
-    app.Run("http://localhost:5155")
+    app.Run("http://localhost:5100")
     0
