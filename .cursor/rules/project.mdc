@@ -33,3 +33,5 @@ cd backend/DeltaResume.Api && dotnet run
 # Frontend
 cd frontend && npm run dev
 ```
+
+Do not take a screenshot of the app. The user can see it for themselves in the browser.

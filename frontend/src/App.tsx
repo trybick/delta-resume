@@ -9,7 +9,6 @@ import {
   Group,
   Stack,
   Text,
-  ThemeIcon,
   Title,
   Tooltip,
 } from '@mantine/core'
@@ -25,6 +24,7 @@ import {
   IconCoins,
   IconSparkles,
 } from '@tabler/icons-react'
+import DeltaLogo from './components/DeltaLogo'
 import ResumeInput from './components/ResumeInput'
 import JobDescriptionInput from './components/JobDescriptionInput'
 import ResultsPanel from './components/ResultsPanel'
@@ -140,11 +140,21 @@ const App = () => {
       >
         <Group justify="space-between">
           <Group gap="sm">
-            <ThemeIcon variant="light" size="lg" radius="md">
-              <IconSparkles size={20} />
-            </ThemeIcon>
+            <DeltaLogo size={40} />
             <div>
-              <Title order={3}>Delta Resume</Title>
+              <Title order={3} style={{ letterSpacing: '-0.02em' }}>
+                <Text
+                  span
+                  inherit
+                  variant="gradient"
+                  gradient={{ from: 'cyan.3', to: 'blue.4', deg: 45 }}
+                >
+                  Delta
+                </Text>{' '}
+                <Text span inherit fw={400} c="gray.3">
+                  Resume
+                </Text>
+              </Title>
               <Text size="xs" c="dimmed">
                 Optimize your resume bullets for any job description
               </Text>
