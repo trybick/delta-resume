@@ -1,4 +1,9 @@
-import { useCallback, useEffect, useState, type ComponentProps } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useState,
+  type ComponentPropsWithoutRef,
+} from 'react'
 import {
   Alert,
   Badge,
@@ -11,6 +16,7 @@ import {
   Text,
   Title,
   Tooltip,
+  type ButtonProps,
 } from '@mantine/core'
 import {
   SignInButton,
@@ -25,6 +31,8 @@ import {
   IconSparkles,
 } from '@tabler/icons-react'
 import DeltaLogo from './components/DeltaLogo'
+import ThemeSwitcher from './components/ThemeSwitcher'
+import { useAppTheme } from './lib/themeContext'
 import ResumeInput from './components/ResumeInput'
 import JobDescriptionInput from './components/JobDescriptionInput'
 import ResultsPanel from './components/ResultsPanel'
@@ -39,10 +47,11 @@ type AttachedFile = {
   size: number
 }
 
-type ClerkAuthButtonProps = ComponentProps<typeof Button> & {
-  component?: string
-  clerk?: unknown
-}
+type ClerkAuthButtonProps = ButtonProps &
+  ComponentPropsWithoutRef<'button'> & {
+    component?: string
+    clerk?: unknown
+  }
 
 const ClerkAuthButton = ({ component: _component, clerk: _clerk, ...props }: ClerkAuthButtonProps) => (
   <Button {...props} />
@@ -50,6 +59,7 @@ const ClerkAuthButton = ({ component: _component, clerk: _clerk, ...props }: Cle
 
 const App = () => {
   const { isSignedIn, getToken } = useAuth()
+  const { appTheme } = useAppTheme()
   const [resumeText, setResumeText] = useState('')
   const [attachedFile, setAttachedFile] = useState<AttachedFile | null>(null)
   const [jobDescription, setJobDescription] = useState('')
@@ -150,7 +160,7 @@ const App = () => {
                   span
                   inherit
                   variant="gradient"
-                  gradient={{ from: 'cyan.3', to: 'blue.4', deg: 45 }}
+                  gradient={{ ...appTheme.gradient, deg: 45 }}
                 >
                   Delta
                 </Text>{' '}
@@ -164,12 +174,13 @@ const App = () => {
             </div>
           </Group>
           <Group gap="sm">
+            <ThemeSwitcher />
             {creditsLabel && (
               <Tooltip label="One credit is used per tailor run">
                 <Badge
                   size="lg"
                   variant="light"
-                  color={outOfCredits ? 'red' : 'cyan'}
+                  color={outOfCredits ? 'red' : undefined}
                   leftSection={<IconCoins size={14} />}
                 >
                   {creditsLabel}
@@ -178,7 +189,7 @@ const App = () => {
             )}
             <SignedOut>
               <SignInButton mode="modal">
-                <ClerkAuthButton variant="outline" color="cyan">
+                <ClerkAuthButton variant="outline">
                   Sign in
                 </ClerkAuthButton>
               </SignInButton>
