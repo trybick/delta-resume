@@ -11,7 +11,7 @@ import {
   Title,
 } from '@mantine/core'
 import { useClipboard } from '@mantine/hooks'
-import { IconCopy, IconCopyCheck, IconSparkles } from '@tabler/icons-react'
+import { IconArrowBackUp, IconCopy, IconCopyCheck, IconEye, IconSparkles } from '@tabler/icons-react'
 import { patchDecision } from '../lib/api'
 import type { BulletChange, ChangeDecision, TailorResult, TailorStatus } from '../lib/types'
 import DiffBullet from './DiffBullet'
@@ -19,6 +19,9 @@ import DiffBullet from './DiffBullet'
 type ResultsPanelProps = {
   status: TailorStatus
   result: TailorResult | null
+  isExample?: boolean
+  onShowExample?: () => void
+  onDismissExample?: () => void
 }
 
 const buildDecisionMap = (result: TailorResult | null): Record<string, ChangeDecision> => {
@@ -26,7 +29,13 @@ const buildDecisionMap = (result: TailorResult | null): Record<string, ChangeDec
   return Object.fromEntries(result.changes.map((change) => [change.id, 'pending']))
 }
 
-const ResultsPanel = ({ status, result }: ResultsPanelProps) => {
+const ResultsPanel = ({
+  status,
+  result,
+  isExample = false,
+  onShowExample,
+  onDismissExample,
+}: ResultsPanelProps) => {
   const [decisions, setDecisions] = useState<Record<string, ChangeDecision>>(() =>
     buildDecisionMap(result),
   )
@@ -42,6 +51,7 @@ const ResultsPanel = ({ status, result }: ResultsPanelProps) => {
     const previousDecision = decisions[id] ?? 'pending'
     setDecisions((current) => ({ ...current, [id]: decision }))
     setDecisionError(null)
+    if (isExample) return
     patchDecision(id, decision).catch(() => {
       setDecisions((current) => ({ ...current, [id]: previousDecision }))
       setDecisionError('Could not save your decision. Please try again.')
@@ -69,6 +79,16 @@ const ResultsPanel = ({ status, result }: ResultsPanelProps) => {
               Attach your base resume, paste a job description, and click
               &ldquo;Tailor Resume&rdquo; to see suggested bullet changes.
             </Text>
+            {onShowExample && (
+              <Button
+                mt="xs"
+                variant="light"
+                leftSection={<IconEye size={16} />}
+                onClick={onShowExample}
+              >
+                Preview an example
+              </Button>
+            )}
           </Stack>
         </Center>
       </Card>
@@ -100,11 +120,46 @@ const ResultsPanel = ({ status, result }: ResultsPanelProps) => {
   return (
     <Card withBorder shadow="xs" padding="lg">
       <Stack gap="md">
+        {isExample && (
+          <Group
+            justify="space-between"
+            align="center"
+            wrap="wrap"
+            p="sm"
+            style={{
+              borderRadius: 8,
+              backgroundColor: 'var(--mantine-color-cyan-light)',
+            }}
+          >
+            <Group gap="xs">
+              <IconEye size={16} color="var(--mantine-color-cyan-4)" />
+              <Text size="sm">
+                This is an example. Try accepting or rejecting a change, then run your own tailor.
+              </Text>
+            </Group>
+            {onDismissExample && (
+              <Button
+                size="xs"
+                variant="subtle"
+                color="cyan"
+                leftSection={<IconArrowBackUp size={14} />}
+                onClick={onDismissExample}
+              >
+                Back
+              </Button>
+            )}
+          </Group>
+        )}
         <Group justify="space-between" align="center" wrap="wrap">
           <Group gap="sm">
             <Title order={4}>
               {result.changes.length} bullet{result.changes.length === 1 ? '' : 's'} updated
             </Title>
+            {isExample && (
+              <Badge color="cyan" variant="light">
+                Example
+              </Badge>
+            )}
             <Badge color="green" variant="light">
               {acceptedCount} accepted
             </Badge>

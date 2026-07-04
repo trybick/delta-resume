@@ -30,6 +30,7 @@ import JobDescriptionInput from './components/JobDescriptionInput'
 import ResultsPanel from './components/ResultsPanel'
 import PaywallModal from './components/PaywallModal'
 import { ApiError, CreditsExhaustedError, getCredits, postTailor } from './lib/api'
+import { SAMPLE_TAILOR_RESULT } from './lib/mockTailor'
 import { registerTokenGetter } from './lib/authToken'
 import type { CreditStatus, TailorResult, TailorStatus } from './lib/types'
 
@@ -58,6 +59,7 @@ const App = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [credits, setCredits] = useState<CreditStatus | null>(null)
   const [paywallOpened, setPaywallOpened] = useState(false)
+  const [showingExample, setShowingExample] = useState(false)
 
   const canTailor = resumeText.trim().length > 0 && jobDescription.trim().length > 0
   const outOfCredits = credits !== null && credits.remaining <= 0
@@ -99,6 +101,7 @@ const App = () => {
       setPaywallOpened(true)
       return
     }
+    setShowingExample(false)
     setStatus('loading')
     setErrorMessage(null)
     try {
@@ -235,7 +238,14 @@ const App = () => {
                   {errorMessage}
                 </Alert>
               )}
-              <ResultsPanel key={runCount} status={status} result={result} />
+              <ResultsPanel
+                key={showingExample ? 'example' : runCount}
+                status={showingExample ? 'done' : status}
+                result={showingExample ? SAMPLE_TAILOR_RESULT : result}
+                isExample={showingExample}
+                onShowExample={() => setShowingExample(true)}
+                onDismissExample={() => setShowingExample(false)}
+              />
             </Stack>
           </Grid.Col>
         </Grid>
