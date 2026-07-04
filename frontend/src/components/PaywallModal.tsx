@@ -10,9 +10,11 @@ const embeddedSignUpAppearance = {
       border: 'none',
       boxShadow: 'none',
       background: 'transparent',
+      overflow: 'visible',
     },
     card: {
       padding: 0,
+      margin: 0,
       boxShadow: 'none',
       border: 'none',
       background: 'transparent',
@@ -68,7 +70,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
       size={isSignedIn ? 'lg' : 'md'}
       centered
       withCloseButton
-      title={<Text fw={600}>{isSignedIn ? signedInTitle : 'Create account'}</Text>}
+      title={<Text fw={600}>{isSignedIn ? signedInTitle : 'Create your account'}</Text>}
     >
       {isSignedIn ? (
         <Stack gap="md">

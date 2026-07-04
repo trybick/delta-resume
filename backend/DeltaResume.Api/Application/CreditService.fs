@@ -40,8 +40,8 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
 
             if isUnlimitedGuest then
                 return
-                    { Remaining = 999
-                      Total = 999
+                    { Remaining = 3
+                      Total = 3
                       Plan = CreditPlan.toString plan
                       IsAuthenticated = false }
             else
