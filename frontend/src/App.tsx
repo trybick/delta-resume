@@ -48,6 +48,7 @@ import {
 } from './lib/api'
 import { SAMPLE_TAILOR_RESULT } from './lib/mockTailor'
 import { registerTokenGetter } from './lib/authToken'
+import type { PaywallReason } from './components/PaywallModal'
 import type { CreditStatus, SavedResume, TailorResult, TailorStatus } from './lib/types'
 
 type AttachedFile = {
@@ -87,7 +88,7 @@ const App = () => {
   const [runCount, setRunCount] = useState(0)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [credits, setCredits] = useState<CreditStatus | null>(null)
-  const [paywallOpened, setPaywallOpened] = useState(false)
+  const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null)
   const [showingExample, setShowingExample] = useState(false)
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([])
 
@@ -104,7 +105,7 @@ const App = () => {
       const creditStatus = await getCredits()
       setCredits(creditStatus)
       if (creditStatus.remaining > 0) {
-        setPaywallOpened(false)
+        setPaywallReason((reason) => (reason === 'credits' ? null : reason))
       }
     } catch {
       setCredits(null)
@@ -163,7 +164,7 @@ const App = () => {
   const handleTailor = async () => {
     if (!canTailor) return
     if (outOfCredits) {
-      setPaywallOpened(true)
+      setPaywallReason('credits')
       return
     }
     setShowingExample(false)
@@ -182,7 +183,7 @@ const App = () => {
       void loadSavedResumes()
     } catch (error) {
       if (error instanceof CreditsExhaustedError) {
-        setPaywallOpened(true)
+        setPaywallReason('credits')
         void loadCredits()
       } else {
         setErrorMessage(
@@ -277,7 +278,7 @@ const App = () => {
                 onSelectSaved={handleSelectSaved}
                 onRenameSaved={handleRenameSaved}
                 onDeleteSaved={handleDeleteSaved}
-                onUpgradeClick={() => setPaywallOpened(true)}
+                onUpgradeClick={() => setPaywallReason('savedLimit')}
               />
               <JobDescriptionInput
                 value={jobDescription}
@@ -330,8 +331,9 @@ const App = () => {
       </Container>
 
       <PaywallModal
-        opened={paywallOpened}
-        onClose={() => setPaywallOpened(false)}
+        opened={paywallReason !== null}
+        reason={paywallReason ?? 'credits'}
+        onClose={() => setPaywallReason(null)}
         onSubscriptionChange={loadCredits}
       />
     </Box>
