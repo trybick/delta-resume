@@ -32,6 +32,20 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
             let identity = Identity.resolve options ctx
             let plan = Identity.plan identity
 
+            let isUnlimitedGuest =
+                options.UnlimitedGuestCredits
+                && (match identity with
+                    | GuestVisitor _ -> true
+                    | AuthenticatedUser _ -> false)
+
+            if isUnlimitedGuest then
+                return
+                    { Remaining = 999
+                      Total = 999
+                      Plan = CreditPlan.toString plan
+                      IsAuthenticated = false }
+            else
+
             let mutable used = 0
 
             for identityKey, _, period in usageKeys identity do

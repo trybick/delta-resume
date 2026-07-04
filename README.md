@@ -21,6 +21,7 @@ Requires .NET SDK. Listens on http://localhost:5155.
 | `CLERK_FRONTEND_API_URL` | Yes | Clerk Frontend API URL (e.g. `https://in-aphid-71.clerk.accounts.dev`). Found in the Clerk Dashboard under **API keys** → **Advanced** → **Frontend API URL**. If unset, all requests are treated as guests. |
 | `IP_HASH_SALT` | Yes | Secret key for HMAC-SHA256 hashing of guest IPs for credit tracking. Generate with `openssl rand -hex 32`. |
 | `TRUST_FORWARDED_HEADERS` | No | Set to `true` only when running behind a reverse proxy (production) so `X-Forwarded-For` is used for guest IP resolution |
+| `UNLIMITED_GUEST_CREDITS` | No | Set to `true` for local development to give guest requests unlimited tailor credits. Defaults to `false` (guests get 3). |
 
 ```bash
 cd backend/DeltaResume.Api

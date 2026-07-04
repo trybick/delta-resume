@@ -36,7 +36,8 @@ type RequestIdentity =
 
 type IdentityOptions =
     { IpHashSalt: string
-      TrustForwardedHeaders: bool }
+      TrustForwardedHeaders: bool
+      UnlimitedGuestCredits: bool }
 
 module IdentityOptions =
     let fromEnvironment () : IdentityOptions =
@@ -46,14 +47,15 @@ module IdentityOptions =
             |> Option.filter (String.IsNullOrWhiteSpace >> not)
             |> Option.defaultWith (fun () -> failwith "IP_HASH_SALT environment variable is required")
 
-        let trustForwarded =
-            Environment.GetEnvironmentVariable "TRUST_FORWARDED_HEADERS"
+        let readBool (name: string) =
+            Environment.GetEnvironmentVariable name
             |> Option.ofObj
             |> Option.map (fun value -> value.Equals("true", StringComparison.OrdinalIgnoreCase))
             |> Option.defaultValue false
 
         { IpHashSalt = salt
-          TrustForwardedHeaders = trustForwarded }
+          TrustForwardedHeaders = readBool "TRUST_FORWARDED_HEADERS"
+          UnlimitedGuestCredits = readBool "UNLIMITED_GUEST_CREDITS" }
 
 module Identity =
 
