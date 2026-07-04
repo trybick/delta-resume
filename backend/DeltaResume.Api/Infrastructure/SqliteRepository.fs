@@ -53,8 +53,7 @@ module Schema =
                 name TEXT NOT NULL,
                 resume_text TEXT NOT NULL,
                 content_hash TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                last_used_at TEXT NOT NULL
+                created_at TEXT NOT NULL
             );
 
             CREATE INDEX IF NOT EXISTS idx_saved_resumes_owner
@@ -135,8 +134,7 @@ type private SavedResumeRow =
       name: string
       resume_text: string
       content_hash: string
-      created_at: string
-      last_used_at: string }
+      created_at: string }
 
 type SqliteSavedResumeRepository(connectionString: string) =
 
@@ -146,8 +144,7 @@ type SqliteSavedResumeRepository(connectionString: string) =
           Name = row.name
           ResumeText = row.resume_text
           ContentHash = row.content_hash
-          CreatedAt = System.DateTimeOffset.Parse row.created_at
-          LastUsedAt = System.DateTimeOffset.Parse row.last_used_at }
+          CreatedAt = System.DateTimeOffset.Parse row.created_at }
 
     interface SavedResumeRepository with
 
@@ -159,10 +156,10 @@ type SqliteSavedResumeRepository(connectionString: string) =
                 let! rows =
                     connection.QueryAsync<SavedResumeRow>(
                         """
-                        SELECT id, owner_key, name, resume_text, content_hash, created_at, last_used_at
+                        SELECT id, owner_key, name, resume_text, content_hash, created_at
                         FROM saved_resumes
                         WHERE owner_key = @OwnerKey
-                        ORDER BY last_used_at DESC
+                        ORDER BY created_at DESC
                         """,
                         {| OwnerKey = ownerKey |}
                     )
@@ -178,7 +175,7 @@ type SqliteSavedResumeRepository(connectionString: string) =
                 let! rows =
                     connection.QueryAsync<SavedResumeRow>(
                         """
-                        SELECT id, owner_key, name, resume_text, content_hash, created_at, last_used_at
+                        SELECT id, owner_key, name, resume_text, content_hash, created_at
                         FROM saved_resumes
                         WHERE owner_key = @OwnerKey AND content_hash = @ContentHash
                         LIMIT 1
@@ -200,33 +197,15 @@ type SqliteSavedResumeRepository(connectionString: string) =
                 let! _ =
                     connection.ExecuteAsync(
                         """
-                        INSERT INTO saved_resumes (id, owner_key, name, resume_text, content_hash, created_at, last_used_at)
-                        VALUES (@Id, @OwnerKey, @Name, @ResumeText, @ContentHash, @CreatedAt, @LastUsedAt)
+                        INSERT INTO saved_resumes (id, owner_key, name, resume_text, content_hash, created_at)
+                        VALUES (@Id, @OwnerKey, @Name, @ResumeText, @ContentHash, @CreatedAt)
                         """,
                         {| Id = string id
                            OwnerKey = resume.OwnerKey
                            Name = resume.Name
                            ResumeText = resume.ResumeText
                            ContentHash = resume.ContentHash
-                           CreatedAt = resume.CreatedAt.ToString("O")
-                           LastUsedAt = resume.LastUsedAt.ToString("O") |}
-                    )
-
-                return ()
-            }
-
-        member _.Touch(id: SavedResumeId, lastUsedAt: System.DateTimeOffset) : Task<unit> =
-            task {
-                use connection = new SqliteConnection(connectionString)
-                do! connection.OpenAsync()
-
-                let (SavedResumeId resumeId) = id
-
-                let! _ =
-                    connection.ExecuteAsync(
-                        "UPDATE saved_resumes SET last_used_at = @LastUsedAt WHERE id = @Id",
-                        {| Id = string resumeId
-                           LastUsedAt = lastUsedAt.ToString("O") |}
+                           CreatedAt = resume.CreatedAt.ToString("O") |}
                     )
 
                 return ()
@@ -280,7 +259,7 @@ type SqliteSavedResumeRepository(connectionString: string) =
                           AND id NOT IN (
                               SELECT id FROM saved_resumes
                               WHERE owner_key = @OwnerKey
-                              ORDER BY last_used_at DESC
+                              ORDER BY created_at DESC
                               LIMIT @KeepCount
                           )
                         """,

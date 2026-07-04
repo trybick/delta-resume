@@ -26,5 +26,4 @@ export type SavedResume = {
   name: string
   resumeText: string
   createdAt: string
-  lastUsedAt: string
 }

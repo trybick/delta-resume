@@ -25,7 +25,6 @@ type SavedResumeRepository =
     abstract member ListByOwner: ownerKey: string -> Task<SavedResume list>
     abstract member FindByHash: ownerKey: string * contentHash: string -> Task<SavedResume option>
     abstract member Insert: resume: SavedResume -> Task<unit>
-    abstract member Touch: id: SavedResumeId * lastUsedAt: DateTimeOffset -> Task<unit>
     abstract member Rename: id: SavedResumeId * ownerKey: string * name: string -> Task<bool>
     abstract member Delete: id: SavedResumeId * ownerKey: string -> Task<bool>
     abstract member DeleteLeastRecentlyUsed: ownerKey: string * keepCount: int -> Task<unit>

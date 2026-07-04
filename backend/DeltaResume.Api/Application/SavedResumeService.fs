@@ -35,7 +35,7 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
                 let! existing = repository.FindByHash(ownerKey, contentHash)
 
                 match existing with
-                | Some resume -> do! repository.Touch(resume.Id, now)
+                | Some _ -> ()
                 | None ->
                     do!
                         repository.Insert
@@ -44,8 +44,7 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
                               Name = sanitizeName requestedName now
                               ResumeText = resumeText
                               ContentHash = contentHash
-                              CreatedAt = now
-                              LastUsedAt = now }
+                              CreatedAt = now }
 
                     do! repository.DeleteLeastRecentlyUsed(ownerKey, limit)
         }

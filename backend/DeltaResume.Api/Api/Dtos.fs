@@ -19,8 +19,7 @@ type SavedResumeDto =
     { Id: Guid
       Name: string
       ResumeText: string
-      CreatedAt: DateTimeOffset
-      LastUsedAt: DateTimeOffset }
+      CreatedAt: DateTimeOffset }
 
 type BulletChangeDto =
     { Id: Guid
@@ -57,5 +56,4 @@ module Mapping =
         { Id = id
           Name = resume.Name
           ResumeText = resume.ResumeText
-          CreatedAt = resume.CreatedAt
-          LastUsedAt = resume.LastUsedAt }
+          CreatedAt = resume.CreatedAt }

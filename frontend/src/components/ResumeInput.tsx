@@ -61,16 +61,6 @@ const formatFileSize = (bytes: number): string => {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-const formatLastUsed = (isoDate: string): string => {
-  const date = new Date(isoDate)
-  if (Number.isNaN(date.getTime())) return ''
-  return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-}
-
 const ResumeInput = ({
   resumeText,
   attachedFile,
@@ -290,9 +280,6 @@ const ResumeInput = ({
                           )}
                         </Group>
                       )}
-                      <Text size="xs" c="dimmed">
-                        Last used {formatLastUsed(resume.lastUsedAt)}
-                      </Text>
                       <Text size="xs" c="dimmed" lineClamp={2}>
                         {resume.resumeText}
                       </Text>

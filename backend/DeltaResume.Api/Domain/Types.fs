@@ -56,8 +56,7 @@ type SavedResume =
       Name: string
       ResumeText: string
       ContentHash: string
-      CreatedAt: DateTimeOffset
-      LastUsedAt: DateTimeOffset }
+      CreatedAt: DateTimeOffset }
 
 type TailorError =
     | InvalidInput of message: string
