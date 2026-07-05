@@ -8,7 +8,8 @@ import {
   Text,
   Tooltip,
 } from '@mantine/core'
-import { IconCheck, IconX } from '@tabler/icons-react'
+import { useClipboard } from '@mantine/hooks'
+import { IconCheck, IconCopy, IconCopyCheck, IconX } from '@tabler/icons-react'
 import { diffWords } from 'diff'
 import type { BulletChange, ChangeDecision } from '../lib/types'
 
@@ -28,6 +29,19 @@ const borderColorByDecision: Record<ChangeDecision, string> = {
 
 const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => {
   const [view, setView] = useState<DiffView>('diff')
+  const clipboard = useClipboard({ timeout: 1500 })
+
+  const handleCopyBullet = () => {
+    if (view === 'original') {
+      clipboard.copy(change.original)
+      return
+    }
+    if (view === 'tailored') {
+      clipboard.copy(change.tailored)
+      return
+    }
+    clipboard.copy(decision === 'rejected' ? change.original : change.tailored)
+  }
 
   const handleAccept = () => {
     onDecisionChange(change.id, decision === 'accepted' ? 'pending' : 'accepted')
@@ -115,6 +129,16 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
           />
         </Group>
         <Group gap={4} wrap="nowrap">
+          <Tooltip label={clipboard.copied ? 'Copied' : 'Copy bullet'}>
+            <ActionIcon
+              variant="light"
+              color="gray"
+              onClick={handleCopyBullet}
+              aria-label="Copy bullet"
+            >
+              {clipboard.copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />}
+            </ActionIcon>
+          </Tooltip>
           <Tooltip label={decision === 'accepted' ? 'Undo accept' : 'Accept change'}>
             <ActionIcon
               variant={decision === 'accepted' ? 'filled' : 'light'}
