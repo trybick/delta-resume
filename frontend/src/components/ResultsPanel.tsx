@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Badge,
   Button,
@@ -8,9 +8,17 @@ import {
   Stack,
   Text,
   Title,
+  UnstyledButton,
 } from '@mantine/core'
 import { useClipboard } from '@mantine/hooks'
-import { IconArrowBackUp, IconCopy, IconCopyCheck, IconEye, IconSparkles } from '@tabler/icons-react'
+import {
+  IconArrowBackUp,
+  IconArrowsVertical,
+  IconCopy,
+  IconCopyCheck,
+  IconEye,
+  IconSparkles,
+} from '@tabler/icons-react'
 import { patchDecision } from '../lib/api'
 import type { BulletChange, ChangeDecision, TailorResult, TailorStatus } from '../lib/types'
 import DiffBullet from './DiffBullet'
@@ -29,6 +37,94 @@ const buildDecisionMap = (result: TailorResult | null): Record<string, ChangeDec
   return Object.fromEntries(result.changes.map((change) => [change.id, 'pending']))
 }
 
+const COLLAPSE_MIN_LINES = 4
+const VISIBLE_CONTEXT_LINES = 2
+
+type ContextSplit = {
+  leading: string[]
+  hidden: string[]
+  trailing: string[]
+}
+
+const splitContextLines = (lines: string[], collapsed: boolean): ContextSplit => {
+  if (!collapsed || lines.length <= VISIBLE_CONTEXT_LINES) {
+    return { leading: lines, hidden: [], trailing: [] }
+  }
+  const leadingCount = Math.ceil(VISIBLE_CONTEXT_LINES / 2)
+  const trailingCount = VISIBLE_CONTEXT_LINES - leadingCount
+  return {
+    leading: lines.slice(0, leadingCount),
+    hidden: lines.slice(leadingCount, lines.length - trailingCount),
+    trailing: lines.slice(lines.length - trailingCount),
+  }
+}
+
+type ResumeSegment =
+  | { kind: 'change'; change: BulletChange }
+  | { kind: 'context'; startIndex: number; lines: string[] }
+
+const buildSegments = (
+  lines: string[],
+  changesByLine: Map<number, BulletChange>,
+): ResumeSegment[] => {
+  const segments: ResumeSegment[] = []
+  lines.forEach((line, lineIndex) => {
+    const change = changesByLine.get(lineIndex)
+    if (change) {
+      segments.push({ kind: 'change', change })
+      return
+    }
+    const previousSegment = segments[segments.length - 1]
+    if (previousSegment && previousSegment.kind === 'context') {
+      previousSegment.lines.push(line)
+      return
+    }
+    segments.push({ kind: 'context', startIndex: lineIndex, lines: [line] })
+  })
+  return segments
+}
+
+const ContextLine = ({ line }: { line: string }) => (
+  <Text
+    c="dimmed"
+    style={{
+      fontFamily: 'ui-monospace, monospace',
+      fontSize: 13,
+      whiteSpace: 'pre-wrap',
+      minHeight: line.trim() === '' ? 20 : undefined,
+    }}
+  >
+    {line}
+  </Text>
+)
+
+type CollapsedContextProps = {
+  hiddenCount: number
+  onExpand: () => void
+}
+
+const CollapsedContext = ({ hiddenCount, onExpand }: CollapsedContextProps) => (
+  <UnstyledButton
+    onClick={onExpand}
+    my={6}
+    style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      width: '100%',
+      padding: '4px 10px',
+      borderRadius: 6,
+      border: '1px dashed var(--mantine-color-default-border)',
+      backgroundColor: 'var(--mantine-color-default-hover)',
+    }}
+  >
+    <IconArrowsVertical size={14} color="var(--mantine-primary-color-filled)" />
+    <Text size="xs" c="dimmed">
+      Show {hiddenCount} hidden line{hiddenCount === 1 ? '' : 's'} from original
+    </Text>
+  </UnstyledButton>
+)
+
 const ResultsPanel = ({
   status,
   result,
@@ -40,7 +136,16 @@ const ResultsPanel = ({
     buildDecisionMap(result),
   )
   const [decisionError, setDecisionError] = useState<string | null>(null)
+  const [expandedSegments, setExpandedSegments] = useState<Set<number>>(new Set())
   const clipboard = useClipboard({ timeout: 1500 })
+
+  useEffect(() => {
+    setExpandedSegments(new Set())
+  }, [result])
+
+  const handleExpandSegment = (startIndex: number) => {
+    setExpandedSegments((current) => new Set(current).add(startIndex))
+  }
 
   const changesByLine = useMemo(() => {
     if (!result) return new Map<number, BulletChange>()
@@ -105,6 +210,7 @@ const ResultsPanel = ({
   const acceptedCount = decisionValues.filter((d) => d === 'accepted').length
   const rejectedCount = decisionValues.filter((d) => d === 'rejected').length
   const lines = result.resumeText.split('\n')
+  const segments = buildSegments(lines, changesByLine)
 
   return (
     <Card withBorder shadow="xs" padding="lg">
@@ -175,31 +281,42 @@ const ResultsPanel = ({
         )}
 
         <div>
-          {lines.map((line, lineIndex) => {
-            const change = changesByLine.get(lineIndex)
-            if (change) {
+          {segments.map((segment) => {
+            if (segment.kind === 'change') {
               return (
                 <DiffBullet
-                  key={change.id}
-                  change={change}
-                  decision={decisions[change.id] ?? 'pending'}
+                  key={segment.change.id}
+                  change={segment.change}
+                  decision={decisions[segment.change.id] ?? 'pending'}
                   onDecisionChange={handleDecisionChange}
                 />
               )
             }
+            const isCollapsible =
+              segment.lines.length >= COLLAPSE_MIN_LINES &&
+              !expandedSegments.has(segment.startIndex)
+            const { leading, hidden, trailing } = splitContextLines(
+              segment.lines,
+              isCollapsible,
+            )
             return (
-              <Text
-                key={lineIndex}
-                c="dimmed"
-                style={{
-                  fontFamily: 'ui-monospace, monospace',
-                  fontSize: 13,
-                  whiteSpace: 'pre-wrap',
-                  minHeight: line.trim() === '' ? 20 : undefined,
-                }}
-              >
-                {line}
-              </Text>
+              <div key={segment.startIndex}>
+                {leading.map((line, offset) => (
+                  <ContextLine key={segment.startIndex + offset} line={line} />
+                ))}
+                {isCollapsible && (
+                  <CollapsedContext
+                    hiddenCount={hidden.length}
+                    onExpand={() => handleExpandSegment(segment.startIndex)}
+                  />
+                )}
+                {trailing.map((line, offset) => (
+                  <ContextLine
+                    key={segment.startIndex + leading.length + hidden.length + offset}
+                    line={line}
+                  />
+                ))}
+              </div>
             )
           })}
         </div>
