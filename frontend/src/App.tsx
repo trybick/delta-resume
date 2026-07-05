@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Alert,
   Box,
@@ -18,19 +18,13 @@ import ResumeInput from './components/ResumeInput'
 import JobDescriptionInput from './components/JobDescriptionInput'
 import ResultsPanel from './components/ResultsPanel'
 import PaywallModal from './components/PaywallModal'
-import {
-  ApiError,
-  CreditsExhaustedError,
-  deleteSavedResume,
-  getCredits,
-  getSavedResumes,
-  postTailor,
-  renameSavedResume,
-} from './lib/api'
+import { useCredits } from './hooks/useCredits'
+import { useSavedResumes } from './hooks/useSavedResumes'
+import { useTailorRun } from './hooks/useTailorRun'
 import { SAMPLE_TAILOR_RESULT } from './lib/mockTailor'
 import { registerTokenGetter } from './lib/authToken'
 import type { PaywallReason } from './components/PaywallModal'
-import type { CreditStatus, SavedResume, TailorResult, TailorStatus } from './lib/types'
+import type { SavedResume } from './lib/types'
 
 type AttachedFile = {
   name: string
@@ -53,48 +47,39 @@ const App = () => {
   const [resumeText, setResumeText] = useState('')
   const [attachedFile, setAttachedFile] = useState<AttachedFile | null>(null)
   const [jobDescription, setJobDescription] = useState('')
-  const [status, setStatus] = useState<TailorStatus>('idle')
-  const [result, setResult] = useState<TailorResult | null>(null)
-  const [runCount, setRunCount] = useState(0)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [credits, setCredits] = useState<CreditStatus | null>(null)
   const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null)
   const [showingExample, setShowingExample] = useState(false)
-  const [savedResumes, setSavedResumes] = useState<SavedResume[]>([])
+
+  const { credits, outOfCredits, creditsLabel, loadCredits } = useCredits()
+  const { savedResumes, loadSavedResumes, renameResume, deleteResume } = useSavedResumes()
+  const { status, result, runCount, errorMessage, clearError, runTailor } = useTailorRun({
+    onSuccess: () => {
+      void loadCredits()
+      void loadSavedResumes()
+    },
+    onCreditsExhausted: () => {
+      setPaywallReason('credits')
+      void loadCredits()
+    },
+  })
 
   const canTailor = resumeText.trim().length > 0 && jobDescription.trim().length > 0
-  const outOfCredits = credits !== null && credits.remaining <= 0
 
   useEffect(() => {
     registerTokenGetter(() => getToken())
     return () => registerTokenGetter(null)
   }, [getToken])
 
-  const loadCredits = useCallback(async () => {
-    try {
-      const creditStatus = await getCredits()
-      setCredits(creditStatus)
-      if (creditStatus.remaining > 0) {
-        setPaywallReason((reason) => (reason === 'credits' ? null : reason))
-      }
-    } catch {
-      setCredits(null)
-    }
-  }, [])
-
-  const loadSavedResumes = useCallback(async () => {
-    try {
-      const resumes = await getSavedResumes()
-      setSavedResumes(resumes)
-    } catch {
-      setSavedResumes([])
-    }
-  }, [])
-
   useEffect(() => {
     void loadCredits()
     void loadSavedResumes()
   }, [isSignedIn, loadCredits, loadSavedResumes])
+
+  useEffect(() => {
+    if (credits !== null && credits.remaining > 0) {
+      setPaywallReason((reason) => (reason === 'credits' ? null : reason))
+    }
+  }, [credits])
 
   const handleFileAttach = (file: AttachedFile, text: string) => {
     setAttachedFile(file)
@@ -111,26 +96,6 @@ const App = () => {
     setResumeText(resume.resumeText)
   }
 
-  const handleRenameSaved = async (resumeId: string, name: string) => {
-    setSavedResumes((resumes) =>
-      resumes.map((resume) => (resume.id === resumeId ? { ...resume, name } : resume)),
-    )
-    try {
-      await renameSavedResume(resumeId, name)
-    } catch {
-      void loadSavedResumes()
-    }
-  }
-
-  const handleDeleteSaved = async (resumeId: string) => {
-    setSavedResumes((resumes) => resumes.filter((resume) => resume.id !== resumeId))
-    try {
-      await deleteSavedResume(resumeId)
-    } catch {
-      void loadSavedResumes()
-    }
-  }
-
   const handleTailor = async () => {
     if (!canTailor) return
     if (outOfCredits) {
@@ -138,40 +103,8 @@ const App = () => {
       return
     }
     setShowingExample(false)
-    setStatus('loading')
-    setErrorMessage(null)
-    try {
-      const tailorResult = await postTailor(
-        resumeText,
-        jobDescription,
-        formatDefaultResumeName(new Date()),
-      )
-      setResult(tailorResult)
-      setRunCount((count) => count + 1)
-      setStatus('done')
-      void loadCredits()
-      void loadSavedResumes()
-    } catch (error) {
-      if (error instanceof CreditsExhaustedError) {
-        setPaywallReason('credits')
-        void loadCredits()
-      } else {
-        setErrorMessage(
-          error instanceof ApiError
-            ? error.message
-            : 'Could not reach the server. Is the backend running?',
-        )
-      }
-      setStatus(result ? 'done' : 'idle')
-    }
+    await runTailor(resumeText, jobDescription, formatDefaultResumeName(new Date()))
   }
-
-  const creditsLabel =
-    credits === null
-      ? null
-      : credits.plan === 'pro'
-        ? `${credits.remaining} credits`
-        : `${credits.remaining} free ${credits.remaining === 1 ? 'credit' : 'credits'} left`
 
   return (
     <Box>
@@ -191,8 +124,8 @@ const App = () => {
                 onFileAttach={handleFileAttach}
                 onClear={handleClearResume}
                 onSelectSaved={handleSelectSaved}
-                onRenameSaved={handleRenameSaved}
-                onDeleteSaved={handleDeleteSaved}
+                onRenameSaved={renameResume}
+                onDeleteSaved={deleteResume}
                 onUpgradeClick={() => setPaywallReason('savedLimit')}
               />
               <JobDescriptionInput
@@ -227,7 +160,7 @@ const App = () => {
                   icon={<IconAlertCircle size={18} />}
                   title="Tailoring failed"
                   withCloseButton
-                  onClose={() => setErrorMessage(null)}
+                  onClose={clearError}
                 >
                   {errorMessage}
                 </Alert>
