@@ -21,7 +21,7 @@ const JobDescriptionInput = ({ value, onChange }: JobDescriptionInputProps) => {
           placeholder="Paste the job description you're targeting…"
           autosize
           minRows={8}
-          maxRows={14}
+          maxRows={8}
         />
       </Stack>
     </Card>

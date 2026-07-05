@@ -204,7 +204,7 @@ const ResumeInput = ({
             placeholder="Paste your resume text here…"
             autosize
             minRows={10}
-            maxRows={18}
+            maxRows={10}
             styles={{ input: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } }}
           />
         )}
