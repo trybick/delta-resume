@@ -7,19 +7,11 @@ export type AppTheme = {
   clerkPrimary: string
 }
 
-const fontStack =
-  'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+export const manropeStack =
+  'Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
 
-const baseTheme = {
-  primaryShade: { light: 6, dark: 5 } as const,
-  fontFamily: fontStack,
-  defaultRadius: 'md' as const,
-  autoContrast: true,
-  headings: {
-    fontFamily: fontStack,
-    fontWeight: '600',
-  },
-}
+export const spaceGroteskStack =
+  '"Space Grotesk", Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
 
 const deepOceanDark: MantineColorsTuple = [
   '#e7f0f4',
@@ -36,7 +28,14 @@ const deepOceanDark: MantineColorsTuple = [
 
 export const appTheme: AppTheme = {
   theme: createTheme({
-    ...baseTheme,
+    primaryShade: { light: 6, dark: 5 },
+    fontFamily: manropeStack,
+    defaultRadius: 'md',
+    autoContrast: true,
+    headings: {
+      fontFamily: manropeStack,
+      fontWeight: '600',
+    },
     primaryColor: 'cyan',
     colors: { dark: deepOceanDark },
   }),

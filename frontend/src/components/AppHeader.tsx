@@ -17,7 +17,7 @@ import {
 } from '@clerk/clerk-react'
 import { IconCoins } from '@tabler/icons-react'
 import DeltaLogo from './DeltaLogo'
-import { appTheme } from '../lib/theme'
+import { appTheme, spaceGroteskStack } from '../lib/theme'
 
 type ClerkAuthButtonProps = ButtonProps &
   ComponentPropsWithoutRef<'button'> & {
@@ -47,7 +47,10 @@ const AppHeader = ({ creditsLabel, outOfCredits }: AppHeaderProps) => {
         <Group gap="sm">
           <DeltaLogo size={40} />
           <div>
-            <Title order={3} style={{ letterSpacing: '-0.02em' }}>
+            <Title
+              order={3}
+              style={{ fontFamily: spaceGroteskStack, letterSpacing: '-0.02em' }}
+            >
               <Text
                 span
                 inherit
