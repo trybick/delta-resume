@@ -35,13 +35,3 @@ type TailoringService(engine: TailoringEngine, repository: TailorRunRepository) 
                         do! repository.SaveRun run
                         return Ok run
         }
-
-    member _.RecordDecision(changeId: ChangeId, decision: Decision) : Task<Result<unit, TailorError>> =
-        task {
-            let! updated = repository.UpdateDecision(changeId, decision)
-
-            if updated then
-                return Ok()
-            else
-                return Error(NotFound "Change not found.")
-        }

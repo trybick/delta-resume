@@ -21,7 +21,6 @@ import {
   IconEye,
   IconSparkles,
 } from '@tabler/icons-react'
-import { patchDecision } from '../lib/api'
 import type { BulletChange, ChangeDecision, TailorResult, TailorStatus } from '../lib/types'
 import DiffBullet from './DiffBullet'
 import TailoringLoader from './TailoringLoader'
@@ -165,7 +164,6 @@ const ResultsPanel = ({
   const [decisions, setDecisions] = useState<Record<string, ChangeDecision>>(() =>
     buildDecisionMap(result),
   )
-  const [decisionError, setDecisionError] = useState<string | null>(null)
   const [expandedSegments, setExpandedSegments] = useState<Set<number>>(new Set())
   const clipboard = useClipboard({ timeout: 1500 })
 
@@ -183,14 +181,7 @@ const ResultsPanel = ({
   }, [result])
 
   const handleDecisionChange = (id: string, decision: ChangeDecision) => {
-    const previousDecision = decisions[id] ?? 'pending'
     setDecisions((current) => ({ ...current, [id]: decision }))
-    setDecisionError(null)
-    if (isExample) return
-    patchDecision(id, decision).catch(() => {
-      setDecisions((current) => ({ ...current, [id]: previousDecision }))
-      setDecisionError('Could not save your decision. Please try again.')
-    })
   }
 
   const handleCopy = () => {
@@ -320,12 +311,6 @@ const ResultsPanel = ({
             {clipboard.copied ? 'Copied' : 'Copy tailored resume'}
           </Button>
         </Group>
-
-        {decisionError && (
-          <Text size="xs" c="red">
-            {decisionError}
-          </Text>
-        )}
 
         <div>
           {segments.map((segment) => {

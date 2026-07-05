@@ -108,27 +108,3 @@ module Handlers =
                     else
                         return! errorResponse StatusCodes.Status404NotFound "Resume not found." next ctx
             }
-
-    let updateDecision (changeId: string) : HttpHandler =
-        fun next ctx ->
-            task {
-                let service = ctx.GetService<TailoringService>()
-                let! request = ctx.BindJsonAsync<DecisionRequestDto>()
-
-                match Guid.TryParse changeId, Decision.tryParse request.Decision with
-                | (false, _), _ ->
-                    return! errorResponse StatusCodes.Status400BadRequest "Invalid change id." next ctx
-                | _, None ->
-                    return!
-                        errorResponse
-                            StatusCodes.Status400BadRequest
-                            "Decision must be 'pending', 'accepted', or 'rejected'."
-                            next
-                            ctx
-                | (true, id), Some decision ->
-                    let! result = service.RecordDecision(ChangeId id, decision)
-
-                    match result with
-                    | Ok() -> return! setStatusCode StatusCodes.Status204NoContent next ctx
-                    | Error error -> return! tailorErrorToResponse error next ctx
-            }

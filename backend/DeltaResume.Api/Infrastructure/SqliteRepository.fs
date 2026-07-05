@@ -33,7 +33,6 @@ module Schema =
                 line_index INTEGER NOT NULL,
                 original TEXT NOT NULL,
                 tailored TEXT NOT NULL,
-                decision TEXT NOT NULL DEFAULT 'pending',
                 kind TEXT NOT NULL DEFAULT 'bullet'
             );
 
@@ -102,15 +101,14 @@ type SqliteTailorRunRepository(connectionString: string) =
                     let! _ =
                         connection.ExecuteAsync(
                             """
-                            INSERT INTO bullet_changes (id, run_id, line_index, original, tailored, decision, kind)
-                            VALUES (@Id, @RunId, @LineIndex, @Original, @Tailored, @Decision, @Kind)
+                            INSERT INTO bullet_changes (id, run_id, line_index, original, tailored, kind)
+                            VALUES (@Id, @RunId, @LineIndex, @Original, @Tailored, @Kind)
                             """,
                             {| Id = string changeId
                                RunId = string runId
                                LineIndex = change.LineIndex
                                Original = change.Original
                                Tailored = change.Tailored
-                               Decision = Decision.toString change.Decision
                                Kind = LineKind.toString change.Kind |},
                             transaction
                         )
@@ -118,23 +116,6 @@ type SqliteTailorRunRepository(connectionString: string) =
                     ()
 
                 transaction.Commit()
-            }
-
-        member _.UpdateDecision(changeId: ChangeId, decision: Decision) : Task<bool> =
-            task {
-                use connection = new SqliteConnection(connectionString)
-                do! connection.OpenAsync()
-
-                let (ChangeId id) = changeId
-
-                let! affected =
-                    connection.ExecuteAsync(
-                        "UPDATE bullet_changes SET decision = @Decision WHERE id = @Id",
-                        {| Id = string id
-                           Decision = Decision.toString decision |}
-                    )
-
-                return affected > 0
             }
 
 [<CLIMutable>]

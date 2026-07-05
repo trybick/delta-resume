@@ -20,7 +20,6 @@ let private webApp: HttpHandler =
           GET >=> route "/api/credits" >=> Handlers.credits
           GET >=> route "/api/resumes" >=> Handlers.listResumes
           POST >=> route "/api/tailor" >=> Handlers.tailor
-          PATCH >=> routef "/api/changes/%s" Handlers.updateDecision
           PATCH >=> routef "/api/resumes/%s" Handlers.renameResume
           DELETE >=> routef "/api/resumes/%s" Handlers.deleteResume
           setStatusCode 404 >=> json {| Message = "Not found" |} ]

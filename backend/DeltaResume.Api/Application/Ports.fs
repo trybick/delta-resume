@@ -10,7 +10,6 @@ type TailoringEngine =
 
 type TailorRunRepository =
     abstract member SaveRun: run: TailorRun -> Task<unit>
-    abstract member UpdateDecision: changeId: ChangeId * decision: Decision -> Task<bool>
 
 type CreditUsageEntry =
     { IdentityKey: string

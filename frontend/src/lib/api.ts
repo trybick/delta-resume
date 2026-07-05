@@ -1,4 +1,4 @@
-import type { ChangeDecision, CreditStatus, SavedResume, TailorResult } from './types'
+import type { CreditStatus, SavedResume, TailorResult } from './types'
 import { getAuthToken } from './authToken'
 import { getFingerprint } from './fingerprint'
 
@@ -121,20 +121,6 @@ export const deleteSavedResume = async (resumeId: string): Promise<void> => {
   const response = await fetch(`${API_BASE_URL}/api/resumes/${resumeId}`, {
     method: 'DELETE',
     headers: await buildHeaders(),
-  })
-  if (!response.ok) {
-    return throwApiError(response)
-  }
-}
-
-export const patchDecision = async (
-  changeId: string,
-  decision: ChangeDecision,
-): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/api/changes/${changeId}`, {
-    method: 'PATCH',
-    headers: await buildHeaders(),
-    body: JSON.stringify({ decision }),
   })
   if (!response.ok) {
     return throwApiError(response)

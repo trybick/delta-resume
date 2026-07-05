@@ -10,9 +10,6 @@ type TailorRequestDto =
       ResumeName: string option }
 
 [<CLIMutable>]
-type DecisionRequestDto = { Decision: string }
-
-[<CLIMutable>]
 type RenameResumeRequestDto = { Name: string }
 
 type SavedResumeDto =
