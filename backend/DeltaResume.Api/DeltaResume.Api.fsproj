@@ -16,7 +16,9 @@
     <Compile Include="Infrastructure/CreditStore.fs" />
     <Compile Include="Infrastructure/AnthropicEngine.fs" />
     <Compile Include="Api/Dtos.fs" />
+    <Compile Include="Api/RateLimiting.fs" />
     <Compile Include="Api/Handlers.fs" />
+    <Compile Include="Api/Routes.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>
 

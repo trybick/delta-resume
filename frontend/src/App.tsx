@@ -46,6 +46,10 @@ const App = () => {
   const [originalDocx, setOriginalDocx] = useState<OriginalDocx | null>(null)
   const [jobDescription, setJobDescription] = useState('')
   const [lastRunJobDescription, setLastRunJobDescription] = useState('')
+  const [lastSuccessfulInputs, setLastSuccessfulInputs] = useState<{
+    resumeText: string
+    jobDescription: string
+  } | null>(null)
   const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null)
   const [showingExample, setShowingExample] = useState(false)
 
@@ -63,7 +67,15 @@ const App = () => {
     },
   })
 
-  const canTailor = resumeText.trim().length > 0 && jobDescription.trim().length > 0
+  const inputsUnchangedSinceLastRun =
+    lastSuccessfulInputs !== null &&
+    lastSuccessfulInputs.resumeText === resumeText.trim() &&
+    lastSuccessfulInputs.jobDescription === jobDescription.trim()
+
+  const canTailor =
+    resumeText.trim().length > 0 &&
+    jobDescription.trim().length > 0 &&
+    !inputsUnchangedSinceLastRun
 
   useEffect(() => {
     registerTokenGetter(() => getToken())
@@ -111,7 +123,13 @@ const App = () => {
     }
     setShowingExample(false)
     setLastRunJobDescription(jobDescription)
-    await runTailor(resumeText, jobDescription, formatDefaultResumeName(new Date()))
+    const succeeded = await runTailor(resumeText, jobDescription, formatDefaultResumeName(new Date()))
+    if (succeeded) {
+      setLastSuccessfulInputs({
+        resumeText: resumeText.trim(),
+        jobDescription: jobDescription.trim(),
+      })
+    }
   }
 
   return (
@@ -155,6 +173,11 @@ const App = () => {
                 >
                   {outOfCredits ? 'Get more credits' : 'Tailor Resume'}
                 </Button>
+                {inputsUnchangedSinceLastRun && !outOfCredits && (
+                  <Text size="xs" c="dimmed" ta="center">
+                    Edit your resume or job description to tailor again.
+                  </Text>
+                )}
                 {outOfCredits && (
                   <Text size="xs" c="dimmed" ta="center">
                     {credits?.isAuthenticated

@@ -14,16 +14,6 @@ open DeltaResume.Api
 open DeltaResume.Application
 open DeltaResume.Infrastructure
 
-let private webApp: HttpHandler =
-    choose
-        [ GET >=> route "/api/health" >=> Handlers.health
-          GET >=> route "/api/credits" >=> Handlers.credits
-          GET >=> route "/api/resumes" >=> Handlers.listResumes
-          POST >=> route "/api/tailor" >=> Handlers.tailor
-          PATCH >=> routef "/api/resumes/%s" Handlers.renameResume
-          DELETE >=> routef "/api/resumes/%s" Handlers.deleteResume
-          setStatusCode 404 >=> json {| Message = "Not found" |} ]
-
 [<EntryPoint>]
 let main args =
     DotNetEnv.Env.Load() |> ignore
@@ -85,6 +75,9 @@ let main args =
 
     let identityOptions = IdentityOptions.fromEnvironment ()
 
+    builder.Services.AddSingleton<RateLimiters>(fun _ -> RateLimiters identityOptions)
+    |> ignore
+
     builder.Services.AddSingleton<CreditService>(fun provider ->
         CreditService(provider.GetRequiredService<CreditStore>(), identityOptions))
     |> ignore
@@ -104,7 +97,7 @@ let main args =
     if Option.isSome clerkAuthority then
         app.UseAuthentication() |> ignore
 
-    app.UseGiraffe webApp
+    app.UseGiraffe Routes.webApp
 
     app.Run("http://localhost:5100")
     0

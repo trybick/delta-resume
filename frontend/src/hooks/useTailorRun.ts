@@ -13,7 +13,7 @@ type UseTailorRunResult = {
   runCount: number
   errorMessage: string | null
   clearError: () => void
-  runTailor: (resumeText: string, jobDescription: string, resumeName: string) => Promise<void>
+  runTailor: (resumeText: string, jobDescription: string, resumeName: string) => Promise<boolean>
 }
 
 export const useTailorRun = ({
@@ -32,7 +32,7 @@ export const useTailorRun = ({
     resumeText: string,
     jobDescription: string,
     resumeName: string,
-  ) => {
+  ): Promise<boolean> => {
     setStatus('loading')
     setErrorMessage(null)
     try {
@@ -42,6 +42,7 @@ export const useTailorRun = ({
       setRunCount((count) => count + 1)
       setStatus('done')
       onSuccess()
+      return true
     } catch (error) {
       if (error instanceof CreditsExhaustedError) {
         onCreditsExhausted()
@@ -53,6 +54,7 @@ export const useTailorRun = ({
         )
       }
       setStatus(resultRef.current ? 'done' : 'idle')
+      return false
     }
   }
 
