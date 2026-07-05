@@ -15,7 +15,7 @@ import {
   SignedOut,
   UserButton,
 } from '@clerk/clerk-react'
-import { IconCoins } from '@tabler/icons-react'
+import { IconCoins, IconSparkles } from '@tabler/icons-react'
 import DeltaLogo from './DeltaLogo'
 import { appTheme, spaceGroteskStack } from '../lib/theme'
 
@@ -32,9 +32,11 @@ const ClerkAuthButton = ({ component: _component, clerk: _clerk, ...props }: Cle
 type AppHeaderProps = {
   creditsLabel: string | null
   outOfCredits: boolean
+  isProPlan: boolean
+  onUpgradeClick: () => void
 }
 
-const AppHeader = ({ creditsLabel, outOfCredits }: AppHeaderProps) => {
+const AppHeader = ({ creditsLabel, outOfCredits, isProPlan, onUpgradeClick }: AppHeaderProps) => {
   return (
     <Box
       component="header"
@@ -79,6 +81,19 @@ const AppHeader = ({ creditsLabel, outOfCredits }: AppHeaderProps) => {
               >
                 {creditsLabel}
               </Badge>
+            </Tooltip>
+          )}
+          {!isProPlan && (
+            <Tooltip label="Pro: 200 tailor credits every month, 10 saved resumes, match scoring, and DOCX export">
+              <Button
+                size="xs"
+                variant="gradient"
+                gradient={{ ...appTheme.gradient, deg: 45 }}
+                leftSection={<IconSparkles size={14} />}
+                onClick={onUpgradeClick}
+              >
+                Upgrade to Pro
+              </Button>
             </Tooltip>
           )}
           <SignedOut>

@@ -37,7 +37,7 @@ type ResumeInputProps = {
   savedResumeLimit: number
   isProPlan: boolean
   onResumeTextChange: (text: string) => void
-  onFileAttach: (file: AttachedFile, text: string) => void
+  onFileAttach: (file: AttachedFile, text: string, sourceFile: File) => void
   onClear: () => void
   onSelectSaved: (resume: SavedResume) => void
   onRenameSaved: (resumeId: string, name: string) => void
@@ -91,7 +91,7 @@ const ResumeInput = ({
     setParseError(null)
     try {
       const text = await parseResumeFile(file)
-      onFileAttach(attached, text)
+      onFileAttach(attached, text, file)
     } catch (error) {
       setParseError(
         error instanceof ResumeParseError

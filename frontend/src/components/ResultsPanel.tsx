@@ -18,17 +18,28 @@ import {
   IconCircleCheck,
   IconCopy,
   IconCopyCheck,
+  IconDownload,
   IconEye,
   IconSparkles,
+  IconTargetArrow,
 } from '@tabler/icons-react'
 import type { BulletChange, ChangeDecision, TailorResult, TailorStatus } from '../lib/types'
+import { buildTemplateDocx, downloadDocx, patchOriginalDocx } from '../lib/exportDocx'
+import { extractKeywords, scoreResume } from '../lib/matchScore'
 import DiffBullet from './DiffBullet'
 import TailoringLoader from './TailoringLoader'
+
+type OriginalDocx = {
+  file: File
+  parsedText: string
+}
 
 type ResultsPanelProps = {
   status: TailorStatus
   result: TailorResult | null
   isExample?: boolean
+  jobDescription?: string
+  originalDocx?: OriginalDocx | null
   onShowExample?: () => void
   onDismissExample?: () => void
 }
@@ -158,6 +169,8 @@ const ResultsPanel = ({
   status,
   result,
   isExample = false,
+  jobDescription = '',
+  originalDocx = null,
   onShowExample,
   onDismissExample,
 }: ResultsPanelProps) => {
@@ -165,6 +178,7 @@ const ResultsPanel = ({
     buildDecisionMap(result),
   )
   const [expandedSegments, setExpandedSegments] = useState<Set<number>>(new Set())
+  const [isExporting, setIsExporting] = useState(false)
   const clipboard = useClipboard({ timeout: 1500 })
 
   useEffect(() => {
@@ -184,15 +198,62 @@ const ResultsPanel = ({
     setDecisions((current) => ({ ...current, [id]: decision }))
   }
 
-  const handleCopy = () => {
-    if (!result) return
+  const buildMergedText = (): string => {
+    if (!result) return ''
     const lines = result.resumeText.split('\n').map((line, lineIndex) => {
       const change = changesByLine.get(lineIndex)
       if (!change) return line
       return decisions[change.id] === 'rejected' ? change.original : change.tailored
     })
-    clipboard.copy(lines.join('\n'))
+    return lines.join('\n')
   }
+
+  const handleCopy = () => {
+    if (!result) return
+    clipboard.copy(buildMergedText())
+  }
+
+  const handleDownloadDocx = async () => {
+    if (!result || isExporting) return
+    setIsExporting(true)
+    try {
+      const canPatchOriginal =
+        originalDocx !== null && originalDocx.parsedText === result.resumeText
+      let blob: Blob | null = null
+      if (canPatchOriginal) {
+        const replacements = result.changes
+          .filter((change) => decisions[change.id] !== 'rejected')
+          .map((change) => ({ original: change.original, tailored: change.tailored }))
+        try {
+          blob = await patchOriginalDocx(originalDocx.file, replacements)
+        } catch {
+          blob = null
+        }
+      }
+      if (!blob) {
+        blob = await buildTemplateDocx(buildMergedText())
+      }
+      downloadDocx(blob, 'tailored-resume.docx')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const matchKeywords = useMemo(() => extractKeywords(jobDescription), [jobDescription])
+  const matchScoreBefore = useMemo(
+    () => (result ? scoreResume(result.resumeText, matchKeywords) : 0),
+    [result, matchKeywords],
+  )
+  const matchScoreAfter = useMemo(() => {
+    if (!result) return 0
+    const mergedLines = result.resumeText.split('\n').map((line, lineIndex) => {
+      const change = changesByLine.get(lineIndex)
+      if (!change) return line
+      return decisions[change.id] === 'rejected' ? change.original : change.tailored
+    })
+    return scoreResume(mergedLines.join('\n'), matchKeywords)
+  }, [result, changesByLine, decisions, matchKeywords])
+  const showMatchScore = matchKeywords.length > 0 && jobDescription.trim().length > 0
 
   if (status === 'idle') {
     return (
@@ -299,17 +360,39 @@ const ResultsPanel = ({
                 </Badge>
               </Tooltip>
             )}
+            {showMatchScore && (
+              <Tooltip label="How much of the job description's keywords your resume covers. The second number reflects the changes you currently have accepted or pending.">
+                <Badge
+                  color={matchScoreAfter > matchScoreBefore ? 'green' : 'gray'}
+                  variant="light"
+                  leftSection={<IconTargetArrow size={12} />}
+                >
+                  Match {matchScoreBefore}% {'\u2192'} {matchScoreAfter}%
+                </Badge>
+              </Tooltip>
+            )}
           </Group>
-          <Button
-            size="xs"
-            variant="light"
-            leftSection={
-              clipboard.copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />
-            }
-            onClick={handleCopy}
-          >
-            {clipboard.copied ? 'Copied' : 'Copy tailored resume'}
-          </Button>
+          <Group gap="xs">
+            <Button
+              size="xs"
+              variant="light"
+              leftSection={
+                clipboard.copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />
+              }
+              onClick={handleCopy}
+            >
+              {clipboard.copied ? 'Copied' : 'Copy tailored resume'}
+            </Button>
+            <Button
+              size="xs"
+              variant="light"
+              leftSection={<IconDownload size={16} />}
+              loading={isExporting}
+              onClick={handleDownloadDocx}
+            >
+              Download .docx
+            </Button>
+          </Group>
         </Group>
 
         <div>

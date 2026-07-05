@@ -25,7 +25,7 @@ const embeddedSignUpAppearance = {
   },
 } as const
 
-export type PaywallReason = 'credits' | 'savedLimit'
+export type PaywallReason = 'credits' | 'savedLimit' | 'upgrade'
 
 type PaywallModalProps = {
   opened: boolean
@@ -49,15 +49,27 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
   }, [opened, isSignedIn, hasProPlan, reason, onSubscriptionChange, onClose])
 
   const signedInTitle =
-    reason === 'savedLimit' ? 'Upgrade to save more resumes' : 'Upgrade to keep tailoring'
+    reason === 'savedLimit'
+      ? 'Upgrade to save more resumes'
+      : reason === 'upgrade'
+        ? 'Upgrade to Pro'
+        : 'Upgrade to keep tailoring'
   const signedInHeading =
-    reason === 'savedLimit' ? 'You\u2019ve reached your saved resume limit' : 'You\u2019re out of credits'
+    reason === 'savedLimit'
+      ? 'You\u2019ve reached your saved resume limit'
+      : reason === 'upgrade'
+        ? 'Get the most out of Delta Resume'
+        : 'You\u2019re out of credits'
   const signedInDescription =
     reason === 'savedLimit'
-      ? 'Subscribe to Pro to save up to 10 resumes, plus 100 tailor credits every month. Cancel anytime.'
-      : 'Subscribe to Pro and get 100 tailor credits every month. Cancel anytime.'
+      ? 'Subscribe to Pro to save up to 10 resumes, plus 200 tailor credits every month. Cancel anytime.'
+      : 'Subscribe to Pro and get 200 tailor credits every month, 10 saved resumes, match scoring, and DOCX export. Cancel anytime.'
   const signedOutHeading =
-    reason === 'savedLimit' ? 'Save more resumes with Pro' : 'You\u2019ve used your 3 free tailors'
+    reason === 'savedLimit'
+      ? 'Save more resumes with Pro'
+      : reason === 'upgrade'
+        ? 'Go Pro with Delta Resume'
+        : 'You\u2019ve used your 3 free tailors'
   const signedOutDescription =
     reason === 'savedLimit'
       ? 'Create a free account and upgrade to Pro to save up to 10 resumes.'

@@ -22,7 +22,7 @@ module CreditPlan =
         match plan with
         | GuestPlan
         | FreePlan -> 3
-        | ProPlan -> 100
+        | ProPlan -> 200
 
     let savedResumeLimit (plan: CreditPlan) : int =
         match plan with

@@ -33,11 +33,18 @@ type AttachedFile = {
   size: number
 }
 
+type OriginalDocx = {
+  file: File
+  parsedText: string
+}
+
 const App = () => {
   const { isSignedIn, getToken } = useAuth()
   const [resumeText, setResumeText] = useState('')
   const [attachedFile, setAttachedFile] = useState<AttachedFile | null>(null)
+  const [originalDocx, setOriginalDocx] = useState<OriginalDocx | null>(null)
   const [jobDescription, setJobDescription] = useState('')
+  const [lastRunJobDescription, setLastRunJobDescription] = useState('')
   const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null)
   const [showingExample, setShowingExample] = useState(false)
 
@@ -73,18 +80,25 @@ const App = () => {
     }
   }, [credits])
 
-  const handleFileAttach = (file: AttachedFile, text: string) => {
+  const handleFileAttach = (file: AttachedFile, text: string, sourceFile: File) => {
     setAttachedFile(file)
     setResumeText(text)
+    setOriginalDocx(
+      sourceFile.name.toLowerCase().endsWith('.docx')
+        ? { file: sourceFile, parsedText: text }
+        : null,
+    )
   }
 
   const handleClearResume = () => {
     setAttachedFile(null)
+    setOriginalDocx(null)
     setResumeText('')
   }
 
   const handleSelectSaved = (resume: SavedResume) => {
     setAttachedFile(null)
+    setOriginalDocx(null)
     setResumeText(resume.resumeText)
   }
 
@@ -95,12 +109,18 @@ const App = () => {
       return
     }
     setShowingExample(false)
+    setLastRunJobDescription(jobDescription)
     await runTailor(resumeText, jobDescription, formatDefaultResumeName(new Date()))
   }
 
   return (
     <Box>
-      <AppHeader creditsLabel={creditsLabel} outOfCredits={outOfCredits} />
+      <AppHeader
+        creditsLabel={creditsLabel}
+        outOfCredits={outOfCredits}
+        isProPlan={credits?.plan === 'pro'}
+        onUpgradeClick={() => setPaywallReason('upgrade')}
+      />
 
       <Container size="xl" py="xl">
         <Grid gap="xl">
@@ -162,6 +182,8 @@ const App = () => {
                 status={showingExample ? 'done' : status}
                 result={showingExample ? SAMPLE_TAILOR_RESULT : result}
                 isExample={showingExample}
+                jobDescription={showingExample ? '' : lastRunJobDescription}
+                originalDocx={showingExample ? null : originalDocx}
                 onShowExample={() => setShowingExample(true)}
                 onDismissExample={() => setShowingExample(false)}
               />
