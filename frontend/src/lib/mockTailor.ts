@@ -48,6 +48,11 @@ EDUCATION
 B.S. Computer Science, State University (2018)
 Graduated with honors; teaching assistant for Intro to Data Structures`
 
+export const SAMPLE_MATCH_SCORE = {
+  before: 54,
+  after: 86,
+}
+
 export const SAMPLE_TAILOR_RESULT: TailorResult = {
   resumeText: SAMPLE_RESUME,
   changes: [

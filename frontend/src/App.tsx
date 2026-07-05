@@ -21,7 +21,7 @@ import PaywallModal from './components/PaywallModal'
 import { useCredits } from './hooks/useCredits'
 import { useSavedResumes } from './hooks/useSavedResumes'
 import { useTailorRun } from './hooks/useTailorRun'
-import { SAMPLE_TAILOR_RESULT } from './lib/mockTailor'
+import { SAMPLE_MATCH_SCORE, SAMPLE_TAILOR_RESULT } from './lib/mockTailor'
 import { trackEvent } from './lib/analytics'
 import { registerTokenGetter } from './lib/authToken'
 import { formatDefaultResumeName } from './lib/formatDefaultResumeName'
@@ -183,6 +183,7 @@ const App = () => {
                 result={showingExample ? SAMPLE_TAILOR_RESULT : result}
                 isExample={showingExample}
                 jobDescription={showingExample ? '' : lastRunJobDescription}
+                exampleMatchScore={showingExample ? SAMPLE_MATCH_SCORE : undefined}
                 originalDocx={showingExample ? null : originalDocx}
                 onShowExample={() => setShowingExample(true)}
                 onDismissExample={() => setShowingExample(false)}

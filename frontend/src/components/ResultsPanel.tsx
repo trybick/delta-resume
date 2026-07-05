@@ -34,11 +34,17 @@ type OriginalDocx = {
   parsedText: string
 }
 
+type ExampleMatchScore = {
+  before: number
+  after: number
+}
+
 type ResultsPanelProps = {
   status: TailorStatus
   result: TailorResult | null
   isExample?: boolean
   jobDescription?: string
+  exampleMatchScore?: ExampleMatchScore
   originalDocx?: OriginalDocx | null
   onShowExample?: () => void
   onDismissExample?: () => void
@@ -170,6 +176,7 @@ const ResultsPanel = ({
   result,
   isExample = false,
   jobDescription = '',
+  exampleMatchScore,
   originalDocx = null,
   onShowExample,
   onDismissExample,
@@ -240,11 +247,11 @@ const ResultsPanel = ({
   }
 
   const matchKeywords = useMemo(() => extractKeywords(jobDescription), [jobDescription])
-  const matchScoreBefore = useMemo(
+  const computedMatchScoreBefore = useMemo(
     () => (result ? scoreResume(result.resumeText, matchKeywords) : 0),
     [result, matchKeywords],
   )
-  const matchScoreAfter = useMemo(() => {
+  const computedMatchScoreAfter = useMemo(() => {
     if (!result) return 0
     const mergedLines = result.resumeText.split('\n').map((line, lineIndex) => {
       const change = changesByLine.get(lineIndex)
@@ -253,7 +260,11 @@ const ResultsPanel = ({
     })
     return scoreResume(mergedLines.join('\n'), matchKeywords)
   }, [result, changesByLine, decisions, matchKeywords])
-  const showMatchScore = matchKeywords.length > 0 && jobDescription.trim().length > 0
+  const matchScoreBefore = exampleMatchScore?.before ?? computedMatchScoreBefore
+  const matchScoreAfter = exampleMatchScore?.after ?? computedMatchScoreAfter
+  const showMatchScore =
+    exampleMatchScore !== undefined ||
+    (matchKeywords.length > 0 && jobDescription.trim().length > 0)
 
   if (status === 'idle') {
     return (
