@@ -37,8 +37,8 @@ const buildDecisionMap = (result: TailorResult | null): Record<string, ChangeDec
   return Object.fromEntries(result.changes.map((change) => [change.id, 'pending']))
 }
 
-const COLLAPSE_MIN_LINES = 4
-const VISIBLE_CONTEXT_LINES = 2
+const CONTEXT_LINES_PER_SIDE = 2
+const COLLAPSE_MIN_LINES = CONTEXT_LINES_PER_SIDE * 2 + 1
 
 type ContextSplit = {
   leading: string[]
@@ -47,15 +47,13 @@ type ContextSplit = {
 }
 
 const splitContextLines = (lines: string[], collapsed: boolean): ContextSplit => {
-  if (!collapsed || lines.length <= VISIBLE_CONTEXT_LINES) {
+  if (!collapsed || lines.length < COLLAPSE_MIN_LINES) {
     return { leading: lines, hidden: [], trailing: [] }
   }
-  const leadingCount = Math.ceil(VISIBLE_CONTEXT_LINES / 2)
-  const trailingCount = VISIBLE_CONTEXT_LINES - leadingCount
   return {
-    leading: lines.slice(0, leadingCount),
-    hidden: lines.slice(leadingCount, lines.length - trailingCount),
-    trailing: lines.slice(lines.length - trailingCount),
+    leading: lines.slice(0, CONTEXT_LINES_PER_SIDE),
+    hidden: lines.slice(CONTEXT_LINES_PER_SIDE, lines.length - CONTEXT_LINES_PER_SIDE),
+    trailing: lines.slice(lines.length - CONTEXT_LINES_PER_SIDE),
   }
 }
 
