@@ -8,9 +8,6 @@ type TailoringEngine =
     abstract member ProposeChanges:
         bullets: BulletLine list * jobDescription: string -> Task<Result<ProposedChange list, string>>
 
-type TailorRunRepository =
-    abstract member SaveRun: run: TailorRun -> Task<unit>
-
 type CreditUsageEntry =
     { IdentityKey: string
       Kind: string

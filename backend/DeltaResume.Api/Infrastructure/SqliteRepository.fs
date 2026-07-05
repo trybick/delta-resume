@@ -20,21 +20,8 @@ module Schema =
 
         connection.Execute(
             """
-            CREATE TABLE IF NOT EXISTS tailor_runs (
-                id TEXT PRIMARY KEY,
-                resume_text TEXT NOT NULL,
-                job_description TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            );
-
-            CREATE TABLE IF NOT EXISTS bullet_changes (
-                id TEXT PRIMARY KEY,
-                run_id TEXT NOT NULL REFERENCES tailor_runs(id),
-                line_index INTEGER NOT NULL,
-                original TEXT NOT NULL,
-                tailored TEXT NOT NULL,
-                kind TEXT NOT NULL DEFAULT 'bullet'
-            );
+            DROP TABLE IF EXISTS bullet_changes;
+            DROP TABLE IF EXISTS tailor_runs;
 
             CREATE TABLE IF NOT EXISTS credit_usage (
                 id TEXT PRIMARY KEY,
@@ -61,62 +48,6 @@ module Schema =
             """
         )
         |> ignore
-
-        let existingColumns =
-            connection.Query<string>("SELECT name FROM pragma_table_info('bullet_changes')")
-            |> Seq.toList
-
-        if not (List.contains "kind" existingColumns) then
-            connection.Execute("ALTER TABLE bullet_changes ADD COLUMN kind TEXT NOT NULL DEFAULT 'bullet'")
-            |> ignore
-
-type SqliteTailorRunRepository(connectionString: string) =
-
-    interface TailorRunRepository with
-
-        member _.SaveRun(run: TailorRun) : Task<unit> =
-            task {
-                use connection = new SqliteConnection(connectionString)
-                do! connection.OpenAsync()
-                use transaction = connection.BeginTransaction()
-
-                let (RunId runId) = run.Id
-
-                let! _ =
-                    connection.ExecuteAsync(
-                        """
-                        INSERT INTO tailor_runs (id, resume_text, job_description, created_at)
-                        VALUES (@Id, @ResumeText, @JobDescription, @CreatedAt)
-                        """,
-                        {| Id = string runId
-                           ResumeText = run.ResumeText
-                           JobDescription = run.JobDescription
-                           CreatedAt = run.CreatedAt.ToString("O") |},
-                        transaction
-                    )
-
-                for change in run.Changes do
-                    let (ChangeId changeId) = change.Id
-
-                    let! _ =
-                        connection.ExecuteAsync(
-                            """
-                            INSERT INTO bullet_changes (id, run_id, line_index, original, tailored, kind)
-                            VALUES (@Id, @RunId, @LineIndex, @Original, @Tailored, @Kind)
-                            """,
-                            {| Id = string changeId
-                               RunId = string runId
-                               LineIndex = change.LineIndex
-                               Original = change.Original
-                               Tailored = change.Tailored
-                               Kind = LineKind.toString change.Kind |},
-                            transaction
-                        )
-
-                    ()
-
-                transaction.Commit()
-            }
 
 [<CLIMutable>]
 type private SavedResumeRow =

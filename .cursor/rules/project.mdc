@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Delta Resume
 
-Resume tailoring app: upload a base resume, paste a job description, review Claude-suggested bullet rewrites with inline diffs, accept/reject changes, copy the result. Runs and decisions persist to SQLite.
+Resume tailoring app: upload a base resume, paste a job description, review Claude-suggested bullet rewrites with inline diffs, accept/reject changes, copy the result. Tailoring runs are not persisted; only saved resumes and credit usage are stored in SQLite.
 
 ## Stack
 

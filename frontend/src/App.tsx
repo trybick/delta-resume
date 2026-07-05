@@ -14,6 +14,7 @@ import {
   IconSparkles,
 } from '@tabler/icons-react'
 import AppHeader from './components/AppHeader'
+import AppFooter from './components/AppFooter'
 import ResumeInput from './components/ResumeInput'
 import JobDescriptionInput from './components/JobDescriptionInput'
 import ResultsPanel from './components/ResultsPanel'
@@ -114,7 +115,7 @@ const App = () => {
   }
 
   return (
-    <Box>
+    <Box mih="100vh" style={{ display: 'flex', flexDirection: 'column' }}>
       <AppHeader
         creditsLabel={creditsLabel}
         outOfCredits={outOfCredits}
@@ -122,7 +123,7 @@ const App = () => {
         onUpgradeClick={() => setPaywallReason('upgrade')}
       />
 
-      <Container size="xl" py="xl">
+      <Container size="xl" py="xl" w="100%" style={{ flexGrow: 1 }}>
         <Grid gap="xl">
           <Grid.Col span={{ base: 12, md: 5 }}>
             <Stack gap="lg">
@@ -192,6 +193,8 @@ const App = () => {
           </Grid.Col>
         </Grid>
       </Container>
+
+      <AppFooter />
 
       <PaywallModal
         opened={paywallReason !== null}

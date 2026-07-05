@@ -4,7 +4,7 @@ open System
 open System.Threading.Tasks
 open DeltaResume.Domain
 
-type TailoringService(engine: TailoringEngine, repository: TailorRunRepository) =
+type TailoringService(engine: TailoringEngine) =
 
     member _.TailorResume(resumeText: string, jobDescription: string) : Task<Result<TailorRun, TailorError>> =
         task {
@@ -32,6 +32,5 @@ type TailoringService(engine: TailoringEngine, repository: TailorRunRepository) 
                               CreatedAt = DateTimeOffset.UtcNow
                               Changes = changes }
 
-                        do! repository.SaveRun run
                         return Ok run
         }

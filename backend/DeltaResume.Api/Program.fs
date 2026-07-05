@@ -74,10 +74,6 @@ let main args =
     builder.Services.AddSingleton<HttpClient>(fun _ -> new HttpClient(Timeout = TimeSpan.FromSeconds 120.0))
     |> ignore
 
-    builder.Services.AddSingleton<TailorRunRepository>(fun _ ->
-        SqliteTailorRunRepository(connectionString) :> TailorRunRepository)
-    |> ignore
-
     builder.Services.AddSingleton<TailoringEngine>(fun provider ->
         AnthropicEngine(provider.GetRequiredService<HttpClient>()) :> TailoringEngine)
     |> ignore
