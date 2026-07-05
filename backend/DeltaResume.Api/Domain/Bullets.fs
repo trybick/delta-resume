@@ -12,13 +12,59 @@ module Bullets =
         Regex(@"^\s*[A-Z][A-Z\s&/-]{1,40}:?\s*$", RegexOptions.Compiled)
 
     let private skillsHeaderKeywords =
-        [| "SKILL"; "COMPETENC"; "TECHNOLOG"; "EXPERTISE"; "PROFICIENC"; "TOOLS" |]
+        [| "SKILL"; "COMPETENC"; "TECHNOLOG"; "EXPERTISE"; "PROFICIENC"; "TECH STACK" |]
+
+    /// Loose header shape: a short line of words (any casing) optionally ending with ":".
+    let private headerShapePattern =
+        Regex(@"^[A-Za-z][A-Za-z\s&/-]{0,40}:?$", RegexOptions.Compiled)
+
+    let private normalizeHeader (line: string) : string =
+        line.Trim().TrimEnd(':').Trim().ToUpperInvariant()
+
+    let private knownSectionNames =
+        set
+            [ "SUMMARY"
+              "PROFILE"
+              "OBJECTIVE"
+              "ABOUT"
+              "ABOUT ME"
+              "EXPERIENCE"
+              "WORK EXPERIENCE"
+              "PROFESSIONAL EXPERIENCE"
+              "EMPLOYMENT"
+              "EMPLOYMENT HISTORY"
+              "EDUCATION"
+              "PROJECT"
+              "PROJECTS"
+              "PERSONAL PROJECTS"
+              "CERTIFICATION"
+              "CERTIFICATIONS"
+              "CERTIFICATES"
+              "AWARDS"
+              "HONORS"
+              "PUBLICATIONS"
+              "VOLUNTEER"
+              "VOLUNTEERING"
+              "INTERESTS"
+              "REFERENCES"
+              "ACTIVITIES"
+              "LEADERSHIP" ]
 
     let private isSkillsHeaderLine (line: string) : bool =
         let trimmed = line.Trim()
-        let upper = trimmed.TrimEnd(':').ToUpperInvariant()
-        sectionHeaderPattern.IsMatch trimmed
-        && skillsHeaderKeywords |> Array.exists upper.Contains
+
+        headerShapePattern.IsMatch trimmed
+        && (let upper = normalizeHeader trimmed
+            skillsHeaderKeywords |> Array.exists upper.Contains)
+
+    /// A non-skills section header that ends the skills section. Matched by known section
+    /// names in any casing (single short all-caps lines like "AWS" or "CI/CD" inside a
+    /// skills list must not count as headers).
+    let private isSkillsSectionEnd (line: string) : bool =
+        let trimmed = line.Trim()
+
+        headerShapePattern.IsMatch trimmed
+        && Set.contains (normalizeHeader trimmed) knownSectionNames
 
     let isBulletLine (line: string) : bool =
         bulletPattern.IsMatch line
@@ -32,17 +78,15 @@ module Bullets =
         && not (sectionHeaderPattern.IsMatch trimmed)
         && not (trimmed.Contains '@')
 
-    /// Finds the lines belonging to a "Skills"-style section (e.g. "SKILLS", "TECHNICAL SKILLS",
-    /// "CORE COMPETENCIES"): everything after the header line up to the next section header.
+    /// Finds the lines belonging to a "Skills"-style section (e.g. "Skills", "TECHNICAL SKILLS",
+    /// "Core Competencies"): everything after the header line up to the next known section header.
     let private findSkillsLines (allLines: BulletLine[]) : BulletLine list =
         allLines
         |> Array.tryFindIndex (fun line -> isSkillsHeaderLine line.Text)
         |> Option.map (fun headerIndex ->
             allLines
             |> Array.skip (headerIndex + 1)
-            |> Array.takeWhile (fun line ->
-                let trimmed = line.Text.Trim()
-                String.IsNullOrWhiteSpace trimmed || not (sectionHeaderPattern.IsMatch trimmed))
+            |> Array.takeWhile (fun line -> not (isSkillsSectionEnd line.Text))
             |> Array.filter (fun line -> not (String.IsNullOrWhiteSpace(line.Text.Trim())))
             |> Array.map (fun line -> { line with Kind = Skill })
             |> Array.toList)

@@ -32,10 +32,20 @@ Rules for resume bullets:
 - If a bullet line starts with a bullet marker, preserve that exact marker and leading indentation; if it does not, keep it as plain text with the same indentation.
 
 Rules for skills lines:
+Skills sections come in two formats. Detect which one you are given and follow the matching rules.
+
+Format A - list lines, e.g. "Backend: Node.js, Express, Redis" or "React, TypeScript, GraphQL":
 - You may reorder the items within a skills line so items that match the job description come first. Never remove an existing item.
-- You may add an item to a skills line ONLY if both are true: (1) it is clearly evidenced elsewhere in the resume bullets provided, and (2) it is relevant to the job description. Never invent or add a skill with no supporting evidence in the resume bullets.
+- You may add an item to a skills line ONLY if both are true: (1) it is clearly evidenced in the resume bullets provided, and (2) it is relevant to the job description. Never invent or add a skill with no supporting evidence in the resume bullets.
 - Preserve the exact category label/prefix (e.g. "Backend:") and separator style (commas, pipes, etc.) of the original line.
-- Only include a skills line in your response if you are actually changing it (reordering or adding an evidenced item); omit lines you would leave unchanged.
+
+Format B - one skill per line, e.g. a line containing only "React", the next only "Redux":
+- You may reorder skills within the same category group so skills that match the job description come first. Express the reorder as per-line rewrites: for each line whose content moves, output that lineIndex with the skill that should now occupy it.
+- The rewritten group must contain exactly the same set of skills as the original group: no additions, no removals, no duplicates.
+- Never move a skill across category boundaries (lines ending with ":" such as "Frontend:" are category labels; leave them unchanged).
+- Only reorder when it meaningfully improves the match with the job description; otherwise leave the group alone.
+
+For both formats: only include a skills line in your response if you are actually changing it; omit lines you would leave unchanged.
 
 General rules:
 - Keep every rewrite truthful to the original meaning.
@@ -131,7 +141,7 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                 | Some apiKey ->
                     let requestBody =
                         {| model = model
-                           max_tokens = 2048
+                           max_tokens = 3072
                            temperature = 0.2
                            system = systemPrompt
                            messages =
