@@ -17,8 +17,7 @@ import {
 } from '@clerk/clerk-react'
 import { IconCoins } from '@tabler/icons-react'
 import DeltaLogo from './DeltaLogo'
-import ThemeSwitcher from './ThemeSwitcher'
-import { useAppTheme } from '../lib/themeContext'
+import { appTheme } from '../lib/theme'
 
 type ClerkAuthButtonProps = ButtonProps &
   ComponentPropsWithoutRef<'button'> & {
@@ -36,8 +35,6 @@ type AppHeaderProps = {
 }
 
 const AppHeader = ({ creditsLabel, outOfCredits }: AppHeaderProps) => {
-  const { appTheme } = useAppTheme()
-
   return (
     <Box
       component="header"
@@ -69,7 +66,6 @@ const AppHeader = ({ creditsLabel, outOfCredits }: AppHeaderProps) => {
           </div>
         </Group>
         <Group gap="sm">
-          <ThemeSwitcher />
           {creditsLabel && (
             <Tooltip label="One credit is used per tailor run">
               <Badge

@@ -2,11 +2,10 @@ import { ClerkProvider } from '@clerk/clerk-react'
 import { dark } from '@clerk/themes'
 import App from '../App'
 import { getClerkPublishableKey } from '../lib/env'
-import { useAppTheme } from '../lib/themeContext'
+import { appTheme } from '../lib/theme'
 
 const AppBootstrap = () => {
   const clerkPublishableKey = getClerkPublishableKey()
-  const { appTheme } = useAppTheme()
 
   return (
     <ClerkProvider
