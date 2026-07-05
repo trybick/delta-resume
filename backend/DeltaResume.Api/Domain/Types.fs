@@ -35,10 +35,15 @@ module LineKind =
         | Bullet -> "bullet"
         | Skill -> "skill"
 
+    let tryParse (value: string) : LineKind option =
+        match value with
+        | "bullet" -> Some Bullet
+        | "skill" -> Some Skill
+        | _ -> None
+
 type BulletLine =
     { LineIndex: int
-      Text: string
-      Kind: LineKind }
+      Text: string }
 
 type ProposedChange =
     { LineIndex: int

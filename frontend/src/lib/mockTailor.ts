@@ -85,9 +85,9 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
     },
     {
       id: 'sample-change-5',
-      lineIndex: 45,
-      original: 'Backend: Node.js, Express, PostgreSQL, Redis, REST APIs',
-      tailored: 'Backend: REST APIs, Node.js, Express, PostgreSQL, Redis',
+      lineIndex: 44,
+      original: 'Frontend: React, Next.js, Redux, HTML/CSS, Vite',
+      tailored: 'Frontend: React, Next.js, Redux, HTML/CSS, Vite, React Native',
       kind: 'skill',
     },
   ],

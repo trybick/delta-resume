@@ -8,12 +8,14 @@ import {
   Stack,
   Text,
   Title,
+  Tooltip,
   UnstyledButton,
 } from '@mantine/core'
 import { useClipboard } from '@mantine/hooks'
 import {
   IconArrowBackUp,
   IconArrowsVertical,
+  IconCircleCheck,
   IconCopy,
   IconCopyCheck,
   IconEye,
@@ -295,6 +297,17 @@ const ResultsPanel = ({
             <Badge color="red" variant="light">
               {rejectedCount} rejected
             </Badge>
+            {skillChangeCount === 0 && (
+              <Tooltip label="Your skills section already matches this job description well, so no skill changes were suggested.">
+                <Badge
+                  color="teal"
+                  variant="light"
+                  leftSection={<IconCircleCheck size={12} />}
+                >
+                  Skills all set
+                </Badge>
+              </Tooltip>
+            )}
           </Group>
           <Button
             size="xs"
