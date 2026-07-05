@@ -5,7 +5,6 @@ import {
   Card,
   Center,
   Group,
-  Loader,
   Stack,
   Text,
   Title,
@@ -15,6 +14,7 @@ import { IconArrowBackUp, IconCopy, IconCopyCheck, IconEye, IconSparkles } from 
 import { patchDecision } from '../lib/api'
 import type { BulletChange, ChangeDecision, TailorResult, TailorStatus } from '../lib/types'
 import DiffBullet from './DiffBullet'
+import TailoringLoader from './TailoringLoader'
 
 type ResultsPanelProps = {
   status: TailorStatus
@@ -96,18 +96,7 @@ const ResultsPanel = ({
   }
 
   if (status === 'loading') {
-    return (
-      <Card withBorder shadow="xs" padding="xl" h="100%">
-        <Center h="100%" mih={360}>
-          <Stack align="center" gap="sm">
-            <Loader size="md" />
-            <Text size="sm" c="dimmed">
-              Analyzing your resume against the job description…
-            </Text>
-          </Stack>
-        </Center>
-      </Card>
-    )
+    return <TailoringLoader />
   }
 
   if (!result) return null

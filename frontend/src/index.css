@@ -3,3 +3,69 @@ body {
   background-color: var(--mantine-color-dark-8);
   min-height: 100vh;
 }
+
+.tailoring-loader-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--mantine-primary-color-filled),
+    var(--mantine-color-cyan-4),
+    transparent
+  );
+  background-size: 50% 100%;
+  background-repeat: no-repeat;
+  animation: tailoring-loader-sweep 1.6s ease-in-out infinite;
+}
+
+@keyframes tailoring-loader-sweep {
+  0% {
+    background-position: -60% 0;
+  }
+  100% {
+    background-position: 160% 0;
+  }
+}
+
+.tailoring-loader-sparkle {
+  animation: tailoring-loader-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes tailoring-loader-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.88);
+  }
+}
+
+.tailoring-loader-message {
+  animation: tailoring-loader-fade-in 0.45s ease both;
+}
+
+@keyframes tailoring-loader-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tailoring-loader-topbar,
+  .tailoring-loader-sparkle,
+  .tailoring-loader-message {
+    animation: none;
+  }
+}
