@@ -237,6 +237,8 @@ const ResultsPanel = ({
   const decisionValues = result.changes.map((change) => decisions[change.id] ?? 'pending')
   const acceptedCount = decisionValues.filter((d) => d === 'accepted').length
   const rejectedCount = decisionValues.filter((d) => d === 'rejected').length
+  const bulletChangeCount = result.changes.filter((change) => change.kind === 'bullet').length
+  const skillChangeCount = result.changes.filter((change) => change.kind === 'skill').length
   const lines = result.resumeText.split('\n')
   const segments = buildSegments(lines, changesByLine)
 
@@ -276,7 +278,11 @@ const ResultsPanel = ({
         <Group justify="space-between" align="center" wrap="wrap">
           <Group gap="sm">
             <Title order={4}>
-              {result.changes.length} bullet{result.changes.length === 1 ? '' : 's'} updated
+              {bulletChangeCount} bullet{bulletChangeCount === 1 ? '' : 's'}
+              {skillChangeCount > 0
+                ? `, ${skillChangeCount} skill${skillChangeCount === 1 ? '' : 's'}`
+                : ''}{' '}
+              updated
             </Title>
             {isExample && (
               <Badge color="cyan" variant="light">

@@ -25,7 +25,8 @@ type BulletChangeDto =
     { Id: Guid
       LineIndex: int
       Original: string
-      Tailored: string }
+      Tailored: string
+      Kind: string }
 
 type TailorResponseDto =
     { RunId: Guid
@@ -41,7 +42,8 @@ module Mapping =
         { Id = id
           LineIndex = change.LineIndex
           Original = change.Original
-          Tailored = change.Tailored }
+          Tailored = change.Tailored
+          Kind = LineKind.toString change.Kind }
 
     let toResponseDto (run: TailorRun) : TailorResponseDto =
         let (RunId runId) = run.Id

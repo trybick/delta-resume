@@ -25,21 +25,34 @@ module Decision =
         | "rejected" -> Some Rejected
         | _ -> None
 
+type LineKind =
+    | Bullet
+    | Skill
+
+module LineKind =
+    let toString (kind: LineKind) : string =
+        match kind with
+        | Bullet -> "bullet"
+        | Skill -> "skill"
+
 type BulletLine =
     { LineIndex: int
-      Text: string }
+      Text: string
+      Kind: LineKind }
 
 type ProposedChange =
     { LineIndex: int
       Original: string
-      Tailored: string }
+      Tailored: string
+      Kind: LineKind }
 
 type BulletChange =
     { Id: ChangeId
       LineIndex: int
       Original: string
       Tailored: string
-      Decision: Decision }
+      Decision: Decision
+      Kind: LineKind }
 
 type TailorRun =
     { Id: RunId

@@ -33,7 +33,8 @@ module Schema =
                 line_index INTEGER NOT NULL,
                 original TEXT NOT NULL,
                 tailored TEXT NOT NULL,
-                decision TEXT NOT NULL DEFAULT 'pending'
+                decision TEXT NOT NULL DEFAULT 'pending',
+                kind TEXT NOT NULL DEFAULT 'bullet'
             );
 
             CREATE TABLE IF NOT EXISTS credit_usage (
@@ -61,6 +62,14 @@ module Schema =
             """
         )
         |> ignore
+
+        let existingColumns =
+            connection.Query<string>("SELECT name FROM pragma_table_info('bullet_changes')")
+            |> Seq.toList
+
+        if not (List.contains "kind" existingColumns) then
+            connection.Execute("ALTER TABLE bullet_changes ADD COLUMN kind TEXT NOT NULL DEFAULT 'bullet'")
+            |> ignore
 
 type SqliteTailorRunRepository(connectionString: string) =
 
@@ -93,15 +102,16 @@ type SqliteTailorRunRepository(connectionString: string) =
                     let! _ =
                         connection.ExecuteAsync(
                             """
-                            INSERT INTO bullet_changes (id, run_id, line_index, original, tailored, decision)
-                            VALUES (@Id, @RunId, @LineIndex, @Original, @Tailored, @Decision)
+                            INSERT INTO bullet_changes (id, run_id, line_index, original, tailored, decision, kind)
+                            VALUES (@Id, @RunId, @LineIndex, @Original, @Tailored, @Decision, @Kind)
                             """,
                             {| Id = string changeId
                                RunId = string runId
                                LineIndex = change.LineIndex
                                Original = change.Original
                                Tailored = change.Tailored
-                               Decision = Decision.toString change.Decision |},
+                               Decision = Decision.toString change.Decision
+                               Kind = LineKind.toString change.Kind |},
                             transaction
                         )
 

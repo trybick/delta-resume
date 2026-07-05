@@ -11,6 +11,15 @@ module Bullets =
     let private sectionHeaderPattern =
         Regex(@"^\s*[A-Z][A-Z\s&/-]{1,40}:?\s*$", RegexOptions.Compiled)
 
+    let private skillsHeaderKeywords =
+        [| "SKILL"; "COMPETENC"; "TECHNOLOG"; "EXPERTISE"; "PROFICIENC"; "TOOLS" |]
+
+    let private isSkillsHeaderLine (line: string) : bool =
+        let trimmed = line.Trim()
+        let upper = trimmed.TrimEnd(':').ToUpperInvariant()
+        sectionHeaderPattern.IsMatch trimmed
+        && skillsHeaderKeywords |> Array.exists upper.Contains
+
     let isBulletLine (line: string) : bool =
         bulletPattern.IsMatch line
 
@@ -23,20 +32,45 @@ module Bullets =
         && not (sectionHeaderPattern.IsMatch trimmed)
         && not (trimmed.Contains '@')
 
+    /// Finds the lines belonging to a "Skills"-style section (e.g. "SKILLS", "TECHNICAL SKILLS",
+    /// "CORE COMPETENCIES"): everything after the header line up to the next section header.
+    let private findSkillsLines (allLines: BulletLine[]) : BulletLine list =
+        allLines
+        |> Array.tryFindIndex (fun line -> isSkillsHeaderLine line.Text)
+        |> Option.map (fun headerIndex ->
+            allLines
+            |> Array.skip (headerIndex + 1)
+            |> Array.takeWhile (fun line ->
+                let trimmed = line.Text.Trim()
+                String.IsNullOrWhiteSpace trimmed || not (sectionHeaderPattern.IsMatch trimmed))
+            |> Array.filter (fun line -> not (String.IsNullOrWhiteSpace(line.Text.Trim())))
+            |> Array.map (fun line -> { line with Kind = Skill })
+            |> Array.toList)
+        |> Option.defaultValue []
+
     let extract (resumeText: string) : BulletLine list =
         let allLines =
             resumeText.Split('\n')
-            |> Array.mapi (fun lineIndex line -> { LineIndex = lineIndex; Text = line })
+            |> Array.mapi (fun lineIndex line -> { LineIndex = lineIndex; Text = line; Kind = Bullet })
+
+        let skillsLines = findSkillsLines allLines
+        let skillsIndexes = skillsLines |> List.map (fun line -> line.LineIndex) |> Set.ofList
+
+        let candidateLines =
+            allLines |> Array.filter (fun line -> not (Set.contains line.LineIndex skillsIndexes))
 
         let markedBullets =
-            allLines |> Array.filter (fun bullet -> isBulletLine bullet.Text) |> Array.toList
+            candidateLines |> Array.filter (fun bullet -> isBulletLine bullet.Text) |> Array.toList
 
-        if not (List.isEmpty markedBullets) then
-            markedBullets
-        else
-            allLines
-            |> Array.filter (fun bullet -> isProseLine bullet.Text)
-            |> Array.toList
+        let bulletLines =
+            if not (List.isEmpty markedBullets) then
+                markedBullets
+            else
+                candidateLines
+                |> Array.filter (fun bullet -> isProseLine bullet.Text)
+                |> Array.toList
+
+        bulletLines @ skillsLines |> List.sortBy (fun line -> line.LineIndex)
 
     let private contentOf (line: string) : string =
         let markerMatch = bulletPattern.Match line
@@ -71,16 +105,17 @@ module Bullets =
     let toChanges (bullets: BulletLine list) (proposals: ProposedChange list) : BulletChange list =
         let bulletsByIndex =
             bullets
-            |> List.map (fun bullet -> bullet.LineIndex, bullet.Text)
+            |> List.map (fun bullet -> bullet.LineIndex, bullet)
             |> Map.ofList
 
         validateProposals bullets proposals
         |> List.map (fun proposal ->
-            let original = bulletsByIndex[proposal.LineIndex]
+            let originalLine = bulletsByIndex[proposal.LineIndex]
 
             { Id = ChangeId(Guid.NewGuid())
               LineIndex = proposal.LineIndex
-              Original = original
-              Tailored = normalizeTailored original proposal.Tailored
-              Decision = Pending })
+              Original = originalLine.Text
+              Tailored = normalizeTailored originalLine.Text proposal.Tailored
+              Decision = Pending
+              Kind = originalLine.Kind })
         |> List.sortBy (fun change -> change.LineIndex)

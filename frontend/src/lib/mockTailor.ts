@@ -57,6 +57,7 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
       original: '- Worked on the checkout flow for the main e-commerce product',
       tailored:
         '- Rebuilt the checkout flow in React and TypeScript, lifting conversion 12% for the main e-commerce product',
+      kind: 'bullet',
     },
     {
       id: 'sample-change-2',
@@ -64,6 +65,7 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
       original: '- Built internal dashboards for tracking team metrics',
       tailored:
         '- Built real-time internal dashboards with React and PostgreSQL, cutting weekly reporting time by 6 hours',
+      kind: 'bullet',
     },
     {
       id: 'sample-change-3',
@@ -71,6 +73,7 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
       original: '- Helped migrate legacy services to a modern cloud platform',
       tailored:
         '- Led migration of 14 legacy services to AWS with Docker, reducing infrastructure costs by 30%',
+      kind: 'bullet',
     },
     {
       id: 'sample-change-4',
@@ -78,6 +81,14 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
       original: '- Made improvements to the public REST API',
       tailored:
         '- Redesigned the public REST API in Node.js, improving p95 latency by 40% for 200+ integration partners',
+      kind: 'bullet',
+    },
+    {
+      id: 'sample-change-5',
+      lineIndex: 45,
+      original: 'Backend: Node.js, Express, PostgreSQL, Redis, REST APIs',
+      tailored: 'Backend: REST APIs, Node.js, Express, PostgreSQL, Redis',
+      kind: 'skill',
     },
   ],
 }

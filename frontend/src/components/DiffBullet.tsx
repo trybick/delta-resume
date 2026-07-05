@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   ActionIcon,
+  Badge,
   Group,
   Paper,
   SegmentedControl,
@@ -96,16 +97,23 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
       }}
     >
       <Group justify="space-between" mb={8} wrap="nowrap">
-        <SegmentedControl
-          size="xs"
-          value={view}
-          onChange={(value) => setView(value as DiffView)}
-          data={[
-            { label: 'Inline diff', value: 'diff' },
-            { label: 'Original', value: 'original' },
-            { label: 'Tailored', value: 'tailored' },
-          ]}
-        />
+        <Group gap={8} wrap="nowrap">
+          {change.kind === 'skill' && (
+            <Badge size="sm" color="grape" variant="light">
+              Skills
+            </Badge>
+          )}
+          <SegmentedControl
+            size="xs"
+            value={view}
+            onChange={(value) => setView(value as DiffView)}
+            data={[
+              { label: 'Inline diff', value: 'diff' },
+              { label: 'Original', value: 'original' },
+              { label: 'Tailored', value: 'tailored' },
+            ]}
+          />
+        </Group>
         <Group gap={4} wrap="nowrap">
           <Tooltip label={decision === 'accepted' ? 'Undo accept' : 'Accept change'}>
             <ActionIcon

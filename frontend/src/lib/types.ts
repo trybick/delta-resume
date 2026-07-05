@@ -1,10 +1,13 @@
 export type TailorStatus = 'idle' | 'loading' | 'done'
 
+export type ChangeKind = 'bullet' | 'skill'
+
 export type BulletChange = {
   id: string
   lineIndex: number
   original: string
   tailored: string
+  kind: ChangeKind
 }
 
 export type TailorResult = {
