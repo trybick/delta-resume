@@ -38,7 +38,7 @@ const buildDecisionMap = (result: TailorResult | null): Record<string, ChangeDec
 }
 
 const CONTEXT_LINES_PER_SIDE = 2
-const COLLAPSE_MIN_LINES = CONTEXT_LINES_PER_SIDE * 2 + 1
+const MIN_HIDDEN_LINES = 3
 
 type ContextSplit = {
   leading: string[]
@@ -46,14 +46,44 @@ type ContextSplit = {
   trailing: string[]
 }
 
-const splitContextLines = (lines: string[], collapsed: boolean): ContextSplit => {
-  if (!collapsed || lines.length < COLLAPSE_MIN_LINES) {
-    return { leading: lines, hidden: [], trailing: [] }
+const isBlankLine = (line: string) => line.trim() === ''
+
+type TrimmedSegment = {
+  lines: string[]
+  offset: number
+}
+
+const trimBlankEdges = (lines: string[]): TrimmedSegment => {
+  let start = 0
+  while (start < lines.length && isBlankLine(lines[start])) {
+    start += 1
   }
+  let end = lines.length
+  while (end > start && isBlankLine(lines[end - 1])) {
+    end -= 1
+  }
+  return { lines: lines.slice(start, end), offset: start }
+}
+
+const splitContextLines = (lines: string[], collapsed: boolean): ContextSplit => {
+  const expandedSplit: ContextSplit = { leading: lines, hidden: [], trailing: [] }
+  if (!collapsed || lines.length < CONTEXT_LINES_PER_SIDE * 2 + MIN_HIDDEN_LINES) {
+    return expandedSplit
+  }
+  let leadingEnd = CONTEXT_LINES_PER_SIDE
+  while (leadingEnd > 0 && isBlankLine(lines[leadingEnd - 1])) {
+    leadingEnd -= 1
+  }
+  let trailingStart = lines.length - CONTEXT_LINES_PER_SIDE
+  while (trailingStart < lines.length && isBlankLine(lines[trailingStart])) {
+    trailingStart += 1
+  }
+  const hidden = lines.slice(leadingEnd, trailingStart)
+  if (hidden.length < MIN_HIDDEN_LINES) return expandedSplit
   return {
-    leading: lines.slice(0, CONTEXT_LINES_PER_SIDE),
-    hidden: lines.slice(CONTEXT_LINES_PER_SIDE, lines.length - CONTEXT_LINES_PER_SIDE),
-    trailing: lines.slice(lines.length - CONTEXT_LINES_PER_SIDE),
+    leading: lines.slice(0, leadingEnd),
+    hidden,
+    trailing: lines.slice(trailingStart),
   }
 }
 
@@ -88,11 +118,11 @@ const ContextLine = ({ line }: { line: string }) => (
     style={{
       fontFamily: 'ui-monospace, monospace',
       fontSize: 13,
+      lineHeight: 1.6,
       whiteSpace: 'pre-wrap',
-      minHeight: line.trim() === '' ? 20 : undefined,
     }}
   >
-    {line}
+    {line.trim() === '' ? '\u00A0' : line}
   </Text>
 )
 
@@ -290,19 +320,19 @@ const ResultsPanel = ({
                 />
               )
             }
-            const isCollapsible =
-              segment.lines.length >= COLLAPSE_MIN_LINES &&
-              !expandedSegments.has(segment.startIndex)
+            const trimmed = trimBlankEdges(segment.lines)
+            if (trimmed.lines.length === 0) return null
+            const keyBase = segment.startIndex + trimmed.offset
             const { leading, hidden, trailing } = splitContextLines(
-              segment.lines,
-              isCollapsible,
+              trimmed.lines,
+              !expandedSegments.has(segment.startIndex),
             )
             return (
               <div key={segment.startIndex}>
                 {leading.map((line, offset) => (
-                  <ContextLine key={segment.startIndex + offset} line={line} />
+                  <ContextLine key={keyBase + offset} line={line} />
                 ))}
-                {isCollapsible && (
+                {hidden.length > 0 && (
                   <CollapsedContext
                     hiddenCount={hidden.length}
                     onExpand={() => handleExpandSegment(segment.startIndex)}
@@ -310,7 +340,7 @@ const ResultsPanel = ({
                 )}
                 {trailing.map((line, offset) => (
                   <ContextLine
-                    key={segment.startIndex + leading.length + hidden.length + offset}
+                    key={keyBase + leading.length + hidden.length + offset}
                     line={line}
                   />
                 ))}
