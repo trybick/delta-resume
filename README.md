@@ -38,6 +38,7 @@ Proxies `/api` to the backend. Open http://localhost:5200 after starting.
 | --- | --- | --- |
 | `VITE_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key (`pk_test_…` or `pk_live_…`) |
 | `VITE_API_BASE_URL` | No | Backend URL when not using the Vite dev proxy. Leave unset for local dev — Vite proxies `/api` to `http://localhost:5100`. |
+| `VITE_GA_MEASUREMENT_ID` | No | Google Analytics 4 measurement ID (`G-XXXXXXXXXX`). When unset, analytics is disabled. |
 
 Pull Clerk keys from the linked **Delta Resume** application, then start the dev server:
 
