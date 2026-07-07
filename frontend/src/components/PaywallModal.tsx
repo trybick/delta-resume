@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Modal, Stack, Text, Title } from '@mantine/core'
-import { PricingTable, SignUp, useAuth, useUser } from '@clerk/clerk-react'
+import { SignUp, useAuth, useUser } from '@clerk/clerk-react'
+import ProPlanShowcase from './ProPlanShowcase'
 
 const embeddedSignUpAppearance = {
   elements: {
@@ -66,10 +67,12 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
           : 'You\u2019re out of credits'
   const signedInDescription =
     reason === 'savedLimit'
-      ? 'Subscribe to Pro to save up to 10 resumes, plus 200 tailor credits every month. Cancel anytime.'
+      ? 'Go Pro to save up to 10 resumes and keep tailoring all month.'
       : reason === 'coverLetter'
-        ? 'Subscribe to Pro and every tailor run also writes a matching cover letter, plus 200 credits every month, 10 saved resumes, and DOCX export. Cancel anytime.'
-        : 'Subscribe to Pro and get 200 tailor credits every month, 10 saved resumes, automatic cover letters, match scoring, and DOCX export. Cancel anytime.'
+        ? 'Go Pro and every tailor run also writes a matching cover letter.'
+        : reason === 'upgrade'
+          ? 'Everything you need to land more interviews, in one plan.'
+          : 'Go Pro to keep tailoring without interruption.'
   const signedOutHeading =
     reason === 'savedLimit'
       ? 'Save more resumes with Pro'
@@ -83,13 +86,20 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
       ? 'Create a free account and upgrade to Pro to save up to 10 resumes.'
       : reason === 'coverLetter'
         ? 'Create a free account and upgrade to Pro to get a matching cover letter with every tailor run.'
-        : 'Create a free account to continue. Signing in with Google takes seconds.'
+        : reason === 'upgrade'
+          ? 'Sign in to continue \u2014 it takes seconds with Google.'
+          : 'Create a free account to keep tailoring. Signing in with Google takes seconds.'
+
+  const handleSubscriptionComplete = () => {
+    onSubscriptionChange()
+    onClose()
+  }
 
   return (
     <Modal
       opened={opened}
       onClose={onClose}
-      size={isSignedIn ? 'lg' : 'md'}
+      size="md"
       centered
       withCloseButton
       title={<Text fw={600}>{isSignedIn ? signedInTitle : 'Create your account'}</Text>}
@@ -102,7 +112,10 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
               {signedInDescription}
             </Text>
           </div>
-          <PricingTable />
+          <ProPlanShowcase
+            onCheckoutOpen={onClose}
+            onSubscriptionComplete={handleSubscriptionComplete}
+          />
         </Stack>
       ) : (
         <Stack gap="md" align="center">

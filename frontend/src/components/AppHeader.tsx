@@ -3,7 +3,10 @@ import {
   Badge,
   Box,
   Button,
+  Divider,
   Group,
+  HoverCard,
+  Skeleton,
   Stack,
   Text,
   Title,
@@ -18,6 +21,8 @@ import {
 } from '@clerk/clerk-react'
 import { IconCoins, IconSparkles } from '@tabler/icons-react'
 import DeltaLogo from './DeltaLogo'
+import { ProFeatureList } from './ProPlanShowcase'
+import { useProPlan } from '../lib/proPlan'
 import { appTheme, spaceGroteskStack } from '../lib/theme'
 
 type ClerkAuthButtonProps = ButtonProps &
@@ -29,6 +34,82 @@ type ClerkAuthButtonProps = ButtonProps &
 const ClerkAuthButton = ({ component: _component, clerk: _clerk, ...props }: ClerkAuthButtonProps) => (
   <Button {...props} />
 )
+
+type UpgradeHoverCardProps = {
+  onUpgradeClick: () => void
+}
+
+const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
+  const { annualMonthlyPrice, monthlyPrice } = useProPlan()
+  const displayedPrice = annualMonthlyPrice ?? monthlyPrice
+
+  return (
+    <HoverCard
+      width={300}
+      position="bottom-end"
+      shadow="lg"
+      radius="lg"
+      openDelay={120}
+      closeDelay={150}
+      withArrow
+    >
+      <HoverCard.Target>
+        <Button
+          size="xs"
+          variant="gradient"
+          gradient={{ ...appTheme.gradient, deg: 45 }}
+          leftSection={<IconSparkles size={14} />}
+          onClick={onUpgradeClick}
+        >
+          Upgrade to Pro
+        </Button>
+      </HoverCard.Target>
+      <HoverCard.Dropdown
+        style={{
+          border: '1px solid var(--mantine-color-cyan-9)',
+          background:
+            'linear-gradient(160deg, rgba(34, 184, 207, 0.1) 0%, var(--mantine-color-dark-7) 55%)',
+        }}
+      >
+        <Stack gap="sm">
+          <Group justify="space-between" align="baseline">
+            <Text
+              fw={700}
+              size="md"
+              variant="gradient"
+              gradient={{ ...appTheme.gradient, deg: 45 }}
+            >
+              Delta Resume Pro
+            </Text>
+            {displayedPrice ? (
+              <Group gap={4} align="baseline">
+                <Text fw={700} size="md">
+                  {displayedPrice}
+                </Text>
+                <Text size="xs" c="dimmed">
+                  / month
+                </Text>
+              </Group>
+            ) : (
+              <Skeleton width={56} height={18} />
+            )}
+          </Group>
+          <Divider color="dark.4" />
+          <ProFeatureList />
+          <Button
+            size="xs"
+            fullWidth
+            variant="gradient"
+            gradient={{ ...appTheme.gradient, deg: 45 }}
+            onClick={onUpgradeClick}
+          >
+            See plan details
+          </Button>
+        </Stack>
+      </HoverCard.Dropdown>
+    </HoverCard>
+  )
+}
 
 type AppHeaderProps = {
   creditsLabel: string | null
@@ -93,17 +174,7 @@ const AppHeader = ({
             </Tooltip>
           )}
           {planLoaded && !isProPlan && (
-            <Tooltip label="Pro: 200 tailor credits every month, 10 saved resumes, match scoring, and DOCX export">
-              <Button
-                size="xs"
-                variant="gradient"
-                gradient={{ ...appTheme.gradient, deg: 45 }}
-                leftSection={<IconSparkles size={14} />}
-                onClick={onUpgradeClick}
-              >
-                Upgrade to Pro
-              </Button>
-            </Tooltip>
+            <UpgradeHoverCard onUpgradeClick={onUpgradeClick} />
           )}
           <SignedOut>
             <SignInButton mode="modal">

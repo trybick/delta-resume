@@ -244,7 +244,7 @@ const TailoredLetterBanner = ({
           </Text>
           <Text size="sm" c="dimmed">
             Written specifically for {roleDescription}, drawing on the strongest matches from
-            your resume. Add your name below, then copy or download it.
+            your resume.
           </Text>
         </Stack>
       </Group>
