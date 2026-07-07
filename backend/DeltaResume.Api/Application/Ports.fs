@@ -8,6 +8,16 @@ type TailoringEngine =
     abstract member ProposeChanges:
         bullets: BulletLine list * jobDescription: string -> Task<Result<ProposedChange list, string>>
 
+type CoverLetterDraft =
+    { JobTitle: string
+      CompanyName: string
+      Letter: string }
+
+type CoverLetterEngine =
+    abstract member GenerateCoverLetter:
+        resumeText: string * jobDescription: string * candidateName: string option ->
+            Task<Result<CoverLetterDraft, string>>
+
 type CreditUsageEntry =
     { IdentityKey: string
       Kind: string

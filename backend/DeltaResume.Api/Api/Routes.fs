@@ -10,6 +10,7 @@ module Routes =
               GET >=> route "/api/credits" >=> RateLimit.loosePolicy >=> Handlers.credits
               GET >=> route "/api/resumes" >=> RateLimit.loosePolicy >=> Handlers.listResumes
               POST >=> route "/api/tailor" >=> RateLimit.tailorPolicy >=> Handlers.tailor
+              POST >=> route "/api/cover-letter" >=> RateLimit.tailorPolicy >=> Handlers.coverLetter
               PATCH
               >=> routef "/api/resumes/%s" (fun resumeId -> RateLimit.loosePolicy >=> Handlers.renameResume resumeId)
               DELETE

@@ -68,12 +68,18 @@ let main args =
         AnthropicEngine(provider.GetRequiredService<HttpClient>()) :> TailoringEngine)
     |> ignore
 
+    builder.Services.AddSingleton<CoverLetterEngine>(fun provider ->
+        AnthropicCoverLetterEngine(provider.GetRequiredService<HttpClient>()) :> CoverLetterEngine)
+    |> ignore
+
     builder.Services.AddSingleton<TailoringService>() |> ignore
 
     builder.Services.AddSingleton<CreditStore>(fun _ -> SqliteCreditStore(connectionString) :> CreditStore)
     |> ignore
 
     let identityOptions = IdentityOptions.fromEnvironment ()
+
+    builder.Services.AddSingleton<IdentityOptions>(identityOptions) |> ignore
 
     builder.Services.AddSingleton<RateLimiters>(fun _ -> RateLimiters identityOptions)
     |> ignore

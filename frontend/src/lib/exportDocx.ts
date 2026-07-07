@@ -130,6 +130,100 @@ export const buildTemplateDocx = async (resumeText: string): Promise<Blob> => {
   return Packer.toBlob(document)
 }
 
+const LETTER_NAME_SIZE = 40
+const LETTER_META_SIZE = 20
+const LETTER_BODY_SIZE = 22
+const LETTER_LINE_SPACING = 320
+
+const letterBodyParagraph = (text: string, spacingAfter: number): Paragraph =>
+  new Paragraph({
+    spacing: { after: spacingAfter, line: LETTER_LINE_SPACING },
+    children: [new TextRun({ text, font: FONT, size: LETTER_BODY_SIZE })],
+  })
+
+export const buildCoverLetterDocx = async (
+  letter: string,
+  candidateName: string,
+  jobTitle: string,
+  companyName: string,
+): Promise<Blob> => {
+  const paragraphs: Paragraph[] = []
+  const headerName = candidateName.trim()
+
+  if (headerName.length > 0) {
+    paragraphs.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 60 },
+        border: { bottom: { style: BorderStyle.SINGLE, size: 6, space: 8 } },
+        children: [
+          new TextRun({ text: headerName, font: FONT, size: LETTER_NAME_SIZE, bold: true }),
+        ],
+      }),
+    )
+  }
+
+  const dateLine = new Date().toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  })
+  paragraphs.push(
+    new Paragraph({
+      spacing: { before: headerName.length > 0 ? 240 : 0, after: 120 },
+      children: [new TextRun({ text: dateLine, font: FONT, size: LETTER_META_SIZE })],
+    }),
+  )
+
+  const subjectParts = [jobTitle.trim(), companyName.trim()].filter((part) => part.length > 0)
+  if (subjectParts.length > 0) {
+    paragraphs.push(
+      new Paragraph({
+        spacing: { after: 240 },
+        children: [
+          new TextRun({
+            text: `Re: ${subjectParts.join(' at ')}`,
+            font: FONT,
+            size: LETTER_META_SIZE,
+            bold: true,
+          }),
+        ],
+      }),
+    )
+  }
+
+  const blocks = letter
+    .split(/\n\s*\n/)
+    .map((block) => block.trim())
+    .filter((block) => block.length > 0)
+
+  blocks.forEach((block, blockIndex) => {
+    const lines = block.split('\n').map((line) => line.trim()).filter((line) => line.length > 0)
+    lines.forEach((line, lineIndex) => {
+      const isLastLineOfBlock = lineIndex === lines.length - 1
+      const isLastBlock = blockIndex === blocks.length - 1
+      paragraphs.push(
+        letterBodyParagraph(line, isLastLineOfBlock && !isLastBlock ? 200 : 40),
+      )
+    })
+  })
+
+  const document = new Document({
+    sections: [
+      {
+        properties: {
+          page: {
+            margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 },
+          },
+        },
+        children: paragraphs,
+      },
+    ],
+  })
+
+  return Packer.toBlob(document)
+}
+
 export const downloadDocx = (blob: Blob, filename: string): void => {
   const typedBlob = blob.type === DOCX_MIME ? blob : new Blob([blob], { type: DOCX_MIME })
   const url = URL.createObjectURL(typedBlob)

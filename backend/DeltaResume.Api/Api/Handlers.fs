@@ -65,6 +65,48 @@ module Handlers =
                     | Error error -> return! tailorErrorToResponse error next ctx
             }
 
+    let coverLetter: HttpHandler =
+        fun next ctx ->
+            task {
+                let identityOptions = ctx.GetService<IdentityOptions>()
+                let identity = Identity.resolve identityOptions ctx
+
+                if Identity.plan identity <> ProPlan then
+                    return!
+                        (setStatusCode StatusCodes.Status403Forbidden
+                         >=> json
+                                 {| Code = "pro_required"
+                                    Message = "Cover letters are a Pro feature. Upgrade to Pro to unlock them." |})
+                            next
+                            ctx
+                else
+                    let! request = ctx.BindJsonAsync<CoverLetterRequestDto>()
+
+                    if String.IsNullOrWhiteSpace request.ResumeText then
+                        return! errorResponse StatusCodes.Status400BadRequest "Resume text is required." next ctx
+                    elif String.IsNullOrWhiteSpace request.JobDescription then
+                        return! errorResponse StatusCodes.Status400BadRequest "Job description is required." next ctx
+                    else
+                        let engine = ctx.GetService<CoverLetterEngine>()
+
+                        let! result =
+                            engine.GenerateCoverLetter(
+                                request.ResumeText,
+                                request.JobDescription,
+                                request.CandidateName
+                            )
+
+                        match result with
+                        | Ok draft ->
+                            let response: CoverLetterResponseDto =
+                                { JobTitle = draft.JobTitle
+                                  CompanyName = draft.CompanyName
+                                  Letter = draft.Letter }
+
+                            return! json response next ctx
+                        | Error message -> return! errorResponse StatusCodes.Status502BadGateway message next ctx
+            }
+
     let listResumes: HttpHandler =
         fun next ctx ->
             task {

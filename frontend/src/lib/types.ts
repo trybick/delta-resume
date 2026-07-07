@@ -17,6 +17,14 @@ export type TailorResult = {
 
 export type ChangeDecision = 'pending' | 'accepted' | 'rejected'
 
+export type CoverLetterStatus = 'idle' | 'loading' | 'done' | 'error'
+
+export type CoverLetterResult = {
+  jobTitle: string
+  companyName: string
+  letter: string
+}
+
 export type CreditStatus = {
   remaining: number
   total: number

@@ -18,10 +18,12 @@ import AppFooter from './components/AppFooter'
 import ResumeInput from './components/ResumeInput'
 import JobDescriptionInput from './components/JobDescriptionInput'
 import ResultsPanel from './components/ResultsPanel'
+import CoverLetterPanel from './components/CoverLetterPanel'
 import PaywallModal from './components/PaywallModal'
 import { useCredits } from './hooks/useCredits'
 import { useSavedResumes } from './hooks/useSavedResumes'
 import { useTailorRun } from './hooks/useTailorRun'
+import { useCoverLetter } from './hooks/useCoverLetter'
 import { SAMPLE_MATCH_SCORE, SAMPLE_TAILOR_RESULT } from './lib/mockTailor'
 import { trackEvent } from './lib/analytics'
 import { registerTokenGetter } from './lib/authToken'
@@ -66,6 +68,16 @@ const App = () => {
       void loadCredits()
     },
   })
+
+  const {
+    status: coverLetterStatus,
+    result: coverLetterResult,
+    errorMessage: coverLetterError,
+    runCoverLetter,
+    retryCoverLetter,
+  } = useCoverLetter()
+
+  const isProPlan = credits?.plan === 'pro'
 
   const inputsUnchangedSinceLastRun =
     lastSuccessfulInputs !== null &&
@@ -123,6 +135,9 @@ const App = () => {
     }
     setShowingExample(false)
     setLastRunJobDescription(jobDescription)
+    if (isProPlan) {
+      void runCoverLetter(resumeText, jobDescription)
+    }
     const succeeded = await runTailor(resumeText, jobDescription, formatDefaultResumeName(new Date()))
     if (succeeded) {
       setLastSuccessfulInputs({
@@ -137,7 +152,7 @@ const App = () => {
       <AppHeader
         creditsLabel={creditsLabel}
         outOfCredits={outOfCredits}
-        isProPlan={credits?.plan === 'pro'}
+        isProPlan={isProPlan}
         onUpgradeClick={() => setPaywallReason('upgrade')}
       />
 
@@ -149,8 +164,8 @@ const App = () => {
                 resumeText={resumeText}
                 attachedFile={attachedFile}
                 savedResumes={savedResumes}
-                savedResumeLimit={credits?.plan === 'pro' ? 10 : 1}
-                isProPlan={credits?.plan === 'pro'}
+                savedResumeLimit={isProPlan ? 10 : 1}
+                isProPlan={isProPlan}
                 onResumeTextChange={setResumeText}
                 onFileAttach={handleFileAttach}
                 onClear={handleClearResume}
@@ -212,6 +227,16 @@ const App = () => {
                 onShowExample={() => setShowingExample(true)}
                 onDismissExample={() => setShowingExample(false)}
               />
+              {!showingExample && status !== 'idle' && (
+                <CoverLetterPanel
+                  isProPlan={isProPlan}
+                  status={coverLetterStatus}
+                  result={coverLetterResult}
+                  errorMessage={coverLetterError}
+                  onRetry={retryCoverLetter}
+                  onUpgradeClick={() => setPaywallReason('coverLetter')}
+                />
+              )}
             </Stack>
           </Grid.Col>
         </Grid>

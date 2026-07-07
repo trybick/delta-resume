@@ -1,4 +1,4 @@
-import type { CreditStatus, SavedResume, TailorResult } from './types'
+import type { CoverLetterResult, CreditStatus, SavedResume, TailorResult } from './types'
 import { getAuthToken } from './authToken'
 import { getFingerprint } from './fingerprint'
 
@@ -91,6 +91,22 @@ export const postTailor = async (
     return throwApiError(response)
   }
   return (await response.json()) as TailorResponse
+}
+
+export const postCoverLetter = async (
+  resumeText: string,
+  jobDescription: string,
+  candidateName?: string,
+): Promise<CoverLetterResult> => {
+  const response = await fetch(`${API_BASE_URL}/api/cover-letter`, {
+    method: 'POST',
+    headers: await buildHeaders(),
+    body: JSON.stringify({ resumeText, jobDescription, candidateName: candidateName ?? null }),
+  })
+  if (!response.ok) {
+    return throwApiError(response)
+  }
+  return (await response.json()) as CoverLetterResult
 }
 
 export const getSavedResumes = async (): Promise<SavedResume[]> => {
