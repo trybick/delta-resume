@@ -42,6 +42,7 @@ import {
 } from './lib/mockTailor'
 import { trackEvent } from './lib/analytics'
 import { registerTokenGetter } from './lib/authToken'
+import { subscribeToRateLimit } from './lib/rateLimitNotice'
 import { formatDefaultResumeName } from './lib/formatDefaultResumeName'
 import type { PaywallReason } from './components/PaywallModal'
 import type { SavedResume } from './lib/types'
@@ -70,6 +71,7 @@ const App = () => {
   const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null)
   const [showingExample, setShowingExample] = useState(false)
   const [activeTab, setActiveTab] = useState<string | null>('resume')
+  const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null)
 
   const { credits, outOfCredits, creditsLabel, loadCredits } = useCredits()
   const { savedResumes, loadSavedResumes, renameResume, deleteResume } = useSavedResumes()
@@ -110,6 +112,8 @@ const App = () => {
     registerTokenGetter(() => getToken())
     return () => registerTokenGetter(null)
   }, [getToken])
+
+  useEffect(() => subscribeToRateLimit(setRateLimitMessage), [])
 
   useEffect(() => {
     void loadCredits()
@@ -205,6 +209,18 @@ const App = () => {
       />
 
       <Container size="xl" py="xl" w="100%" style={{ flexGrow: 1 }}>
+        {rateLimitMessage && (
+          <Alert
+            color="orange"
+            icon={<IconAlertCircle size={18} />}
+            title="Rate limited"
+            withCloseButton
+            onClose={() => setRateLimitMessage(null)}
+            mb="lg"
+          >
+            {rateLimitMessage}
+          </Alert>
+        )}
         <Grid gap="xl">
           <Grid.Col span={{ base: 12, md: 5 }}>
             <Stack gap="lg">

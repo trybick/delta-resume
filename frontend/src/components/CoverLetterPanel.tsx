@@ -62,9 +62,6 @@ const LockedTeaser = ({
       <Group gap="sm">
         <IconMail size={20} color="var(--mantine-primary-color-filled)" />
         <Title order={4}>Cover letter</Title>
-        <Badge variant="light">
-          {SAMPLE_COVER_LETTER_RESULT.jobTitle} at {SAMPLE_COVER_LETTER_RESULT.companyName}
-        </Badge>
       </Group>
       <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
         {SAMPLE_COVER_LETTER_RESULT.letter}
@@ -115,9 +112,6 @@ const ExampleCoverLetter = ({
         <Title order={4}>Cover letter</Title>
         <Badge color="cyan" variant="light">
           Example
-        </Badge>
-        <Badge variant="light">
-          {exampleResult.jobTitle} at {exampleResult.companyName}
         </Badge>
       </Group>
       <Box

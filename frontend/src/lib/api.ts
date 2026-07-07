@@ -1,6 +1,7 @@
 import type { CoverLetterResult, CreditStatus, SavedResume, TailorResult } from './types'
 import { getAuthToken } from './authToken'
 import { getFingerprint } from './fingerprint'
+import { notifyRateLimited } from './rateLimitNotice'
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
 
@@ -15,6 +16,16 @@ export class ApiError extends Error {
     super(message)
     this.name = 'ApiError'
     this.status = status
+  }
+}
+
+export class RateLimitedError extends ApiError {
+  readonly retryAfterSeconds: number
+
+  constructor(message: string, retryAfterSeconds: number) {
+    super(429, message)
+    this.name = 'RateLimitedError'
+    this.retryAfterSeconds = retryAfterSeconds
   }
 }
 
@@ -49,6 +60,12 @@ const readErrorMessage = async (response: Response): Promise<string> => {
 }
 
 const throwApiError = async (response: Response): Promise<never> => {
+  if (response.status === 429) {
+    const retryAfterSeconds = Number.parseInt(response.headers.get('Retry-After') ?? '', 10) || 60
+    const message = `Rate limited by the backend. Try again in ${retryAfterSeconds}s.`
+    notifyRateLimited(message)
+    throw new RateLimitedError(message, retryAfterSeconds)
+  }
   if (response.status === 402) {
     try {
       const body = (await response.json()) as {

@@ -81,7 +81,16 @@ let main args =
 
     builder.Services.AddSingleton<IdentityOptions>(identityOptions) |> ignore
 
-    builder.Services.AddSingleton<RateLimiters>(fun _ -> RateLimiters identityOptions)
+    let rateLimitingDisabled =
+        Environment.GetEnvironmentVariable "DISABLE_RATE_LIMITING"
+        |> Option.ofObj
+        |> Option.map (fun value -> value.Equals("true", StringComparison.OrdinalIgnoreCase))
+        |> Option.defaultValue false
+
+    if rateLimitingDisabled then
+        eprintfn "Warning: DISABLE_RATE_LIMITING is set; rate limiting is off."
+
+    builder.Services.AddSingleton<RateLimiters>(fun _ -> RateLimiters(identityOptions, rateLimitingDisabled))
     |> ignore
 
     builder.Services.AddSingleton<CreditService>(fun provider ->

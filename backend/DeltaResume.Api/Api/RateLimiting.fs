@@ -6,7 +6,7 @@ open Giraffe
 open Microsoft.AspNetCore.Http
 open DeltaResume.Application
 
-type RateLimiters(options: IdentityOptions) =
+type RateLimiters(options: IdentityOptions, disabled: bool) =
 
     let tailorLimiter =
         PartitionedRateLimiter.Create<string, string>(fun key ->
@@ -36,6 +36,7 @@ type RateLimiters(options: IdentityOptions) =
             ))
 
     member _.IdentityOptions = options
+    member _.Disabled = disabled
     member _.Tailor = tailorLimiter
     member _.Loose = looseLimiter
 
@@ -58,15 +59,18 @@ module RateLimit =
             task {
                 let limiters = ctx.GetService<RateLimiters>()
 
-                let identityKey =
-                    Identity.resolve limiters.IdentityOptions ctx |> Identity.ownerKey
-
-                use lease = (selectLimiter limiters).AttemptAcquire identityKey
-
-                if lease.IsAcquired then
+                if limiters.Disabled then
                     return! next ctx
                 else
-                    return! tooManyRequests lease next ctx
+                    let identityKey =
+                        Identity.resolve limiters.IdentityOptions ctx |> Identity.ownerKey
+
+                    use lease = (selectLimiter limiters).AttemptAcquire identityKey
+
+                    if lease.IsAcquired then
+                        return! next ctx
+                    else
+                        return! tooManyRequests lease next ctx
             }
 
     let tailorPolicy: HttpHandler = limitWith (fun limiters -> limiters.Tailor)
