@@ -1,8 +1,8 @@
 import {
   ActionIcon,
+  Box,
   Group,
   Paper,
-  Stack,
   Text,
   Tooltip,
 } from '@mantine/core'
@@ -41,7 +41,7 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
   const renderContent = () => {
     const parts = diffWords(change.original, change.tailored)
     return (
-      <Text component="div" style={{ fontFamily: 'ui-monospace, monospace', fontSize: 'var(--mantine-font-size-xs)', lineHeight: 1.7 }}>
+      <Text component="div" style={{ fontFamily: 'ui-monospace, monospace', fontSize: 'var(--mantine-font-size-xs)', lineHeight: 1.5 }}>
         {parts.map((part, index) => {
           if (part.added) {
             return (
@@ -51,7 +51,7 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
                   backgroundColor: 'rgba(64, 192, 87, 0.16)',
                   color: 'var(--mantine-color-green-3)',
                   borderRadius: 3,
-                  padding: '1px 2px',
+                  padding: '0 2px',
                 }}
               >
                 {part.value}
@@ -67,7 +67,7 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
                   color: 'var(--mantine-color-red-3)',
                   textDecoration: 'line-through',
                   borderRadius: 3,
-                  padding: '1px 2px',
+                  padding: '0 2px',
                 }}
               >
                 {part.value}
@@ -91,10 +91,10 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
         opacity: decision === 'rejected' ? 0.6 : 1,
       }}
     >
-      <Group align="flex-start" wrap="nowrap" gap="sm">
-        <Stack gap={6} style={{ flex: 1, minWidth: 0 }}>
+      <Group align="center" wrap="nowrap" gap="sm">
+        <Box style={{ flex: 1, minWidth: 0 }}>
           {renderContent()}
-        </Stack>
+        </Box>
         <Group gap={4} wrap="nowrap">
           <Tooltip label={clipboard.copied ? 'Copied' : 'Copy entire bullet'}>
             <ActionIcon
