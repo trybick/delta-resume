@@ -14,6 +14,7 @@ import {
 import { useAuth } from '@clerk/clerk-react'
 import {
   IconAlertCircle,
+  IconCheck,
   IconFileText,
   IconLock,
   IconMail,
@@ -237,7 +238,17 @@ const App = () => {
               ) : (
                 <Tabs defaultValue="resume">
                   <Tabs.List>
-                    <Tabs.Tab value="resume" leftSection={<IconFileText size={16} />}>
+                    <Tabs.Tab
+                      value="resume"
+                      leftSection={<IconFileText size={16} />}
+                      rightSection={
+                        status === 'loading' ? (
+                          <Loader size={12} />
+                        ) : status === 'done' ? (
+                          <IconCheck size={14} color="var(--mantine-color-green-filled)" />
+                        ) : null
+                      }
+                    >
                       Resume changes
                     </Tabs.Tab>
                     <Tabs.Tab
@@ -253,9 +264,7 @@ const App = () => {
                         ) : coverLetterStatus === 'loading' ? (
                           <Loader size={12} />
                         ) : coverLetterStatus === 'done' ? (
-                          <Badge size="xs" variant="light" color="green">
-                            Ready
-                          </Badge>
+                          <IconCheck size={14} color="var(--mantine-color-green-filled)" />
                         ) : coverLetterStatus === 'error' ? (
                           <Badge size="xs" variant="light" color="red">
                             Failed
