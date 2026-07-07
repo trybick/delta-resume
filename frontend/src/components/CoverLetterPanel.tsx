@@ -26,6 +26,7 @@ import {
   IconLock,
   IconMail,
   IconRefresh,
+  IconSparkles,
 } from '@tabler/icons-react'
 import type { CoverLetterResult, CoverLetterStatus } from '../lib/types'
 import { buildCoverLetterDocx, downloadDocx } from '../lib/exportDocx'
@@ -145,26 +146,111 @@ const ExampleCoverLetter = ({
   </Card>
 )
 
-const WritingLoader = () => (
-  <Card withBorder shadow="xs" padding="lg">
-    <Stack gap="md">
-      <Group gap="sm">
-        <IconMail size={20} color="var(--mantine-primary-color-filled)" />
-        <Title order={4}>Cover letter</Title>
-        <Text size="sm" c="dimmed" aria-live="polite">
-          Writing your cover letter…
-        </Text>
-      </Group>
-      <Stack gap={8}>
-        <Skeleton height={10} radius="xl" width="30%" />
-        <Skeleton height={10} radius="xl" width="95%" />
-        <Skeleton height={10} radius="xl" width="90%" />
-        <Skeleton height={10} radius="xl" width="93%" />
-        <Skeleton height={10} radius="xl" width="60%" />
-      </Stack>
-    </Stack>
-  </Card>
+const writingStageMessages: string[] = [
+  'Reading the job description…',
+  'Picking out your strongest matching experience…',
+  'Drafting an opening that hooks the reader…',
+  'Writing the body paragraphs…',
+  'Wrapping up with a confident closing…',
+]
+
+const writingMessageIntervalMs = 2600
+
+const SkeletonParagraph = ({ widths }: { widths: string[] }) => (
+  <Stack gap={8}>
+    {widths.map((width, index) => (
+      <Skeleton key={index} height={10} radius="xl" width={width} />
+    ))}
+  </Stack>
 )
+
+const WritingLoader = () => {
+  const [messageIndex, setMessageIndex] = useState(0)
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setMessageIndex((current) => (current + 1) % writingStageMessages.length)
+    }, writingMessageIntervalMs)
+    return () => window.clearInterval(interval)
+  }, [])
+
+  return (
+    <Card withBorder shadow="xs" padding="xl" style={{ position: 'relative', overflow: 'hidden' }}>
+      <Box className="tailoring-loader-topbar" />
+      <Stack gap="lg" mt="xs">
+        <Group gap="sm" align="center">
+          <Box className="tailoring-loader-sparkle" style={{ display: 'flex' }}>
+            <IconMail size={24} color="var(--mantine-primary-color-filled)" />
+          </Box>
+          <Text
+            key={messageIndex}
+            size="sm"
+            c="dimmed"
+            className="tailoring-loader-message"
+            aria-live="polite"
+          >
+            {writingStageMessages[messageIndex]}
+          </Text>
+        </Group>
+        <Stack gap="lg">
+          <Skeleton height={10} radius="xl" width="28%" />
+          <SkeletonParagraph widths={['96%', '91%', '94%', '55%']} />
+          <SkeletonParagraph widths={['93%', '97%', '88%', '95%', '42%']} />
+          <SkeletonParagraph widths={['90%', '68%']} />
+          <Stack gap={8}>
+            <Skeleton height={10} radius="xl" width="18%" />
+            <Skeleton height={10} radius="xl" width="24%" />
+          </Stack>
+        </Stack>
+      </Stack>
+    </Card>
+  )
+}
+
+const TailoredLetterBanner = ({
+  jobTitle,
+  companyName,
+}: {
+  jobTitle: string
+  companyName: string
+}) => {
+  const trimmedJobTitle = jobTitle.trim()
+  const trimmedCompanyName = companyName.trim()
+  const roleDescription =
+    trimmedJobTitle.length > 0 && trimmedCompanyName.length > 0
+      ? `the ${trimmedJobTitle} role at ${trimmedCompanyName}`
+      : trimmedCompanyName.length > 0
+        ? `your application to ${trimmedCompanyName}`
+        : trimmedJobTitle.length > 0
+          ? `the ${trimmedJobTitle} role`
+          : 'this job description'
+
+  return (
+    <Box
+      p="md"
+      style={{
+        borderRadius: 8,
+        border:
+          '1px solid color-mix(in srgb, var(--mantine-primary-color-filled) 40%, transparent)',
+        background:
+          'linear-gradient(135deg, color-mix(in srgb, var(--mantine-primary-color-filled) 14%, transparent), color-mix(in srgb, var(--mantine-color-cyan-4) 10%, transparent))',
+      }}
+    >
+      <Group gap="sm" wrap="nowrap" align="flex-start">
+        <IconSparkles size={22} color="var(--mantine-primary-color-filled)" style={{ flexShrink: 0, marginTop: 2 }} />
+        <Stack gap={2}>
+          <Text fw={600} size="sm">
+            Your tailored cover letter is ready
+          </Text>
+          <Text size="sm" c="dimmed">
+            Written specifically for {roleDescription}, drawing on the strongest matches from
+            your resume. Add your name below, then copy or download it.
+          </Text>
+        </Stack>
+      </Group>
+    </Box>
+  )
+}
 
 const CoverLetterPanel = ({
   isProPlan,
@@ -303,6 +389,7 @@ const CoverLetterPanel = ({
             </Button>
           </Group>
         </Group>
+        <TailoredLetterBanner jobTitle={result.jobTitle} companyName={result.companyName} />
         <Group gap="sm" align="center" wrap="wrap">
           <Group gap={4} align="center" wrap="nowrap">
             <Text size="sm" fw={500} style={{ whiteSpace: 'nowrap' }}>
