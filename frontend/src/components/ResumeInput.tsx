@@ -47,6 +47,8 @@ type ResumeInputProps = {
 
 type InputMode = 'upload' | 'paste' | 'saved'
 
+export const RESUME_TEXT_MAX_LENGTH = 15000
+
 const ACCEPTED_MIME_TYPES = [
   'text/plain',
   'text/markdown',
@@ -198,15 +200,27 @@ const ResumeInput = ({
         )}
 
         {mode === 'paste' && (
-          <Textarea
-            value={resumeText}
-            onChange={(event) => onResumeTextChange(event.currentTarget.value)}
-            placeholder="Paste your resume text here…"
-            autosize
-            minRows={10}
-            maxRows={10}
-            styles={{ input: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } }}
-          />
+          <Stack gap={4}>
+            <Textarea
+              value={resumeText}
+              onChange={(event) =>
+                onResumeTextChange(event.currentTarget.value.slice(0, RESUME_TEXT_MAX_LENGTH))
+              }
+              placeholder="Paste your resume text here…"
+              maxLength={RESUME_TEXT_MAX_LENGTH}
+              autosize
+              minRows={10}
+              maxRows={10}
+              styles={{ input: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } }}
+            />
+            <Text
+              size="xs"
+              c={RESUME_TEXT_MAX_LENGTH - resumeText.length <= 0 ? 'red' : 'dimmed'}
+              ta="right"
+            >
+              {(RESUME_TEXT_MAX_LENGTH - resumeText.length).toLocaleString()} characters left
+            </Text>
+          </Stack>
         )}
 
         {mode === 'saved' && savedResumes.length === 0 && (
