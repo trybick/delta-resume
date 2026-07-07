@@ -50,9 +50,8 @@ type CoverLetterPanelProps = {
 }
 
 const applyCandidateName = (letter: string, candidateName: string): string => {
-  const trimmedName = candidateName.trim()
-  if (trimmedName.length === 0) return letter
-  return letter.split(NAME_PLACEHOLDER).join(trimmedName)
+  const signatureName = candidateName.trim() || NAME_PLACEHOLDER
+  return `${letter.trimEnd()}\n${signatureName}`
 }
 
 const LockedTeaser = ({
