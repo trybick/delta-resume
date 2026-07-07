@@ -252,9 +252,6 @@ const CoverLetterPanel = ({
   if (!result) return null
 
   const displayLetter = applyCandidateName(result.letter, candidateName)
-  const subjectParts = [result.jobTitle, result.companyName].filter(
-    (part) => part.trim().length > 0,
-  )
 
   const handleCopy = () => {
     clipboard.copy(displayLetter)
@@ -283,9 +280,6 @@ const CoverLetterPanel = ({
           <Group gap="sm">
             <IconMail size={20} color="var(--mantine-primary-color-filled)" />
             <Title order={4}>Cover letter</Title>
-            {subjectParts.length > 0 && (
-              <Badge variant="light">{subjectParts.join(' at ')}</Badge>
-            )}
           </Group>
           <Group gap="xs">
             <Button

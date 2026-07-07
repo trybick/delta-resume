@@ -330,10 +330,10 @@ const ResultsPanel = ({
                 </Badge>
               </Tooltip>
             )}
-            {showMatchScore && (
+            {showMatchScore && matchScoreIncrease > 0  && (
               <Tooltip label="How much your keyword match improved based on accepted and pending changes.">
                 <Badge
-                  color={matchScoreIncrease > 0 ? 'green' : 'gray'}
+                  color="green"
                   variant="light"
                   leftSection={<IconTargetArrow size={12} />}
                 >

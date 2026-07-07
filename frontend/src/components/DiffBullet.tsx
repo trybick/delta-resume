@@ -1,10 +1,8 @@
-import { useState } from 'react'
 import {
   ActionIcon,
-  Badge,
   Group,
   Paper,
-  SegmentedControl,
+  Stack,
   Text,
   Tooltip,
 } from '@mantine/core'
@@ -19,8 +17,6 @@ type DiffBulletProps = {
   onDecisionChange: (id: string, decision: ChangeDecision) => void
 }
 
-type DiffView = 'diff' | 'original' | 'tailored'
-
 const borderColorByDecision: Record<ChangeDecision, string> = {
   pending: 'var(--mantine-primary-color-filled)',
   accepted: 'var(--mantine-color-green-6)',
@@ -28,18 +24,9 @@ const borderColorByDecision: Record<ChangeDecision, string> = {
 }
 
 const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => {
-  const [view, setView] = useState<DiffView>('diff')
   const clipboard = useClipboard({ timeout: 1500 })
 
   const handleCopyBullet = () => {
-    if (view === 'original') {
-      clipboard.copy(change.original)
-      return
-    }
-    if (view === 'tailored') {
-      clipboard.copy(change.tailored)
-      return
-    }
     clipboard.copy(decision === 'rejected' ? change.original : change.tailored)
   }
 
@@ -52,12 +39,6 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
   }
 
   const renderContent = () => {
-    if (view === 'original') {
-      return <Text style={{ fontFamily: 'ui-monospace, monospace', fontSize: 'var(--mantine-font-size-xs)' }}>{change.original}</Text>
-    }
-    if (view === 'tailored') {
-      return <Text style={{ fontFamily: 'ui-monospace, monospace', fontSize: 'var(--mantine-font-size-xs)' }}>{change.tailored}</Text>
-    }
     const parts = diffWords(change.original, change.tailored)
     return (
       <Text component="div" style={{ fontFamily: 'ui-monospace, monospace', fontSize: 'var(--mantine-font-size-xs)', lineHeight: 1.7 }}>
@@ -110,31 +91,17 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
         opacity: decision === 'rejected' ? 0.6 : 1,
       }}
     >
-      <Group justify="space-between" mb={8} wrap="nowrap">
-        <Group gap={8} wrap="nowrap">
-          {change.kind === 'skill' && (
-            <Badge size="sm" color="grape" variant="light">
-              Skills
-            </Badge>
-          )}
-          <SegmentedControl
-            size="xs"
-            value={view}
-            onChange={(value) => setView(value as DiffView)}
-            data={[
-              { label: 'Inline diff', value: 'diff' },
-              { label: 'Original', value: 'original' },
-              { label: 'Tailored', value: 'tailored' },
-            ]}
-          />
-        </Group>
+      <Group align="flex-start" wrap="nowrap" gap="sm">
+        <Stack gap={6} style={{ flex: 1, minWidth: 0 }}>
+          {renderContent()}
+        </Stack>
         <Group gap={4} wrap="nowrap">
-          <Tooltip label={clipboard.copied ? 'Copied' : 'Copy bullet'}>
+          <Tooltip label={clipboard.copied ? 'Copied' : 'Copy entire bullet'}>
             <ActionIcon
               variant="light"
               color="gray"
               onClick={handleCopyBullet}
-              aria-label="Copy bullet"
+              aria-label="Copy entire bullet"
             >
               {clipboard.copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />}
             </ActionIcon>
@@ -161,7 +128,6 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
           </Tooltip>
         </Group>
       </Group>
-      {renderContent()}
     </Paper>
   )
 }
