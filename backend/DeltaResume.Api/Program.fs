@@ -81,16 +81,12 @@ let main args =
 
     builder.Services.AddSingleton<IdentityOptions>(identityOptions) |> ignore
 
-    let rateLimitingDisabled =
-        Environment.GetEnvironmentVariable "DISABLE_RATE_LIMITING"
-        |> Option.ofObj
-        |> Option.map (fun value -> value.Equals("true", StringComparison.OrdinalIgnoreCase))
-        |> Option.defaultValue false
+    let runningLocally = LocalDev.isRunningLocally ()
 
-    if rateLimitingDisabled then
-        eprintfn "Warning: DISABLE_RATE_LIMITING is set; rate limiting is off."
+    if runningLocally then
+        eprintfn "Warning: BACKEND_RUNNING_LOCALLY is set; rate limiting is off and guest credits are unlimited."
 
-    builder.Services.AddSingleton<RateLimiters>(fun _ -> RateLimiters(identityOptions, rateLimitingDisabled))
+    builder.Services.AddSingleton<RateLimiters>(fun _ -> RateLimiters(identityOptions, runningLocally))
     |> ignore
 
     builder.Services.AddSingleton<CreditService>(fun provider ->

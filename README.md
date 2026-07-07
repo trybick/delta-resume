@@ -20,8 +20,8 @@ Requires .NET SDK. Listens on http://localhost:5100.
 | `ANTHROPIC_API_KEY` | Yes | Anthropic API key for tailoring |
 | `CLERK_FRONTEND_API_URL` | Yes | Clerk Frontend API URL (e.g. `https://in-aphid-71.clerk.accounts.dev`). Found in the Clerk Dashboard under **API keys** → **Advanced** → **Frontend API URL**. If unset, all requests are treated as guests. |
 | `IP_HASH_SALT` | Yes | Secret key for HMAC-SHA256 hashing of guest IPs for credit tracking. Generate with `openssl rand -hex 32`. |
-| `TRUST_FORWARDED_HEADERS` | No | Set to `true` only when running behind a reverse proxy (production) so `X-Forwarded-For` is used for guest IP resolution |
-| `UNLIMITED_GUEST_CREDITS` | No | Set to `true` for local development to give guest requests unlimited tailor credits. Defaults to `false` (guests get 3). |
+| `BACKEND_RUNNING_LOCALLY` | No | Set to `true` when running the API on your machine (replaces `UNLIMITED_GUEST_CREDITS`, `DISABLE_RATE_LIMITING`, and `TRUST_FORWARDED_HEADERS=false`). When enabled: guest requests get unlimited tailor credits; API rate limiting is disabled; guest IPs are taken from the direct connection instead of `X-Forwarded-For`. Must be unset or `false` in production. |
+| `TRUST_FORWARDED_HEADERS` | No | Production only (ignored when `BACKEND_RUNNING_LOCALLY` is set). Set to `true` when running behind a reverse proxy so `X-Forwarded-For` is used for guest IP resolution. |
 
 ```bash
 cd backend/DeltaResume.Api

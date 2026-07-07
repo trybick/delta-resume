@@ -47,6 +47,8 @@ module IdentityOptions =
             |> Option.filter (String.IsNullOrWhiteSpace >> not)
             |> Option.defaultWith (fun () -> failwith "IP_HASH_SALT environment variable is required")
 
+        let runningLocally = LocalDev.isRunningLocally ()
+
         let readBool (name: string) =
             Environment.GetEnvironmentVariable name
             |> Option.ofObj
@@ -54,8 +56,10 @@ module IdentityOptions =
             |> Option.defaultValue false
 
         { IpHashSalt = salt
-          TrustForwardedHeaders = readBool "TRUST_FORWARDED_HEADERS"
-          UnlimitedGuestCredits = readBool "UNLIMITED_GUEST_CREDITS" }
+          TrustForwardedHeaders =
+            if runningLocally then false
+            else readBool "TRUST_FORWARDED_HEADERS"
+          UnlimitedGuestCredits = runningLocally }
 
 module Identity =
 
