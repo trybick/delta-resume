@@ -60,19 +60,19 @@ const AppFooter = () => {
   return (
     <Box
       component="footer"
-      py="md"
+      py="lg"
       px="xl"
       mt="auto"
       style={{ borderTop: '1px solid var(--mantine-color-dark-4)' }}
     >
       <Container size="xl">
         <Group justify="space-between" gap="sm">
-          <Text size="xs" c="dimmed">
+          <Text size="sm" c="dimmed">
             © {new Date().getFullYear()} Delta Resume. All rights reserved.
           </Text>
           <Group gap="lg">
             <Anchor
-              size="xs"
+              size="sm"
               c="dimmed"
               component="button"
               type="button"
@@ -81,7 +81,7 @@ const AppFooter = () => {
               Terms of Service
             </Anchor>
             <Anchor
-              size="xs"
+              size="sm"
               c="dimmed"
               component="button"
               type="button"
@@ -89,7 +89,7 @@ const AppFooter = () => {
             >
               Privacy Policy
             </Anchor>
-            <Text size="xs" c="dimmed">
+            <Text size="sm" c="dimmed">
               {SUPPORT_EMAIL}
             </Text>
           </Group>

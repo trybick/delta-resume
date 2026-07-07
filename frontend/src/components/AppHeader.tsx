@@ -4,6 +4,7 @@ import {
   Box,
   Button,
   Group,
+  Stack,
   Text,
   Title,
   Tooltip,
@@ -40,17 +41,18 @@ const AppHeader = ({ creditsLabel, outOfCredits, isProPlan, onUpgradeClick }: Ap
   return (
     <Box
       component="header"
-      py="xs"
+      py="sm"
       px="xl"
       bg="dark.7"
       style={{ borderBottom: '1px solid var(--mantine-color-dark-4)' }}
     >
       <Group justify="space-between">
-        <Group gap="sm">
-          <DeltaLogo size={34} />
-          <div>
+        <Group gap="md" align="center">
+          <DeltaLogo size={38} />
+          <Stack gap={2}>
             <Title
-              order={4}
+              order={3}
+              lh={1.2}
               style={{ fontFamily: spaceGroteskStack, letterSpacing: '-0.02em' }}
             >
               <Text
@@ -65,10 +67,10 @@ const AppHeader = ({ creditsLabel, outOfCredits, isProPlan, onUpgradeClick }: Ap
                 Resume
               </Text>
             </Title>
-            <Text size="xs" c="dimmed">
+            <Text size="xs" c="dimmed" lh={1.4}>
               Optimize your resume bullets for any job description
             </Text>
-          </div>
+          </Stack>
         </Group>
         <Group gap="sm">
           {creditsLabel && (
