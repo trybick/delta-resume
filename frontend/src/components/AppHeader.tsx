@@ -57,7 +57,7 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
         <Button
           size="xs"
           variant="gradient"
-          gradient={{ ...appTheme.gradient, deg: 45 }}
+          gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
           leftSection={<IconSparkles size={14} />}
           onClick={onUpgradeClick}
         >
@@ -66,9 +66,10 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
       </HoverCard.Target>
       <HoverCard.Dropdown
         style={{
-          border: '1px solid var(--mantine-color-cyan-9)',
-          background:
-            'linear-gradient(160deg, rgba(34, 184, 207, 0.1) 0%, var(--mantine-color-dark-7) 55%)',
+          border: '1px solid var(--mantine-color-dark-4)',
+          backgroundColor: 'var(--mantine-color-dark-7)',
+          backgroundImage:
+            'linear-gradient(160deg, rgba(34, 184, 207, 0.12) 0%, transparent 55%)',
         }}
       >
         <Stack gap="sm">
@@ -100,7 +101,7 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
             size="xs"
             fullWidth
             variant="gradient"
-            gradient={{ ...appTheme.gradient, deg: 45 }}
+            gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
             onClick={onUpgradeClick}
           >
             See plan details
@@ -156,7 +157,7 @@ const AppHeader = ({
               </Text>
             </Title>
             <Text size="xs" c="dimmed" lh={1.4}>
-              Optimize your resume bullets for any job description
+              Optimize your resume for any job description
             </Text>
           </Stack>
         </Group>

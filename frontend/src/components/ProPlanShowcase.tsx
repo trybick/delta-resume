@@ -28,7 +28,7 @@ const FeatureRow = ({ feature, compact }: FeatureRowProps) => {
   const Icon = feature.icon
 
   return (
-    <Group gap="sm" wrap="nowrap" align="flex-start">
+    <Group gap="sm" wrap="nowrap" align={compact ? 'center' : 'flex-start'}>
       <ThemeIcon
         size={compact ? 28 : 36}
         radius="md"
@@ -68,7 +68,7 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
       size="md"
       fullWidth
       variant="gradient"
-      gradient={{ ...appTheme.gradient, deg: 45 }}
+      gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
       leftSection={<IconSparkles size={18} />}
     >
       Subscribe to Pro
@@ -148,7 +148,7 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
                 size="md"
                 fullWidth
                 variant="gradient"
-                gradient={{ ...appTheme.gradient, deg: 45 }}
+                gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
                 leftSection={<IconSparkles size={18} />}
                 onClick={onCheckoutOpen}
               >
