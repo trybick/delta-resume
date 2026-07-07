@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import {
+  ActionIcon,
   Alert,
   Badge,
   Box,
@@ -12,6 +13,7 @@ import {
   Text,
   TextInput,
   Title,
+  Tooltip,
 } from '@mantine/core'
 import { useClipboard } from '@mantine/hooks'
 import { useAuth, useUser } from '@clerk/clerk-react'
@@ -20,6 +22,7 @@ import {
   IconCopy,
   IconCopyCheck,
   IconDownload,
+  IconInfoCircle,
   IconLock,
   IconMail,
   IconRefresh,
@@ -253,14 +256,29 @@ const CoverLetterPanel = ({
             </Button>
           </Group>
         </Group>
-        <TextInput
-          label="Your name"
-          description="Used for the signature and the .docx header."
-          placeholder="e.g. Jordan Applicant"
-          value={candidateName}
-          onChange={(event) => setCandidateName(event.currentTarget.value)}
-          maw={320}
-        />
+        <Group gap="sm" align="center" wrap="wrap">
+          <Group gap={4} align="center" wrap="nowrap">
+            <Text size="sm" fw={500} style={{ whiteSpace: 'nowrap' }}>
+              Your name
+            </Text>
+            <Tooltip label="Used for the signature.">
+              <ActionIcon
+                variant="subtle"
+                color="gray"
+                size="xs"
+                aria-label="Used for the signature"
+              >
+                <IconInfoCircle size={14} />
+              </ActionIcon>
+            </Tooltip>
+          </Group>
+          <TextInput
+            placeholder="e.g. Jordan Applicant"
+            value={candidateName}
+            onChange={(event) => setCandidateName(event.currentTarget.value)}
+            maw={280}
+          />
+        </Group>
         <Box
           p="md"
           style={{
