@@ -4,8 +4,10 @@ import {
   Badge,
   Box,
   Button,
+  Center,
   Container,
   Grid,
+  Group,
   Loader,
   Stack,
   Tabs,
@@ -14,7 +16,9 @@ import {
 import { useAuth } from '@clerk/clerk-react'
 import {
   IconAlertCircle,
+  IconArrowBackUp,
   IconCheck,
+  IconEye,
   IconFileText,
   IconLock,
   IconMail,
@@ -31,7 +35,11 @@ import { useCredits } from './hooks/useCredits'
 import { useSavedResumes } from './hooks/useSavedResumes'
 import { useTailorRun } from './hooks/useTailorRun'
 import { useCoverLetter } from './hooks/useCoverLetter'
-import { SAMPLE_MATCH_SCORE, SAMPLE_TAILOR_RESULT } from './lib/mockTailor'
+import {
+  SAMPLE_COVER_LETTER_RESULT,
+  SAMPLE_MATCH_SCORE,
+  SAMPLE_TAILOR_RESULT,
+} from './lib/mockTailor'
 import { trackEvent } from './lib/analytics'
 import { registerTokenGetter } from './lib/authToken'
 import { formatDefaultResumeName } from './lib/formatDefaultResumeName'
@@ -61,6 +69,7 @@ const App = () => {
   } | null>(null)
   const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null)
   const [showingExample, setShowingExample] = useState(false)
+  const [activeTab, setActiveTab] = useState<string | null>('resume')
 
   const { credits, outOfCredits, creditsLabel, loadCredits } = useCredits()
   const { savedResumes, loadSavedResumes, renameResume, deleteResume } = useSavedResumes()
@@ -85,6 +94,7 @@ const App = () => {
   } = useCoverLetter()
 
   const isProPlan = credits?.plan === 'pro'
+  const planLoaded = credits !== null
 
   const inputsUnchangedSinceLastRun =
     lastSuccessfulInputs !== null &&
@@ -134,6 +144,15 @@ const App = () => {
     setResumeText(resume.resumeText)
   }
 
+  const handleShowExample = () => {
+    setShowingExample(true)
+  }
+
+  const handleDismissExample = () => {
+    setShowingExample(false)
+    setActiveTab('resume')
+  }
+
   const handleTailor = async () => {
     if (!canTailor) return
     if (outOfCredits) {
@@ -141,6 +160,7 @@ const App = () => {
       return
     }
     setShowingExample(false)
+    setActiveTab('resume')
     setLastRunJobDescription(jobDescription)
     if (isProPlan) {
       void runCoverLetter(resumeText, jobDescription)
@@ -154,12 +174,33 @@ const App = () => {
     }
   }
 
+  const resumeTabIndicator = showingExample ? null : status === 'loading' ? (
+    <Loader size={12} />
+  ) : status === 'done' ? (
+    <IconCheck size={14} color="var(--mantine-color-green-filled)" />
+  ) : null
+
+  const coverLetterTabIndicator = !planLoaded ? null : !isProPlan ? (
+    <Badge size="xs" variant="light" h={16}>
+      Pro
+    </Badge>
+  ) : showingExample ? null : coverLetterStatus === 'loading' ? (
+    <Loader size={12} />
+  ) : coverLetterStatus === 'done' ? (
+    <IconCheck size={14} color="var(--mantine-color-green-filled)" />
+  ) : coverLetterStatus === 'error' ? (
+    <Badge size="xs" variant="light" color="red" h={16}>
+      Failed
+    </Badge>
+  ) : null
+
   return (
     <Box mih="100vh" style={{ display: 'flex', flexDirection: 'column' }}>
       <AppHeader
         creditsLabel={creditsLabel}
         outOfCredits={outOfCredits}
         isProPlan={isProPlan}
+        planLoaded={planLoaded}
         onUpgradeClick={() => setPaywallReason('upgrade')}
       />
 
@@ -223,79 +264,85 @@ const App = () => {
                   {errorMessage}
                 </Alert>
               )}
-              {showingExample || status === 'idle' ? (
-                <ResultsPanel
-                  key={showingExample ? 'example' : runCount}
-                  status={showingExample ? 'done' : status}
-                  result={showingExample ? SAMPLE_TAILOR_RESULT : result}
-                  isExample={showingExample}
-                  jobDescription=""
-                  exampleMatchScore={showingExample ? SAMPLE_MATCH_SCORE : undefined}
-                  originalDocx={null}
-                  onShowExample={() => setShowingExample(true)}
-                  onDismissExample={() => setShowingExample(false)}
-                />
-              ) : (
-                <Tabs defaultValue="resume">
-                  <Tabs.List>
-                    <Tabs.Tab
-                      value="resume"
-                      leftSection={<IconFileText size={16} />}
-                      rightSection={
-                        status === 'loading' ? (
-                          <Loader size={12} />
-                        ) : status === 'done' ? (
-                          <IconCheck size={14} color="var(--mantine-color-green-filled)" />
-                        ) : null
-                      }
-                    >
-                      Resume changes
-                    </Tabs.Tab>
-                    <Tabs.Tab
-                      value="coverLetter"
-                      leftSection={
-                        isProPlan ? <IconMail size={16} /> : <IconLock size={16} />
-                      }
-                      rightSection={
-                        !isProPlan ? (
-                          <Badge size="xs" variant="light">
-                            Pro
-                          </Badge>
-                        ) : coverLetterStatus === 'loading' ? (
-                          <Loader size={12} />
-                        ) : coverLetterStatus === 'done' ? (
-                          <IconCheck size={14} color="var(--mantine-color-green-filled)" />
-                        ) : coverLetterStatus === 'error' ? (
-                          <Badge size="xs" variant="light" color="red">
-                            Failed
-                          </Badge>
-                        ) : null
-                      }
-                    >
-                      Cover letter
-                    </Tabs.Tab>
-                  </Tabs.List>
-                  <Tabs.Panel value="resume" pt="md">
-                    <ResultsPanel
-                      key={runCount}
-                      status={status}
-                      result={result}
-                      jobDescription={lastRunJobDescription}
-                      originalDocx={originalDocx}
-                    />
-                  </Tabs.Panel>
-                  <Tabs.Panel value="coverLetter" pt="md">
-                    <CoverLetterPanel
-                      isProPlan={isProPlan}
-                      status={coverLetterStatus}
-                      result={coverLetterResult}
-                      errorMessage={coverLetterError}
-                      onRetry={retryCoverLetter}
-                      onUpgradeClick={() => setPaywallReason('coverLetter')}
-                    />
-                  </Tabs.Panel>
-                </Tabs>
+              {showingExample && (
+                <Group
+                  justify="space-between"
+                  align="center"
+                  wrap="wrap"
+                  p="sm"
+                  style={{
+                    borderRadius: 8,
+                    backgroundColor: 'var(--mantine-color-cyan-light)',
+                  }}
+                >
+                  <Group gap="xs">
+                    <IconEye size={16} color="var(--mantine-color-cyan-4)" />
+                    <Text size="sm">
+                      This is an example. Explore the resume changes and cover letter, then run
+                      your own tailor.
+                    </Text>
+                  </Group>
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    color="cyan"
+                    leftSection={<IconArrowBackUp size={14} />}
+                    onClick={handleDismissExample}
+                  >
+                    Back
+                  </Button>
+                </Group>
               )}
+              <Tabs value={activeTab} onChange={setActiveTab}>
+                <Tabs.List>
+                  <Tabs.Tab
+                    value="resume"
+                    leftSection={<IconFileText size={16} />}
+                    rightSection={
+                      resumeTabIndicator && <Center h={16}>{resumeTabIndicator}</Center>
+                    }
+                  >
+                    Resume changes
+                  </Tabs.Tab>
+                  <Tabs.Tab
+                    value="coverLetter"
+                    leftSection={
+                      planLoaded && !isProPlan ? <IconLock size={16} /> : <IconMail size={16} />
+                    }
+                    rightSection={
+                      coverLetterTabIndicator && (
+                        <Center h={16}>{coverLetterTabIndicator}</Center>
+                      )
+                    }
+                  >
+                    Cover letter
+                  </Tabs.Tab>
+                </Tabs.List>
+                <Tabs.Panel value="resume" pt="md">
+                  <ResultsPanel
+                    key={showingExample ? 'example' : runCount}
+                    status={showingExample ? 'done' : status}
+                    result={showingExample ? SAMPLE_TAILOR_RESULT : result}
+                    isExample={showingExample}
+                    jobDescription={showingExample ? '' : lastRunJobDescription}
+                    exampleMatchScore={showingExample ? SAMPLE_MATCH_SCORE : undefined}
+                    originalDocx={showingExample ? null : originalDocx}
+                    onShowExample={status === 'idle' ? handleShowExample : undefined}
+                  />
+                </Tabs.Panel>
+                <Tabs.Panel value="coverLetter" pt="md">
+                  <CoverLetterPanel
+                    isProPlan={isProPlan}
+                    status={coverLetterStatus}
+                    result={coverLetterResult}
+                    errorMessage={coverLetterError}
+                    isExample={showingExample}
+                    exampleResult={SAMPLE_COVER_LETTER_RESULT}
+                    onRetry={retryCoverLetter}
+                    onUpgradeClick={() => setPaywallReason('coverLetter')}
+                  />
+                </Tabs.Panel>
+              </Tabs>
             </Stack>
           </Grid.Col>
         </Grid>

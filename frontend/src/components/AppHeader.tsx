@@ -34,10 +34,17 @@ type AppHeaderProps = {
   creditsLabel: string | null
   outOfCredits: boolean
   isProPlan: boolean
+  planLoaded: boolean
   onUpgradeClick: () => void
 }
 
-const AppHeader = ({ creditsLabel, outOfCredits, isProPlan, onUpgradeClick }: AppHeaderProps) => {
+const AppHeader = ({
+  creditsLabel,
+  outOfCredits,
+  isProPlan,
+  planLoaded,
+  onUpgradeClick,
+}: AppHeaderProps) => {
   return (
     <Box
       component="header"
@@ -85,7 +92,7 @@ const AppHeader = ({ creditsLabel, outOfCredits, isProPlan, onUpgradeClick }: Ap
               </Badge>
             </Tooltip>
           )}
-          {!isProPlan && (
+          {planLoaded && !isProPlan && (
             <Tooltip label="Pro: 200 tailor credits every month, 10 saved resumes, match scoring, and DOCX export">
               <Button
                 size="xs"

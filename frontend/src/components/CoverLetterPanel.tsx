@@ -29,25 +29,17 @@ import {
 } from '@tabler/icons-react'
 import type { CoverLetterResult, CoverLetterStatus } from '../lib/types'
 import { buildCoverLetterDocx, downloadDocx } from '../lib/exportDocx'
+import { SAMPLE_COVER_LETTER_RESULT } from '../lib/mockTailor'
 
 const NAME_PLACEHOLDER = '[Your Name]'
-
-const SAMPLE_LETTER = `Dear Acme Hiring Team,
-
-Your posting for a Senior Frontend Engineer caught my attention because it pairs the product problems I enjoy most with a stack I know deeply. Over the past five years I have shipped React and TypeScript applications used by hundreds of thousands of people, and I would love to bring that experience to Acme.
-
-At my current company I led the rebuild of our checkout flow, cutting page load time by 40% and lifting conversion measurably. I care about the details your team clearly values: accessible components, fast feedback loops, and interfaces that feel effortless.
-
-I would welcome the chance to talk about how I can help Acme ship its next chapter.
-
-Sincerely,
-Jordan Applicant`
 
 type CoverLetterPanelProps = {
   isProPlan: boolean
   status: CoverLetterStatus
   result: CoverLetterResult | null
   errorMessage: string | null
+  isExample?: boolean
+  exampleResult?: CoverLetterResult
   onRetry: () => void
   onUpgradeClick: () => void
 }
@@ -69,10 +61,12 @@ const LockedTeaser = ({
       <Group gap="sm">
         <IconMail size={20} color="var(--mantine-primary-color-filled)" />
         <Title order={4}>Cover letter</Title>
-        <Badge variant="light">Senior Frontend Engineer at Acme</Badge>
+        <Badge variant="light">
+          {SAMPLE_COVER_LETTER_RESULT.jobTitle} at {SAMPLE_COVER_LETTER_RESULT.companyName}
+        </Badge>
       </Group>
       <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-        {SAMPLE_LETTER}
+        {SAMPLE_COVER_LETTER_RESULT.letter}
       </Text>
     </Stack>
     <Center
@@ -104,6 +98,53 @@ const LockedTeaser = ({
   </Card>
 )
 
+const ExampleCoverLetter = ({
+  exampleResult,
+  isProPlan,
+  onUpgradeClick,
+}: {
+  exampleResult: CoverLetterResult
+  isProPlan: boolean
+  onUpgradeClick: () => void
+}) => (
+  <Card withBorder shadow="xs" padding="lg">
+    <Stack gap="md">
+      <Group gap="sm">
+        <IconMail size={20} color="var(--mantine-primary-color-filled)" />
+        <Title order={4}>Cover letter</Title>
+        <Badge color="cyan" variant="light">
+          Example
+        </Badge>
+        <Badge variant="light">
+          {exampleResult.jobTitle} at {exampleResult.companyName}
+        </Badge>
+      </Group>
+      <Box
+        p="md"
+        style={{
+          borderRadius: 8,
+          border: '1px solid var(--mantine-color-default-border)',
+          backgroundColor: 'var(--mantine-color-default-hover)',
+        }}
+      >
+        <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+          {exampleResult.letter}
+        </Text>
+      </Box>
+      {!isProPlan && (
+        <Group justify="space-between" align="center" wrap="wrap">
+          <Text size="sm" c="dimmed">
+            On the Pro plan, every tailor run also writes a cover letter like this one.
+          </Text>
+          <Button size="xs" onClick={onUpgradeClick}>
+            Upgrade to Pro
+          </Button>
+        </Group>
+      )}
+    </Stack>
+  </Card>
+)
+
 const WritingLoader = () => (
   <Card withBorder shadow="xs" padding="lg">
     <Stack gap="md">
@@ -130,6 +171,8 @@ const CoverLetterPanel = ({
   status,
   result,
   errorMessage,
+  isExample = false,
+  exampleResult,
   onRetry,
   onUpgradeClick,
 }: CoverLetterPanelProps) => {
@@ -148,6 +191,16 @@ const CoverLetterPanel = ({
     hasPrefilledName.current = true
     setCandidateName((current) => (current.length === 0 ? clerkFullName : current))
   }, [clerkFullName])
+
+  if (isExample && exampleResult) {
+    return (
+      <ExampleCoverLetter
+        exampleResult={exampleResult}
+        isProPlan={onProPlan}
+        onUpgradeClick={onUpgradeClick}
+      />
+    )
+  }
 
   if (!onProPlan) {
     return <LockedTeaser isProPlan={onProPlan} onUpgradeClick={onUpgradeClick} />

@@ -1,4 +1,4 @@
-import type { TailorResult } from './types'
+import type { CoverLetterResult, TailorResult } from './types'
 
 export const SAMPLE_RESUME = `Jordan Ellis
 Senior Software Engineer | jordan.ellis@email.com | (415) 555-0182 | San Francisco, CA
@@ -51,6 +51,25 @@ Graduated with honors; teaching assistant for Intro to Data Structures`
 export const SAMPLE_MATCH_SCORE = {
   before: 54,
   after: 86,
+}
+
+export const SAMPLE_COVER_LETTER_RESULT: CoverLetterResult = {
+  jobTitle: 'Senior Frontend Engineer',
+  companyName: 'Acme',
+  letter: `Dear Acme Hiring Team,
+
+Your posting for a Senior Frontend Engineer caught my attention because it pairs the product problems I enjoy most with a stack I know deeply. Over the past eight years I have shipped React and TypeScript applications used by hundreds of thousands of people, and I would love to bring that experience to Acme.
+
+In my current role I rebuilt the checkout flow in React and TypeScript, lifting conversion 12% on the company's highest-traffic surface. Getting there meant profiling render bottlenecks, redesigning the state model around optimistic updates, and working closely with design to keep every interaction under 100 milliseconds. It is exactly the kind of user-facing performance work your posting calls out.
+
+I have also carried features well beyond the frontend when the product needed it. I led the migration of 14 legacy services to AWS with Docker, cutting infrastructure costs by 30%, and redesigned a public REST API used by more than 200 integration partners, improving p95 latency by 40%. That end-to-end comfort means I can own a feature from database schema to pixel-level polish without waiting on handoffs.
+
+Beyond shipping, I care about how teams ship. I mentor junior engineers, maintain an open-source kanban library with over 2,000 GitHub stars, and push for the details your team clearly values: accessible components, fast feedback loops, and interfaces that feel effortless.
+
+I would welcome the chance to talk about how I can help Acme ship its next chapter.
+
+Sincerely,
+Jordan Ellis`,
 }
 
 export const SAMPLE_TAILOR_RESULT: TailorResult = {

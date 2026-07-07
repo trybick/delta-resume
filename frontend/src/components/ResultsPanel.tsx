@@ -13,7 +13,6 @@ import {
 } from '@mantine/core'
 import { useClipboard } from '@mantine/hooks'
 import {
-  IconArrowBackUp,
   IconArrowsVertical,
   IconCircleCheck,
   IconCopy,
@@ -47,7 +46,6 @@ type ResultsPanelProps = {
   exampleMatchScore?: ExampleMatchScore
   originalDocx?: OriginalDocx | null
   onShowExample?: () => void
-  onDismissExample?: () => void
 }
 
 const buildDecisionMap = (result: TailorResult | null): Record<string, ChangeDecision> => {
@@ -179,7 +177,6 @@ const ResultsPanel = ({
   exampleMatchScore,
   originalDocx = null,
   onShowExample,
-  onDismissExample,
 }: ResultsPanelProps) => {
   const [decisions, setDecisions] = useState<Record<string, ChangeDecision>>(() =>
     buildDecisionMap(result),
@@ -308,36 +305,6 @@ const ResultsPanel = ({
   return (
     <Card withBorder shadow="xs" padding="lg">
       <Stack gap="md">
-        {isExample && (
-          <Group
-            justify="space-between"
-            align="center"
-            wrap="wrap"
-            p="sm"
-            style={{
-              borderRadius: 8,
-              backgroundColor: 'var(--mantine-color-cyan-light)',
-            }}
-          >
-            <Group gap="xs">
-              <IconEye size={16} color="var(--mantine-color-cyan-4)" />
-              <Text size="sm">
-                This is an example. Try accepting or rejecting a change, then run your own tailor.
-              </Text>
-            </Group>
-            {onDismissExample && (
-              <Button
-                size="xs"
-                variant="subtle"
-                color="cyan"
-                leftSection={<IconArrowBackUp size={14} />}
-                onClick={onDismissExample}
-              >
-                Back
-              </Button>
-            )}
-          </Group>
-        )}
         <Group justify="space-between" align="center" wrap="wrap">
           <Group gap="sm">
             <Title order={4}>
