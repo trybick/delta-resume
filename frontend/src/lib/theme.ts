@@ -28,6 +28,7 @@ const deepOceanDark: MantineColorsTuple = [
 
 export const appTheme: AppTheme = {
   theme: createTheme({
+    scale: 1.1,
     primaryShade: { light: 6, dark: 5 },
     fontFamily: manropeStack,
     defaultRadius: 'md',

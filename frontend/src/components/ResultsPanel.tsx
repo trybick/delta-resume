@@ -135,7 +135,7 @@ const ContextLine = ({ line }: { line: string }) => (
     c="dimmed"
     style={{
       fontFamily: 'ui-monospace, monospace',
-      fontSize: 13,
+      fontSize: 'var(--mantine-font-size-xs)',
       lineHeight: 1.6,
       whiteSpace: 'pre-wrap',
     }}

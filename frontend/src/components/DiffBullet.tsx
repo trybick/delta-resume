@@ -53,14 +53,14 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
 
   const renderContent = () => {
     if (view === 'original') {
-      return <Text style={{ fontFamily: 'ui-monospace, monospace', fontSize: 13 }}>{change.original}</Text>
+      return <Text style={{ fontFamily: 'ui-monospace, monospace', fontSize: 'var(--mantine-font-size-xs)' }}>{change.original}</Text>
     }
     if (view === 'tailored') {
-      return <Text style={{ fontFamily: 'ui-monospace, monospace', fontSize: 13 }}>{change.tailored}</Text>
+      return <Text style={{ fontFamily: 'ui-monospace, monospace', fontSize: 'var(--mantine-font-size-xs)' }}>{change.tailored}</Text>
     }
     const parts = diffWords(change.original, change.tailored)
     return (
-      <Text component="div" style={{ fontFamily: 'ui-monospace, monospace', fontSize: 13, lineHeight: 1.7 }}>
+      <Text component="div" style={{ fontFamily: 'ui-monospace, monospace', fontSize: 'var(--mantine-font-size-xs)', lineHeight: 1.7 }}>
         {parts.map((part, index) => {
           if (part.added) {
             return (

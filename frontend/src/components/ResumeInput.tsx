@@ -211,7 +211,7 @@ const ResumeInput = ({
               autosize
               minRows={10}
               maxRows={10}
-              styles={{ input: { fontFamily: 'ui-monospace, monospace', fontSize: 13 } }}
+              styles={{ input: { fontFamily: 'ui-monospace, monospace', fontSize: 'var(--mantine-font-size-xs)' } }}
             />
             <Text
               size="xs"

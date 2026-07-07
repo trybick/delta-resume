@@ -40,17 +40,17 @@ const AppHeader = ({ creditsLabel, outOfCredits, isProPlan, onUpgradeClick }: Ap
   return (
     <Box
       component="header"
-      py="md"
+      py="xs"
       px="xl"
       bg="dark.7"
       style={{ borderBottom: '1px solid var(--mantine-color-dark-4)' }}
     >
       <Group justify="space-between">
         <Group gap="sm">
-          <DeltaLogo size={40} />
+          <DeltaLogo size={34} />
           <div>
             <Title
-              order={3}
+              order={4}
               style={{ fontFamily: spaceGroteskStack, letterSpacing: '-0.02em' }}
             >
               <Text
