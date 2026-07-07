@@ -24,11 +24,13 @@ Before starting either server, check whether it is already running:
 
 Do **not** start a second instance. If a server responds, reuse it and report the URL — do not restart it from Cursor.
 
+The user runs the backend with **`dotnet watch run`**, which hot-reloads on file changes. Do **not** restart the backend after editing backend code — changes are picked up automatically.
+
 Only start what is missing, and prefer telling the user to start it in their external terminal unless they explicitly ask you to run it:
 
 ```bash
 # Backend (from repo root)
-cd backend/DeltaResume.Api && dotnet run
+cd backend/DeltaResume.Api && dotnet watch run
 
 # Frontend
 cd frontend && npm run dev

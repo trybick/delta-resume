@@ -14,7 +14,7 @@ import {
   Title,
 } from '@mantine/core'
 import { useClipboard } from '@mantine/hooks'
-import { useUser } from '@clerk/clerk-react'
+import { useAuth, useUser } from '@clerk/clerk-react'
 import {
   IconAlertCircle,
   IconCopy,
@@ -55,7 +55,13 @@ const applyCandidateName = (letter: string, candidateName: string): string => {
   return letter.split(NAME_PLACEHOLDER).join(trimmedName)
 }
 
-const LockedTeaser = ({ onUpgradeClick }: { onUpgradeClick: () => void }) => (
+const LockedTeaser = ({
+  isProPlan,
+  onUpgradeClick,
+}: {
+  isProPlan: boolean
+  onUpgradeClick: () => void
+}) => (
   <Card withBorder shadow="xs" padding="lg" style={{ position: 'relative', overflow: 'hidden' }}>
     <Stack gap="md" style={{ filter: 'blur(5px)', userSelect: 'none' }} aria-hidden>
       <Group gap="sm">
@@ -86,9 +92,11 @@ const LockedTeaser = ({ onUpgradeClick }: { onUpgradeClick: () => void }) => (
           Every tailor run also writes a matching cover letter, ready to copy or download as a
           polished .docx.
         </Text>
-        <Button mt={4} onClick={onUpgradeClick}>
-          Upgrade to Pro
-        </Button>
+        {!isProPlan && (
+          <Button mt={4} onClick={onUpgradeClick}>
+            Upgrade to Pro
+          </Button>
+        )}
       </Stack>
     </Center>
   </Card>
@@ -124,6 +132,8 @@ const CoverLetterPanel = ({
   onUpgradeClick,
 }: CoverLetterPanelProps) => {
   const { user } = useUser()
+  const { has } = useAuth()
+  const onProPlan = isProPlan || (has?.({ plan: 'pro' }) ?? false)
   const [candidateName, setCandidateName] = useState('')
   const [isExporting, setIsExporting] = useState(false)
   const hasPrefilledName = useRef(false)
@@ -137,11 +147,24 @@ const CoverLetterPanel = ({
     setCandidateName((current) => (current.length === 0 ? clerkFullName : current))
   }, [clerkFullName])
 
-  if (!isProPlan) {
-    return <LockedTeaser onUpgradeClick={onUpgradeClick} />
+  if (!onProPlan) {
+    return <LockedTeaser isProPlan={onProPlan} onUpgradeClick={onUpgradeClick} />
   }
 
-  if (status === 'idle') return null
+  if (status === 'idle') {
+    return (
+      <Card withBorder shadow="xs" padding="lg">
+        <Stack align="center" gap="xs" py="md">
+          <IconMail size={32} color="var(--mantine-primary-color-filled)" />
+          <Title order={5}>No cover letter yet</Title>
+          <Text size="sm" c="dimmed" ta="center" maw={340}>
+            Your next tailor run will also write a matching cover letter, and it will show up
+            here.
+          </Text>
+        </Stack>
+      </Card>
+    )
+  }
 
   if (status === 'loading') return <WritingLoader />
 

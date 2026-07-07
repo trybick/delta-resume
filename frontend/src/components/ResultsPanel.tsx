@@ -262,6 +262,7 @@ const ResultsPanel = ({
   }, [result, changesByLine, decisions, matchKeywords])
   const matchScoreBefore = exampleMatchScore?.before ?? computedMatchScoreBefore
   const matchScoreAfter = exampleMatchScore?.after ?? computedMatchScoreAfter
+  const matchScoreIncrease = matchScoreAfter - matchScoreBefore
   const showMatchScore =
     exampleMatchScore !== undefined ||
     (matchKeywords.length > 0 && jobDescription.trim().length > 0)
@@ -299,9 +300,6 @@ const ResultsPanel = ({
 
   if (!result) return null
 
-  const decisionValues = result.changes.map((change) => decisions[change.id] ?? 'pending')
-  const acceptedCount = decisionValues.filter((d) => d === 'accepted').length
-  const rejectedCount = decisionValues.filter((d) => d === 'rejected').length
   const bulletChangeCount = result.changes.filter((change) => change.kind === 'bullet').length
   const skillChangeCount = result.changes.filter((change) => change.kind === 'skill').length
   const lines = result.resumeText.split('\n')
@@ -354,12 +352,6 @@ const ResultsPanel = ({
                 Example
               </Badge>
             )}
-            <Badge color="green" variant="light">
-              {acceptedCount} accepted
-            </Badge>
-            <Badge color="red" variant="light">
-              {rejectedCount} rejected
-            </Badge>
             {skillChangeCount === 0 && (
               <Tooltip label="Your skills section already matches this job description well, so no skill changes were suggested.">
                 <Badge
@@ -372,13 +364,13 @@ const ResultsPanel = ({
               </Tooltip>
             )}
             {showMatchScore && (
-              <Tooltip label="How much of the job description's keywords your resume covers. The second number reflects the changes you currently have accepted or pending.">
+              <Tooltip label="How much your keyword match improved based on accepted and pending changes.">
                 <Badge
-                  color={matchScoreAfter > matchScoreBefore ? 'green' : 'gray'}
+                  color={matchScoreIncrease > 0 ? 'green' : 'gray'}
                   variant="light"
                   leftSection={<IconTargetArrow size={12} />}
                 >
-                  Match {matchScoreBefore}% {'\u2192'} {matchScoreAfter}%
+                  Match increased by {matchScoreIncrease}%
                 </Badge>
               </Tooltip>
             )}

@@ -69,15 +69,23 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
         else
             trimmed
 
+    let normalizeContinuation (text: string) : string =
+        text
+            .Replace("\"\"companyName", "\"\",\"companyName")
+            .Replace("\"\"letter", "\"\",\"letter")
+
     let parseDraft (content: string) : Result<CoverLetterDraft, string> =
         try
-            let stripped = stripCodeFences content
+            let stripped = stripCodeFences content |> normalizeContinuation
 
             use document =
-                try
-                    JsonDocument.Parse(assistantPrefill + stripped)
-                with :? JsonException ->
+                if stripped.StartsWith "{" then
                     JsonDocument.Parse stripped
+                else
+                    try
+                        JsonDocument.Parse(assistantPrefill + stripped)
+                    with :? JsonException ->
+                        JsonDocument.Parse stripped
 
             let readString (propertyName: string) : string =
                 match document.RootElement.TryGetProperty propertyName with

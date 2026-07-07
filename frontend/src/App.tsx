@@ -1,16 +1,22 @@
 import { useEffect, useState } from 'react'
 import {
   Alert,
+  Badge,
   Box,
   Button,
   Container,
   Grid,
+  Loader,
   Stack,
+  Tabs,
   Text,
 } from '@mantine/core'
 import { useAuth } from '@clerk/clerk-react'
 import {
   IconAlertCircle,
+  IconFileText,
+  IconLock,
+  IconMail,
   IconSparkles,
 } from '@tabler/icons-react'
 import AppHeader from './components/AppHeader'
@@ -216,26 +222,70 @@ const App = () => {
                   {errorMessage}
                 </Alert>
               )}
-              <ResultsPanel
-                key={showingExample ? 'example' : runCount}
-                status={showingExample ? 'done' : status}
-                result={showingExample ? SAMPLE_TAILOR_RESULT : result}
-                isExample={showingExample}
-                jobDescription={showingExample ? '' : lastRunJobDescription}
-                exampleMatchScore={showingExample ? SAMPLE_MATCH_SCORE : undefined}
-                originalDocx={showingExample ? null : originalDocx}
-                onShowExample={() => setShowingExample(true)}
-                onDismissExample={() => setShowingExample(false)}
-              />
-              {!showingExample && status !== 'idle' && (
-                <CoverLetterPanel
-                  isProPlan={isProPlan}
-                  status={coverLetterStatus}
-                  result={coverLetterResult}
-                  errorMessage={coverLetterError}
-                  onRetry={retryCoverLetter}
-                  onUpgradeClick={() => setPaywallReason('coverLetter')}
+              {showingExample || status === 'idle' ? (
+                <ResultsPanel
+                  key={showingExample ? 'example' : runCount}
+                  status={showingExample ? 'done' : status}
+                  result={showingExample ? SAMPLE_TAILOR_RESULT : result}
+                  isExample={showingExample}
+                  jobDescription=""
+                  exampleMatchScore={showingExample ? SAMPLE_MATCH_SCORE : undefined}
+                  originalDocx={null}
+                  onShowExample={() => setShowingExample(true)}
+                  onDismissExample={() => setShowingExample(false)}
                 />
+              ) : (
+                <Tabs defaultValue="resume">
+                  <Tabs.List>
+                    <Tabs.Tab value="resume" leftSection={<IconFileText size={16} />}>
+                      Resume changes
+                    </Tabs.Tab>
+                    <Tabs.Tab
+                      value="coverLetter"
+                      leftSection={
+                        isProPlan ? <IconMail size={16} /> : <IconLock size={16} />
+                      }
+                      rightSection={
+                        !isProPlan ? (
+                          <Badge size="xs" variant="light">
+                            Pro
+                          </Badge>
+                        ) : coverLetterStatus === 'loading' ? (
+                          <Loader size={12} />
+                        ) : coverLetterStatus === 'done' ? (
+                          <Badge size="xs" variant="light" color="green">
+                            Ready
+                          </Badge>
+                        ) : coverLetterStatus === 'error' ? (
+                          <Badge size="xs" variant="light" color="red">
+                            Failed
+                          </Badge>
+                        ) : null
+                      }
+                    >
+                      Cover letter
+                    </Tabs.Tab>
+                  </Tabs.List>
+                  <Tabs.Panel value="resume" pt="md">
+                    <ResultsPanel
+                      key={runCount}
+                      status={status}
+                      result={result}
+                      jobDescription={lastRunJobDescription}
+                      originalDocx={originalDocx}
+                    />
+                  </Tabs.Panel>
+                  <Tabs.Panel value="coverLetter" pt="md">
+                    <CoverLetterPanel
+                      isProPlan={isProPlan}
+                      status={coverLetterStatus}
+                      result={coverLetterResult}
+                      errorMessage={coverLetterError}
+                      onRetry={retryCoverLetter}
+                      onUpgradeClick={() => setPaywallReason('coverLetter')}
+                    />
+                  </Tabs.Panel>
+                </Tabs>
               )}
             </Stack>
           </Grid.Col>

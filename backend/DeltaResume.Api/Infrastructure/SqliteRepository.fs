@@ -49,6 +49,13 @@ module Schema =
         )
         |> ignore
 
+        let hasStaleLastUsedColumn =
+            connection.Query<string>("SELECT name FROM pragma_table_info('saved_resumes')")
+            |> Seq.contains "last_used_at"
+
+        if hasStaleLastUsedColumn then
+            connection.Execute "ALTER TABLE saved_resumes DROP COLUMN last_used_at" |> ignore
+
 [<CLIMutable>]
 type private SavedResumeRow =
     { id: string

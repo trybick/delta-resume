@@ -27,23 +27,27 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
               | None -> ()
               yield sprintf "ip:%s" ipHash, "ip", LifetimePeriod ]
 
+    let isUnlimited (identity: RequestIdentity) : bool =
+        options.UnlimitedGuestCredits && Identity.plan identity <> ProPlan
+
+    let isAuthenticated (identity: RequestIdentity) : bool =
+        match identity with
+        | AuthenticatedUser _ -> true
+        | GuestVisitor _ -> false
+
     member _.GetStatus(ctx: HttpContext) : Task<CreditStatus> =
         task {
             let identity = Identity.resolve options ctx
             let plan = Identity.plan identity
 
-            let isUnlimitedGuest =
-                options.UnlimitedGuestCredits
-                && (match identity with
-                    | GuestVisitor _ -> true
-                    | AuthenticatedUser _ -> false)
+            if isUnlimited identity then
+                let total = CreditPlan.creditLimit plan
 
-            if isUnlimitedGuest then
                 return
-                    { Remaining = 3
-                      Total = 3
+                    { Remaining = total
+                      Total = total
                       Plan = CreditPlan.toString plan
-                      IsAuthenticated = false }
+                      IsAuthenticated = isAuthenticated identity }
             else
 
             let mutable used = 0
@@ -58,19 +62,21 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
                 { Remaining = max 0 (total - used)
                   Total = total
                   Plan = CreditPlan.toString plan
-                  IsAuthenticated =
-                    match identity with
-                    | AuthenticatedUser _ -> true
-                    | GuestVisitor _ -> false }
+                  IsAuthenticated = isAuthenticated identity }
         }
 
     member _.RecordSpend(ctx: HttpContext) : Task<unit> =
-        let entries =
-            Identity.resolve options ctx
-            |> usageKeys
-            |> List.map (fun (identityKey, kind, period) ->
-                { IdentityKey = identityKey
-                  Kind = kind
-                  Period = period })
+        let identity = Identity.resolve options ctx
 
-        store.RecordUsage entries
+        if isUnlimited identity then
+            Task.FromResult(())
+        else
+            let entries =
+                identity
+                |> usageKeys
+                |> List.map (fun (identityKey, kind, period) ->
+                    { IdentityKey = identityKey
+                      Kind = kind
+                      Period = period })
+
+            store.RecordUsage entries
