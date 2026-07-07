@@ -1,28 +1,32 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Badge,
   Button,
   Card,
   Center,
   Group,
+  Menu,
   Stack,
   Text,
   Title,
   Tooltip,
   UnstyledButton,
 } from '@mantine/core'
-import { useClipboard } from '@mantine/hooks'
+import { notifications } from '@mantine/notifications'
 import {
   IconArrowsVertical,
+  IconChevronDown,
   IconCircleCheck,
   IconCopy,
   IconCopyCheck,
   IconDownload,
   IconEye,
+  IconFileDescription,
   IconSparkles,
   IconTargetArrow,
 } from '@tabler/icons-react'
 import type { BulletChange, ChangeDecision, TailorResult, TailorStatus } from '../lib/types'
+import { copyResumeRichText } from '../lib/copyResume'
 import { buildTemplateDocx, downloadDocx, patchOriginalDocx } from '../lib/exportDocx'
 import { extractKeywords, scoreResume } from '../lib/matchScore'
 import DiffBullet from './DiffBullet'
@@ -183,11 +187,19 @@ const ResultsPanel = ({
   )
   const [expandedSegments, setExpandedSegments] = useState<Set<number>>(new Set())
   const [isExporting, setIsExporting] = useState(false)
-  const clipboard = useClipboard({ timeout: 1500 })
+  const [copied, setCopied] = useState(false)
+  const copiedTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     setExpandedSegments(new Set())
   }, [result])
+
+  useEffect(
+    () => () => {
+      if (copiedTimeoutRef.current !== null) window.clearTimeout(copiedTimeoutRef.current)
+    },
+    [],
+  )
 
   const handleExpandSegment = (startIndex: number) => {
     setExpandedSegments((current) => new Set(current).add(startIndex))
@@ -212,29 +224,53 @@ const ResultsPanel = ({
     return lines.join('\n')
   }
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!result) return
-    clipboard.copy(buildMergedText())
+    try {
+      await copyResumeRichText(buildMergedText())
+      setCopied(true)
+      if (copiedTimeoutRef.current !== null) window.clearTimeout(copiedTimeoutRef.current)
+      copiedTimeoutRef.current = window.setTimeout(() => setCopied(false), 1500)
+    } catch {
+      notifications.show({
+        color: 'red',
+        title: 'Copy failed',
+        message: 'Could not copy the resume to your clipboard.',
+      })
+    }
   }
 
-  const handleDownloadDocx = async () => {
+  const canPatchOriginal =
+    result !== null && originalDocx !== null && originalDocx.parsedText === result.resumeText
+
+  const handleDownloadTemplateDocx = async () => {
     if (!result || isExporting) return
     setIsExporting(true)
     try {
-      const canPatchOriginal =
-        originalDocx !== null && originalDocx.parsedText === result.resumeText
-      let blob: Blob | null = null
-      if (canPatchOriginal) {
-        const replacements = result.changes
-          .filter((change) => decisions[change.id] !== 'rejected')
-          .map((change) => ({ original: change.original, tailored: change.tailored }))
-        try {
-          blob = await patchOriginalDocx(originalDocx.file, replacements)
-        } catch {
-          blob = null
-        }
-      }
-      if (!blob) {
+      const blob = await buildTemplateDocx(buildMergedText())
+      downloadDocx(blob, 'tailored-resume.docx')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleDownloadPatchedDocx = async () => {
+    if (!result || !originalDocx || isExporting) return
+    setIsExporting(true)
+    try {
+      const replacements = result.changes
+        .filter((change) => decisions[change.id] !== 'rejected')
+        .map((change) => ({ original: change.original, tailored: change.tailored }))
+      let blob: Blob
+      try {
+        blob = await patchOriginalDocx(originalDocx.file, replacements)
+      } catch {
+        notifications.show({
+          color: 'orange',
+          title: 'Original layout unavailable',
+          message:
+            'We could not preserve your original formatting, so a clean template was used instead.',
+        })
         blob = await buildTemplateDocx(buildMergedText())
       }
       downloadDocx(blob, 'tailored-resume.docx')
@@ -346,22 +382,50 @@ const ResultsPanel = ({
             <Button
               size="xs"
               variant="light"
-              leftSection={
-                clipboard.copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />
-              }
+              leftSection={copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />}
               onClick={handleCopy}
             >
-              {clipboard.copied ? 'Copied' : 'Copy tailored resume'}
+              {copied ? 'Copied' : 'Copy tailored resume'}
             </Button>
-            <Button
-              size="xs"
-              variant="light"
-              leftSection={<IconDownload size={16} />}
-              loading={isExporting}
-              onClick={handleDownloadDocx}
-            >
-              Download .docx
-            </Button>
+            {canPatchOriginal ? (
+              <Menu position="bottom-end" withinPortal>
+                <Menu.Target>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    leftSection={<IconDownload size={16} />}
+                    rightSection={<IconChevronDown size={14} />}
+                    loading={isExporting}
+                  >
+                    Download .docx
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={<IconFileDescription size={16} />}
+                    onClick={handleDownloadPatchedDocx}
+                  >
+                    Keep my formatting
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconSparkles size={16} />}
+                    onClick={handleDownloadTemplateDocx}
+                  >
+                    Clean template
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            ) : (
+              <Button
+                size="xs"
+                variant="light"
+                leftSection={<IconDownload size={16} />}
+                loading={isExporting}
+                onClick={handleDownloadTemplateDocx}
+              >
+                Download .docx
+              </Button>
+            )}
           </Group>
         </Group>
 

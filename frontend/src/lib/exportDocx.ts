@@ -21,7 +21,7 @@ export type DocxReplacement = {
 const normalizeLine = (line: string): string =>
   line.replace(BULLET_MARKER, '').replace(/\s+/g, ' ').trim().toLowerCase()
 
-const stripBulletMarker = (line: string): string => line.replace(BULLET_MARKER, '')
+export const stripBulletMarker = (line: string): string => line.replace(BULLET_MARKER, '')
 
 export const patchOriginalDocx = async (
   file: File,
@@ -52,9 +52,16 @@ export const patchOriginalDocx = async (
     const paragraphText = textNodes.map((node) => node.textContent ?? '').join('')
     const tailored = replacementMap.get(normalizeLine(paragraphText))
     if (tailored === undefined) continue
+    const dominantIndex = textNodes.reduce(
+      (bestIndex, node, index) =>
+        (node.textContent ?? '').length > (textNodes[bestIndex].textContent ?? '').length
+          ? index
+          : bestIndex,
+      0,
+    )
     textNodes.forEach((node, index) => {
-      node.textContent = index === 0 ? tailored : ''
-      if (index === 0) node.setAttributeNS(XML_NS, 'xml:space', 'preserve')
+      node.textContent = index === dominantIndex ? tailored : ''
+      if (index === dominantIndex) node.setAttributeNS(XML_NS, 'xml:space', 'preserve')
     })
     patchedCount += 1
   }
@@ -65,7 +72,7 @@ export const patchOriginalDocx = async (
   return zip.generateAsync({ type: 'blob', mimeType: DOCX_MIME })
 }
 
-const isHeadingLine = (line: string): boolean => {
+export const isHeadingLine = (line: string): boolean => {
   const trimmed = line.trim()
   if (trimmed.length === 0 || trimmed.length > 48) return false
   return /[A-Z]/.test(trimmed) && trimmed === trimmed.toUpperCase()
