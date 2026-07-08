@@ -14,7 +14,7 @@ import {
   Textarea,
   Title,
 } from '@mantine/core'
-import { Dropzone } from '@mantine/dropzone'
+import { Dropzone, type FileRejection } from '@mantine/dropzone'
 import {
   IconCheck,
   IconFileText,
@@ -50,6 +50,8 @@ type ResumeInputProps = {
 type InputMode = 'upload' | 'paste' | 'saved'
 
 export const RESUME_TEXT_MAX_LENGTH = 15000
+
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
 
 const ACCEPTED_MIME_TYPES = [
   'text/plain',
@@ -106,6 +108,17 @@ const ResumeInput = ({
     } finally {
       setIsParsing(false)
     }
+  }
+
+  const handleDropReject = (rejections: FileRejection[]) => {
+    const isTooLarge = rejections.some((rejection) =>
+      rejection.errors.some((error) => error.code === 'file-too-large'),
+    )
+    setParseError(
+      isTooLarge
+        ? 'That file is too large. The maximum size is 5 MB.'
+        : 'That file type is not supported. Use .txt, .md, .pdf, or .docx.',
+    )
   }
 
   const handleStartRename = (resume: SavedResume) => {
@@ -179,7 +192,9 @@ const ResumeInput = ({
           <Stack gap="xs">
             <Dropzone
               onDrop={handleDrop}
+              onReject={handleDropReject}
               accept={ACCEPTED_MIME_TYPES}
+              maxSize={MAX_FILE_SIZE_BYTES}
               maxFiles={1}
               multiple={false}
               loading={isParsing}
@@ -190,7 +205,7 @@ const ResumeInput = ({
                   {isParsing ? 'Reading your resume…' : 'Drop your resume here or click to browse'}
                 </Text>
                 <Text size="xs" c="dimmed">
-                  .txt, .md, .pdf, or .docx
+                  .txt, .md, .pdf, or .docx — up to 5 MB
                 </Text>
               </Stack>
             </Dropzone>

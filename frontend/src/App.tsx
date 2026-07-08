@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Alert,
   Badge,
@@ -45,6 +45,7 @@ import { registerTokenGetter } from './lib/authToken'
 import { subscribeToRateLimit } from './lib/rateLimitNotice'
 import { formatDefaultResumeName } from './lib/formatDefaultResumeName'
 import { normalizeResumeTextForComparison } from './lib/exportDocx'
+import { cleanupOriginalDocxStore, loadOriginalDocx, saveOriginalDocx } from './lib/docxStore'
 import type { PaywallReason } from './components/PaywallModal'
 import type { SavedResume } from './lib/types'
 
@@ -74,9 +75,17 @@ const App = () => {
   const [activeTab, setActiveTab] = useState<string | null>('resume')
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null)
 
+  const pendingDocxRestoreRef = useRef<string | null>(null)
+
   const { credits, outOfCredits, creditsLabel, loadCredits } = useCredits()
-  const { savedResumes, isLoadingSavedResumes, loadSavedResumes, renameResume, deleteResume } =
-    useSavedResumes()
+  const {
+    savedResumes,
+    isLoadingSavedResumes,
+    hasLoadedSavedResumes,
+    loadSavedResumes,
+    renameResume,
+    deleteResume,
+  } = useSavedResumes()
   const { status, result, runCount, errorMessage, clearError, runTailor } = useTailorRun({
     onSuccess: () => {
       trackEvent('tailor_resume')
@@ -128,20 +137,42 @@ const App = () => {
     }
   }, [credits])
 
+  useEffect(() => {
+    if (!hasLoadedSavedResumes || isLoadingSavedResumes) return
+    const keepTexts = savedResumes.map((resume) => resume.resumeText)
+    if (originalDocx) keepTexts.push(originalDocx.parsedText)
+    void cleanupOriginalDocxStore(keepTexts)
+  }, [hasLoadedSavedResumes, isLoadingSavedResumes, savedResumes, originalDocx])
+
+  const handleResumeTextChange = (text: string) => {
+    pendingDocxRestoreRef.current = null
+    setResumeText(text)
+  }
+
   const handleFileAttach = (file: AttachedFile, text: string, sourceFile: File) => {
+    pendingDocxRestoreRef.current = null
     setAttachedFile(file)
     setResumeText(text)
-    setOriginalDocx(
-      sourceFile.name.toLowerCase().endsWith('.docx')
-        ? { file: sourceFile, parsedText: text }
-        : null,
-    )
+    const isDocx = sourceFile.name.toLowerCase().endsWith('.docx')
+    setOriginalDocx(isDocx ? { file: sourceFile, parsedText: text } : null)
+    if (isDocx) {
+      void saveOriginalDocx(text, sourceFile)
+    }
   }
 
   const handleClearResume = () => {
+    pendingDocxRestoreRef.current = null
     setAttachedFile(null)
     setOriginalDocx(null)
     setResumeText('')
+  }
+
+  const restoreSavedDocx = async (savedResumeText: string) => {
+    const file = await loadOriginalDocx(savedResumeText)
+    if (!file || pendingDocxRestoreRef.current !== savedResumeText) return
+    pendingDocxRestoreRef.current = null
+    setAttachedFile({ name: file.name, size: file.size })
+    setOriginalDocx({ file, parsedText: savedResumeText })
   }
 
   const handleSelectSaved = (resume: SavedResume) => {
@@ -150,11 +181,15 @@ const App = () => {
       normalizeResumeTextForComparison(originalDocx.parsedText) ===
         normalizeResumeTextForComparison(resume.resumeText)
 
-    if (!matchesAttachedDocx) {
-      setAttachedFile(null)
-      setOriginalDocx(null)
-    }
     setResumeText(resume.resumeText)
+    if (matchesAttachedDocx) {
+      pendingDocxRestoreRef.current = null
+      return
+    }
+    setAttachedFile(null)
+    setOriginalDocx(null)
+    pendingDocxRestoreRef.current = resume.resumeText
+    void restoreSavedDocx(resume.resumeText)
   }
 
   const handleShowExample = () => {
@@ -184,6 +219,9 @@ const App = () => {
         resumeText: resumeText.trim(),
         jobDescription: jobDescription.trim(),
       })
+      if (originalDocx) {
+        void saveOriginalDocx(originalDocx.parsedText, originalDocx.file)
+      }
     }
   }
 
@@ -240,7 +278,7 @@ const App = () => {
                 isLoadingSavedResumes={isLoadingSavedResumes}
                 savedResumeLimit={isProPlan ? 10 : 1}
                 isProPlan={isProPlan}
-                onResumeTextChange={setResumeText}
+                onResumeTextChange={handleResumeTextChange}
                 onFileAttach={handleFileAttach}
                 onClear={handleClearResume}
                 onSelectSaved={handleSelectSaved}
