@@ -1,5 +1,6 @@
 import JSZip from 'jszip'
 import { AlignmentType, BorderStyle, Document, Packer, Paragraph, TextRun } from 'docx'
+import { formatCoverLetterDate, formatCoverLetterSubject } from './formatCoverLetter'
 import type { ResumeStructure } from './types'
 
 const WORD_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
@@ -290,11 +291,7 @@ export const buildCoverLetterDocx = async (
     )
   }
 
-  const dateLine = new Date().toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  })
+  const dateLine = formatCoverLetterDate()
   paragraphs.push(
     new Paragraph({
       spacing: { before: headerName.length > 0 ? 240 : 0, after: 120 },
@@ -302,14 +299,14 @@ export const buildCoverLetterDocx = async (
     }),
   )
 
-  const subjectParts = [jobTitle.trim(), companyName.trim()].filter((part) => part.length > 0)
-  if (subjectParts.length > 0) {
+  const subjectLine = formatCoverLetterSubject(jobTitle, companyName)
+  if (subjectLine) {
     paragraphs.push(
       new Paragraph({
         spacing: { after: 240 },
         children: [
           new TextRun({
-            text: `Re: ${subjectParts.join(' at ')}`,
+            text: subjectLine,
             font: FONT,
             size: LETTER_META_SIZE,
             bold: true,

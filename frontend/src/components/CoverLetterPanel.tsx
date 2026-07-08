@@ -30,9 +30,8 @@ import {
 } from '@tabler/icons-react'
 import type { CoverLetterResult, CoverLetterStatus } from '../lib/types'
 import { buildCoverLetterDocx, downloadDocx } from '../lib/exportDocx'
+import { formatCoverLetterText, formatCoverLetterSignature, prependCoverLetterDate } from '../lib/formatCoverLetter'
 import { SAMPLE_COVER_LETTER_RESULT } from '../lib/mockTailor'
-
-const NAME_PLACEHOLDER = '[Your Name]'
 
 type CoverLetterPanelProps = {
   isProPlan: boolean
@@ -43,11 +42,6 @@ type CoverLetterPanelProps = {
   exampleResult?: CoverLetterResult
   onRetry: () => void
   onUpgradeClick: () => void
-}
-
-const applyCandidateName = (letter: string, candidateName: string): string => {
-  const signatureName = candidateName.trim() || NAME_PLACEHOLDER
-  return `${letter.trimEnd()}\n${signatureName}`
 }
 
 const LockedTeaser = ({
@@ -64,7 +58,7 @@ const LockedTeaser = ({
         <Title order={4}>Cover letter</Title>
       </Group>
       <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-        {SAMPLE_COVER_LETTER_RESULT.letter}
+        {prependCoverLetterDate(SAMPLE_COVER_LETTER_RESULT.letter)}
       </Text>
     </Stack>
     <Center
@@ -123,7 +117,7 @@ const ExampleCoverLetter = ({
         }}
       >
         <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-          {exampleResult.letter}
+          {prependCoverLetterDate(exampleResult.letter)}
         </Text>
       </Box>
       {!isProPlan && (
@@ -331,7 +325,7 @@ const CoverLetterPanel = ({
 
   if (!result) return null
 
-  const displayLetter = applyCandidateName(result.letter, candidateName)
+  const displayLetter = formatCoverLetterText(result.letter, candidateName)
 
   const handleCopy = () => {
     clipboard.copy(displayLetter)
@@ -342,7 +336,7 @@ const CoverLetterPanel = ({
     setIsExporting(true)
     try {
       const blob = await buildCoverLetterDocx(
-        displayLetter,
+        formatCoverLetterSignature(result.letter, candidateName),
         candidateName,
         result.jobTitle,
         result.companyName,
