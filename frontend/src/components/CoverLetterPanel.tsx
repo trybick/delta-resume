@@ -8,6 +8,7 @@ import {
   Card,
   Center,
   Group,
+  Menu,
   Skeleton,
   Stack,
   Text,
@@ -19,17 +20,22 @@ import { useClipboard } from '@mantine/hooks'
 import { useAuth, useUser } from '@clerk/clerk-react'
 import {
   IconAlertCircle,
+  IconChevronDown,
   IconCopy,
   IconCopyCheck,
   IconDownload,
+  IconFileDescription,
+  IconFileTypePdf,
   IconInfoCircle,
   IconLock,
   IconMail,
   IconRefresh,
   IconSparkles,
 } from '@tabler/icons-react'
+import { notifications } from '@mantine/notifications'
 import type { CoverLetterResult, CoverLetterStatus } from '../lib/types'
 import { buildCoverLetterDocx, downloadDocx } from '../lib/exportDocx'
+import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf'
 import { formatCoverLetterText, formatCoverLetterSignature, prependCoverLetterDate } from '../lib/formatCoverLetter'
 import { SAMPLE_COVER_LETTER_RESULT } from '../lib/mockTailor'
 
@@ -331,17 +337,33 @@ const CoverLetterPanel = ({
     clipboard.copy(displayLetter)
   }
 
-  const handleDownloadDocx = async () => {
+  const buildCoverLetterBlob = (): Promise<Blob> =>
+    buildCoverLetterDocx(
+      formatCoverLetterSignature(result.letter, candidateName),
+      candidateName,
+      result.jobTitle,
+      result.companyName,
+    )
+
+  const handleExport = async (format: 'docx' | 'pdf') => {
     if (isExporting) return
     setIsExporting(true)
     try {
-      const blob = await buildCoverLetterDocx(
-        formatCoverLetterSignature(result.letter, candidateName),
-        candidateName,
-        result.jobTitle,
-        result.companyName,
-      )
-      downloadDocx(blob, 'cover-letter.docx')
+      const docxBlob = await buildCoverLetterBlob()
+      if (format === 'docx') {
+        downloadDocx(docxBlob, 'cover-letter.docx')
+        return
+      }
+      try {
+        const pdfBlob = await convertDocxToPdf(docxBlob)
+        downloadPdf(pdfBlob, 'cover-letter.pdf')
+      } catch {
+        notifications.show({
+          color: 'red',
+          title: 'PDF export failed',
+          message: 'Could not generate a PDF. Try downloading the .docx instead.',
+        })
+      }
     } finally {
       setIsExporting(false)
     }
@@ -366,15 +388,33 @@ const CoverLetterPanel = ({
             >
               {clipboard.copied ? 'Copied' : 'Copy cover letter'}
             </Button>
-            <Button
-              size="xs"
-              variant="light"
-              leftSection={<IconDownload size={16} />}
-              loading={isExporting}
-              onClick={handleDownloadDocx}
-            >
-              Download .docx
-            </Button>
+            <Menu position="bottom-end" withinPortal>
+              <Menu.Target>
+                <Button
+                  size="xs"
+                  variant="light"
+                  leftSection={<IconDownload size={16} />}
+                  rightSection={<IconChevronDown size={14} />}
+                  loading={isExporting}
+                >
+                  Export
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={<IconFileDescription size={16} />}
+                  onClick={() => handleExport('docx')}
+                >
+                  Word (.docx)
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconFileTypePdf size={16} />}
+                  onClick={() => handleExport('pdf')}
+                >
+                  PDF (.pdf)
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           </Group>
         </Group>
         <TailoredLetterBanner jobTitle={result.jobTitle} companyName={result.companyName} />

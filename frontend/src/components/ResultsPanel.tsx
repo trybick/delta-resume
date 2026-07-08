@@ -32,6 +32,7 @@ import {
   buildStructuredDocx,
   buildTemplateDocx,
   downloadDocx,
+  normalizeResumeTextForComparison,
   patchOriginalDocx,
 } from '../lib/exportDocx'
 import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf'
@@ -249,7 +250,10 @@ const ResultsPanel = ({
   }
 
   const canPatchOriginal =
-    result !== null && originalDocx !== null && originalDocx.parsedText === result.resumeText
+    result !== null &&
+    originalDocx !== null &&
+    normalizeResumeTextForComparison(originalDocx.parsedText) ===
+      normalizeResumeTextForComparison(result.resumeText)
 
   const buildCleanDocx = (): Promise<Blob> =>
     result?.structure

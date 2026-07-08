@@ -23,6 +23,14 @@ export type DocxReplacement = {
 const normalizeLine = (line: string): string =>
   line.replace(BULLET_MARKER, '').replace(/\s+/g, ' ').trim().toLowerCase()
 
+export const normalizeResumeTextForComparison = (text: string): string =>
+  text
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .join('\n')
+
 export const stripBulletMarker = (line: string): string => line.replace(BULLET_MARKER, '')
 
 export const patchOriginalDocx = async (
