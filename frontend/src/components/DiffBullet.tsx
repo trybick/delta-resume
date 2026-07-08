@@ -91,6 +91,16 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
           {renderContent()}
         </Box>
         <Group gap={4} wrap="nowrap">
+          <Tooltip label={decision === 'reverted' ? 'Re-apply change' : 'Revert to original'}>
+            <ActionIcon
+              variant={decision === 'reverted' ? 'filled' : 'light'}
+              color={decision === 'reverted' ? 'green' : 'red'}
+              onClick={handleToggleRevert}
+              aria-label={decision === 'reverted' ? 'Re-apply change' : 'Revert to original'}
+            >
+              {decision === 'reverted' ? <IconRefresh size={16} /> : <IconArrowBackUp size={16} />}
+            </ActionIcon>
+          </Tooltip>
           <Tooltip label={clipboard.copied ? 'Copied' : 'Copy entire bullet'}>
             <ActionIcon
               variant="light"
@@ -99,16 +109,6 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
               aria-label="Copy entire bullet"
             >
               {clipboard.copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />}
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label={decision === 'reverted' ? 'Re-apply change' : 'Revert to original'}>
-            <ActionIcon
-              variant={decision === 'reverted' ? 'filled' : 'light'}
-              color={decision === 'reverted' ? 'green' : 'gray'}
-              onClick={handleToggleRevert}
-              aria-label={decision === 'reverted' ? 'Re-apply change' : 'Revert to original'}
-            >
-              {decision === 'reverted' ? <IconRefresh size={16} /> : <IconArrowBackUp size={16} />}
             </ActionIcon>
           </Tooltip>
         </Group>

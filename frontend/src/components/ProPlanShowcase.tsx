@@ -97,9 +97,11 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
               >
                 Pro
               </Text>
-              <Badge size="sm" variant="light" color="cyan">
-                Most popular
-              </Badge>
+              {billingPeriod === 'annual' && (
+                <Badge size="sm" variant="light" color="cyan">
+                  Most popular
+                </Badge>
+              )}
             </Group>
             <Group gap={6} align="baseline">
               {displayedPrice ? (
