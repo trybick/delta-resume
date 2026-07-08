@@ -33,7 +33,7 @@ export type TailorResult = {
   structure?: ResumeStructure | null
 }
 
-export type ChangeDecision = 'pending' | 'accepted' | 'rejected'
+export type ChangeDecision = 'accepted' | 'reverted'
 
 export type CoverLetterStatus = 'idle' | 'loading' | 'done' | 'error'
 

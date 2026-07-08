@@ -7,7 +7,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { useClipboard } from '@mantine/hooks'
-import { IconCheck, IconCopy, IconCopyCheck, IconX } from '@tabler/icons-react'
+import { IconArrowBackUp, IconCopy, IconCopyCheck, IconRefresh } from '@tabler/icons-react'
 import { diffWords } from 'diff'
 import type { BulletChange, ChangeDecision } from '../lib/types'
 
@@ -18,24 +18,19 @@ type DiffBulletProps = {
 }
 
 const borderColorByDecision: Record<ChangeDecision, string> = {
-  pending: 'var(--mantine-primary-color-filled)',
   accepted: 'var(--mantine-color-green-6)',
-  rejected: 'var(--mantine-color-red-6)',
+  reverted: 'var(--mantine-color-gray-6)',
 }
 
 const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => {
   const clipboard = useClipboard({ timeout: 1500 })
 
   const handleCopyBullet = () => {
-    clipboard.copy(decision === 'rejected' ? change.original : change.tailored)
+    clipboard.copy(decision === 'reverted' ? change.original : change.tailored)
   }
 
-  const handleAccept = () => {
-    onDecisionChange(change.id, decision === 'accepted' ? 'pending' : 'accepted')
-  }
-
-  const handleReject = () => {
-    onDecisionChange(change.id, decision === 'rejected' ? 'pending' : 'rejected')
+  const handleToggleRevert = () => {
+    onDecisionChange(change.id, decision === 'reverted' ? 'accepted' : 'reverted')
   }
 
   const renderContent = () => {
@@ -88,7 +83,7 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
       radius="md"
       style={{
         borderLeft: `3px solid ${borderColorByDecision[decision]}`,
-        opacity: decision === 'rejected' ? 0.6 : 1,
+        opacity: decision === 'reverted' ? 0.6 : 1,
       }}
     >
       <Group align="center" wrap="nowrap" gap="sm">
@@ -106,24 +101,14 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
               {clipboard.copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />}
             </ActionIcon>
           </Tooltip>
-          <Tooltip label={decision === 'accepted' ? 'Undo accept' : 'Accept change'}>
+          <Tooltip label={decision === 'reverted' ? 'Re-apply change' : 'Revert to original'}>
             <ActionIcon
-              variant={decision === 'accepted' ? 'filled' : 'light'}
-              color="green"
-              onClick={handleAccept}
-              aria-label="Accept change"
+              variant={decision === 'reverted' ? 'filled' : 'light'}
+              color={decision === 'reverted' ? 'green' : 'gray'}
+              onClick={handleToggleRevert}
+              aria-label={decision === 'reverted' ? 'Re-apply change' : 'Revert to original'}
             >
-              <IconCheck size={16} />
-            </ActionIcon>
-          </Tooltip>
-          <Tooltip label={decision === 'rejected' ? 'Undo reject' : 'Reject change'}>
-            <ActionIcon
-              variant={decision === 'rejected' ? 'filled' : 'light'}
-              color="red"
-              onClick={handleReject}
-              aria-label="Reject change"
-            >
-              <IconX size={16} />
+              {decision === 'reverted' ? <IconRefresh size={16} /> : <IconArrowBackUp size={16} />}
             </ActionIcon>
           </Tooltip>
         </Group>

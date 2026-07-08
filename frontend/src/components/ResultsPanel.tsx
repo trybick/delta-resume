@@ -62,7 +62,7 @@ type ResultsPanelProps = {
 
 const buildDecisionMap = (result: TailorResult | null): Record<string, ChangeDecision> => {
   if (!result) return {}
-  return Object.fromEntries(result.changes.map((change) => [change.id, 'pending']))
+  return Object.fromEntries(result.changes.map((change) => [change.id, 'accepted']))
 }
 
 const CONTEXT_LINES_PER_SIDE = 2
@@ -227,7 +227,7 @@ const ResultsPanel = ({
     return result.resumeText.split('\n').map((line, lineIndex) => {
       const change = changesByLine.get(lineIndex)
       if (!change) return line
-      return decisions[change.id] === 'rejected' ? change.original : change.tailored
+      return decisions[change.id] === 'reverted' ? change.original : change.tailored
     })
   }
 
@@ -263,7 +263,7 @@ const ResultsPanel = ({
   const buildPatchedDocx = async (): Promise<Blob> => {
     if (!result || !originalDocx) return buildCleanDocx()
     const replacements = result.changes
-      .filter((change) => decisions[change.id] !== 'rejected')
+      .filter((change) => decisions[change.id] !== 'reverted')
       .map((change) => ({ original: change.original, tailored: change.tailored }))
     try {
       return await patchOriginalDocx(originalDocx.file, replacements)
@@ -312,7 +312,7 @@ const ResultsPanel = ({
     const mergedLines = result.resumeText.split('\n').map((line, lineIndex) => {
       const change = changesByLine.get(lineIndex)
       if (!change) return line
-      return decisions[change.id] === 'rejected' ? change.original : change.tailored
+      return decisions[change.id] === 'reverted' ? change.original : change.tailored
     })
     return scoreResume(mergedLines.join('\n'), matchKeywords)
   }, [result, changesByLine, decisions, matchKeywords])
@@ -390,7 +390,7 @@ const ResultsPanel = ({
               </Tooltip>
             )}
             {showMatchScore && matchScoreIncrease > 0  && (
-              <Tooltip label="How much your keyword match improved based on accepted and pending changes.">
+              <Tooltip label="How much your keyword match improved based on the applied changes.">
                 <Badge
                   color="green"
                   variant="light"
@@ -472,7 +472,7 @@ const ResultsPanel = ({
                 <DiffBullet
                   key={segment.change.id}
                   change={segment.change}
-                  decision={decisions[segment.change.id] ?? 'pending'}
+                  decision={decisions[segment.change.id] ?? 'accepted'}
                   onDecisionChange={handleDecisionChange}
                 />
               )
