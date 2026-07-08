@@ -115,4 +115,57 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
       kind: 'skill',
     },
   ],
+  structure: {
+    headerLines: [0, 1, 2],
+    sections: [
+      {
+        headingLine: 4,
+        items: [
+          { kind: 'paragraph', lines: [6] },
+          { kind: 'paragraph', lines: [7] },
+          { kind: 'paragraph', lines: [8] },
+          { kind: 'paragraph', lines: [9] },
+        ],
+      },
+      {
+        headingLine: 11,
+        items: [{ kind: 'paragraph', lines: [13, 14, 15] }],
+      },
+      {
+        headingLine: 17,
+        items: [
+          { kind: 'subheading', lines: [19] },
+          { kind: 'bullet', lines: [20] },
+          { kind: 'bullet', lines: [21] },
+          { kind: 'bullet', lines: [22] },
+          { kind: 'bullet', lines: [23] },
+          { kind: 'bullet', lines: [24] },
+          { kind: 'bullet', lines: [25] },
+          { kind: 'subheading', lines: [27] },
+          { kind: 'bullet', lines: [28] },
+          { kind: 'bullet', lines: [29] },
+          { kind: 'bullet', lines: [30] },
+          { kind: 'bullet', lines: [31] },
+          { kind: 'bullet', lines: [32] },
+          { kind: 'subheading', lines: [34] },
+          { kind: 'bullet', lines: [35] },
+          { kind: 'bullet', lines: [36] },
+        ],
+      },
+      {
+        headingLine: 38,
+        items: [
+          { kind: 'paragraph', lines: [40] },
+          { kind: 'paragraph', lines: [41] },
+        ],
+      },
+      {
+        headingLine: 43,
+        items: [
+          { kind: 'subheading', lines: [45] },
+          { kind: 'paragraph', lines: [46] },
+        ],
+      },
+    ],
+  },
 }

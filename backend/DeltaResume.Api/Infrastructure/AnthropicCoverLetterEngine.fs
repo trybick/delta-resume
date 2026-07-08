@@ -71,6 +71,7 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
 
     let normalizeContinuation (text: string) : string =
         text
+            .Replace("\"\"jobTitle", "\"\",\"jobTitle")
             .Replace("\"\"companyName", "\"\",\"companyName")
             .Replace("\"\"letter", "\"\",\"letter")
 
@@ -78,14 +79,11 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
         try
             let stripped = stripCodeFences content |> normalizeContinuation
 
-            use document =
-                if stripped.StartsWith "{" then
-                    JsonDocument.Parse stripped
-                else
-                    try
-                        JsonDocument.Parse(assistantPrefill + stripped)
-                    with :? JsonException ->
-                        JsonDocument.Parse stripped
+            let jsonText =
+                if stripped.StartsWith "{" then stripped
+                else assistantPrefill + stripped
+
+            use document = JsonDocument.Parse jsonText
 
             let readString (propertyName: string) : string =
                 match document.RootElement.TryGetProperty propertyName with

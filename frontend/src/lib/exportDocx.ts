@@ -1,12 +1,13 @@
 import JSZip from 'jszip'
 import { AlignmentType, BorderStyle, Document, Packer, Paragraph, TextRun } from 'docx'
+import type { ResumeStructure } from './types'
 
 const WORD_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main'
 const XML_NS = 'http://www.w3.org/XML/1998/namespace'
 const DOCX_MIME =
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
-const BULLET_MARKER = /^[\s\u00A0]*[-•–—*]\s*/
+const BULLET_MARKER = /^[\s\u00A0]*(?:[-–—•‣◦▪▫·∙●○*+>][\s\u00A0]*|\d{1,2}[.)][\s\u00A0]+)/
 
 const FONT = 'Calibri'
 const BODY_SIZE = 22
@@ -72,9 +73,42 @@ export const patchOriginalDocx = async (
   return zip.generateAsync({ type: 'blob', mimeType: DOCX_MIME })
 }
 
+const SECTION_NAMES = new Set([
+  'summary',
+  'profile',
+  'objective',
+  'about',
+  'about me',
+  'skills',
+  'technical skills',
+  'core competencies',
+  'experience',
+  'work experience',
+  'professional experience',
+  'employment history',
+  'education',
+  'projects',
+  'certifications',
+  'certificates',
+  'awards',
+  'publications',
+  'volunteering',
+  'volunteer experience',
+  'languages',
+  'interests',
+])
+
+export const isBulletLine = (line: string): boolean => {
+  const trimmed = line.trim()
+  const stripped = stripBulletMarker(line).trim()
+  return stripped !== trimmed && stripped.length > 0
+}
+
 export const isHeadingLine = (line: string): boolean => {
   const trimmed = line.trim()
   if (trimmed.length === 0 || trimmed.length > 48) return false
+  if (isBulletLine(line)) return false
+  if (SECTION_NAMES.has(trimmed.replace(/:$/, '').toLowerCase())) return true
   return /[A-Z]/.test(trimmed) && trimmed === trimmed.toUpperCase()
 }
 
@@ -90,20 +124,21 @@ const buildParagraph = (line: string, index: number, previousBlank: boolean): Pa
     })
   }
 
+  if (isBulletLine(line)) {
+    return new Paragraph({
+      bullet: { level: 0 },
+      spacing: { after: 40 },
+      children: [
+        new TextRun({ text: stripBulletMarker(line).trim(), font: FONT, size: BODY_SIZE }),
+      ],
+    })
+  }
+
   if (isHeadingLine(line)) {
     return new Paragraph({
       spacing: { before: 220, after: 80 },
       border: { bottom: { style: BorderStyle.SINGLE, size: 4, space: 2 } },
       children: [new TextRun({ text: trimmed, font: FONT, size: HEADING_SIZE, bold: true })],
-    })
-  }
-
-  const strippedBullet = stripBulletMarker(line).trim()
-  if (strippedBullet !== trimmed && strippedBullet.length > 0) {
-    return new Paragraph({
-      bullet: { level: 0 },
-      spacing: { after: 40 },
-      children: [new TextRun({ text: strippedBullet, font: FONT, size: BODY_SIZE })],
     })
   }
 
@@ -128,6 +163,91 @@ export const buildTemplateDocx = async (resumeText: string): Promise<Blob> => {
     if (paragraph) paragraphs.push(paragraph)
     contentIndex += 1
     previousBlank = false
+  })
+
+  const document = new Document({
+    sections: [{ children: paragraphs }],
+  })
+
+  return Packer.toBlob(document)
+}
+
+const structuredText = (lines: string[], lineIndexes: number[]): string =>
+  lineIndexes
+    .map((lineIndex) => stripBulletMarker(lines[lineIndex] ?? '').trim())
+    .filter((text) => text.length > 0)
+    .join(' ')
+
+export const buildStructuredDocx = async (
+  lines: string[],
+  structure: ResumeStructure,
+): Promise<Blob> => {
+  const paragraphs: Paragraph[] = []
+
+  structure.headerLines.forEach((lineIndex, headerIndex) => {
+    const text = structuredText(lines, [lineIndex])
+    if (!text) return
+    paragraphs.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: headerIndex === 0 ? 60 : 20 },
+        children: [
+          new TextRun({
+            text,
+            font: FONT,
+            size: headerIndex === 0 ? NAME_SIZE : BODY_SIZE,
+            bold: headerIndex === 0,
+          }),
+        ],
+      }),
+    )
+  })
+
+  structure.sections.forEach((section) => {
+    if (section.headingLine !== null) {
+      const headingText = structuredText(lines, [section.headingLine])
+      if (headingText) {
+        paragraphs.push(
+          new Paragraph({
+            spacing: { before: 220, after: 80 },
+            border: { bottom: { style: BorderStyle.SINGLE, size: 4, space: 2 } },
+            children: [
+              new TextRun({ text: headingText, font: FONT, size: HEADING_SIZE, bold: true }),
+            ],
+          }),
+        )
+      }
+    }
+
+    section.items.forEach((item) => {
+      const text = structuredText(lines, item.lines)
+      if (!text) return
+      if (item.kind === 'bullet') {
+        paragraphs.push(
+          new Paragraph({
+            bullet: { level: 0 },
+            spacing: { after: 40 },
+            children: [new TextRun({ text, font: FONT, size: BODY_SIZE })],
+          }),
+        )
+        return
+      }
+      if (item.kind === 'subheading') {
+        paragraphs.push(
+          new Paragraph({
+            spacing: { before: 120, after: 40 },
+            children: [new TextRun({ text, font: FONT, size: BODY_SIZE, bold: true })],
+          }),
+        )
+        return
+      }
+      paragraphs.push(
+        new Paragraph({
+          spacing: { after: 80 },
+          children: [new TextRun({ text, font: FONT, size: BODY_SIZE })],
+        }),
+      )
+    })
   })
 
   const document = new Document({

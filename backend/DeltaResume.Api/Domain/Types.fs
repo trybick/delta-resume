@@ -32,6 +32,68 @@ type ProposedChange =
       Tailored: string
       Kind: LineKind }
 
+[<RequireQualifiedAccess>]
+type ResumeItemKind =
+    | Paragraph
+    | Bullet
+    | Subheading
+
+module ResumeItemKind =
+    let toString (kind: ResumeItemKind) : string =
+        match kind with
+        | ResumeItemKind.Paragraph -> "paragraph"
+        | ResumeItemKind.Bullet -> "bullet"
+        | ResumeItemKind.Subheading -> "subheading"
+
+    let tryParse (value: string) : ResumeItemKind option =
+        match value with
+        | "paragraph" -> Some ResumeItemKind.Paragraph
+        | "bullet" -> Some ResumeItemKind.Bullet
+        | "subheading" -> Some ResumeItemKind.Subheading
+        | _ -> None
+
+type ResumeItem =
+    { Kind: ResumeItemKind
+      Lines: int list }
+
+type ResumeSection =
+    { HeadingLine: int option
+      Items: ResumeItem list }
+
+type ResumeStructure =
+    { HeaderLines: int list
+      Sections: ResumeSection list }
+
+module ResumeStructure =
+
+    /// Keeps only line indexes that exist in the resume, dropping duplicates in
+    /// document order. Returns None unless every known line ends up covered exactly
+    /// once, so a partial structure can never silently drop resume content.
+    let validate (validLineIndexes: Set<int>) (structure: ResumeStructure) : ResumeStructure option =
+        let seen = System.Collections.Generic.HashSet<int>()
+
+        let claim (lineIndex: int) : bool =
+            validLineIndexes.Contains lineIndex && seen.Add lineIndex
+
+        let headerLines = structure.HeaderLines |> List.filter claim
+
+        let sections =
+            structure.Sections
+            |> List.map (fun section ->
+                { HeadingLine = section.HeadingLine |> Option.filter claim
+                  Items =
+                    section.Items
+                    |> List.map (fun item -> { item with Lines = item.Lines |> List.filter claim })
+                    |> List.filter (fun item -> not (List.isEmpty item.Lines)) })
+            |> List.filter (fun section -> section.HeadingLine.IsSome || not (List.isEmpty section.Items))
+
+        if seen.Count = Set.count validLineIndexes && not (List.isEmpty sections) then
+            Some
+                { HeaderLines = headerLines
+                  Sections = sections }
+        else
+            None
+
 type BulletChange =
     { Id: ChangeId
       LineIndex: int
@@ -44,7 +106,8 @@ type TailorRun =
       ResumeText: string
       JobDescription: string
       CreatedAt: DateTimeOffset
-      Changes: BulletChange list }
+      Changes: BulletChange list
+      Structure: ResumeStructure option }
 
 type SavedResumeId = SavedResumeId of Guid
 

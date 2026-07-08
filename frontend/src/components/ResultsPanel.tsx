@@ -27,7 +27,12 @@ import {
 } from '@tabler/icons-react'
 import type { BulletChange, ChangeDecision, TailorResult, TailorStatus } from '../lib/types'
 import { copyResumeRichText } from '../lib/copyResume'
-import { buildTemplateDocx, downloadDocx, patchOriginalDocx } from '../lib/exportDocx'
+import {
+  buildStructuredDocx,
+  buildTemplateDocx,
+  downloadDocx,
+  patchOriginalDocx,
+} from '../lib/exportDocx'
 import { extractKeywords, scoreResume } from '../lib/matchScore'
 import DiffBullet from './DiffBullet'
 import TailoringLoader from './TailoringLoader'
@@ -214,20 +219,21 @@ const ResultsPanel = ({
     setDecisions((current) => ({ ...current, [id]: decision }))
   }
 
-  const buildMergedText = (): string => {
-    if (!result) return ''
-    const lines = result.resumeText.split('\n').map((line, lineIndex) => {
+  const buildMergedLines = (): string[] => {
+    if (!result) return []
+    return result.resumeText.split('\n').map((line, lineIndex) => {
       const change = changesByLine.get(lineIndex)
       if (!change) return line
       return decisions[change.id] === 'rejected' ? change.original : change.tailored
     })
-    return lines.join('\n')
   }
+
+  const buildMergedText = (): string => buildMergedLines().join('\n')
 
   const handleCopy = async () => {
     if (!result) return
     try {
-      await copyResumeRichText(buildMergedText())
+      await copyResumeRichText(buildMergedLines(), result.structure)
       setCopied(true)
       if (copiedTimeoutRef.current !== null) window.clearTimeout(copiedTimeoutRef.current)
       copiedTimeoutRef.current = window.setTimeout(() => setCopied(false), 1500)
@@ -243,11 +249,16 @@ const ResultsPanel = ({
   const canPatchOriginal =
     result !== null && originalDocx !== null && originalDocx.parsedText === result.resumeText
 
+  const buildCleanDocx = (): Promise<Blob> =>
+    result?.structure
+      ? buildStructuredDocx(buildMergedLines(), result.structure)
+      : buildTemplateDocx(buildMergedText())
+
   const handleDownloadTemplateDocx = async () => {
     if (!result || isExporting) return
     setIsExporting(true)
     try {
-      const blob = await buildTemplateDocx(buildMergedText())
+      const blob = await buildCleanDocx()
       downloadDocx(blob, 'tailored-resume.docx')
     } finally {
       setIsExporting(false)
@@ -271,7 +282,7 @@ const ResultsPanel = ({
           message:
             'We could not preserve your original formatting, so a clean template was used instead.',
         })
-        blob = await buildTemplateDocx(buildMergedText())
+        blob = await buildCleanDocx()
       }
       downloadDocx(blob, 'tailored-resume.docx')
     } finally {

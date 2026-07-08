@@ -10,9 +10,27 @@ export type BulletChange = {
   kind: ChangeKind
 }
 
+export type ResumeItemKind = 'paragraph' | 'bullet' | 'subheading'
+
+export type ResumeItem = {
+  kind: ResumeItemKind
+  lines: number[]
+}
+
+export type ResumeSection = {
+  headingLine: number | null
+  items: ResumeItem[]
+}
+
+export type ResumeStructure = {
+  headerLines: number[]
+  sections: ResumeSection[]
+}
+
 export type TailorResult = {
   resumeText: string
   changes: BulletChange[]
+  structure?: ResumeStructure | null
 }
 
 export type ChangeDecision = 'pending' | 'accepted' | 'rejected'

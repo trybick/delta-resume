@@ -36,10 +36,23 @@ type BulletChangeDto =
       Tailored: string
       Kind: string }
 
+type ResumeItemDto =
+    { Kind: string
+      Lines: int list }
+
+type ResumeSectionDto =
+    { HeadingLine: int option
+      Items: ResumeItemDto list }
+
+type ResumeStructureDto =
+    { HeaderLines: int list
+      Sections: ResumeSectionDto list }
+
 type TailorResponseDto =
     { RunId: Guid
       ResumeText: string
-      Changes: BulletChangeDto list }
+      Changes: BulletChangeDto list
+      Structure: ResumeStructureDto option }
 
 type ErrorResponseDto = { Message: string }
 
@@ -53,12 +66,25 @@ module Mapping =
           Tailored = change.Tailored
           Kind = LineKind.toString change.Kind }
 
+    let toStructureDto (structure: ResumeStructure) : ResumeStructureDto =
+        { HeaderLines = structure.HeaderLines
+          Sections =
+            structure.Sections
+            |> List.map (fun section ->
+                { HeadingLine = section.HeadingLine
+                  Items =
+                    section.Items
+                    |> List.map (fun item ->
+                        { Kind = ResumeItemKind.toString item.Kind
+                          Lines = item.Lines }) }) }
+
     let toResponseDto (run: TailorRun) : TailorResponseDto =
         let (RunId runId) = run.Id
 
         { RunId = runId
           ResumeText = run.ResumeText
-          Changes = run.Changes |> List.map toChangeDto }
+          Changes = run.Changes |> List.map toChangeDto
+          Structure = run.Structure |> Option.map toStructureDto }
 
     let toSavedResumeDto (resume: SavedResume) : SavedResumeDto =
         let (SavedResumeId id) = resume.Id

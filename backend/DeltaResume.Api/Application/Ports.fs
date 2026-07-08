@@ -4,9 +4,13 @@ open System
 open System.Threading.Tasks
 open DeltaResume.Domain
 
+type EngineProposal =
+    { Changes: ProposedChange list
+      Structure: ResumeStructure option }
+
 type TailoringEngine =
     abstract member ProposeChanges:
-        bullets: BulletLine list * jobDescription: string -> Task<Result<ProposedChange list, string>>
+        bullets: BulletLine list * jobDescription: string -> Task<Result<EngineProposal, string>>
 
 type CoverLetterDraft =
     { JobTitle: string

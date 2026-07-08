@@ -22,15 +22,16 @@ type TailoringService(engine: TailoringEngine) =
 
                     match engineResult with
                     | Error message -> return Error(EngineFailure message)
-                    | Ok proposals ->
-                        let changes = Bullets.toChanges bullets proposals
+                    | Ok proposal ->
+                        let changes = Bullets.toChanges bullets proposal.Changes
 
                         let run =
                             { Id = RunId(Guid.NewGuid())
                               ResumeText = resumeText
                               JobDescription = jobDescription
                               CreatedAt = DateTimeOffset.UtcNow
-                              Changes = changes }
+                              Changes = changes
+                              Structure = proposal.Structure }
 
                         return Ok run
         }
