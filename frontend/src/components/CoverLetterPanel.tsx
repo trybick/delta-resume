@@ -378,16 +378,6 @@ const CoverLetterPanel = ({
             <Title order={4}>Cover letter</Title>
           </Group>
           <Group gap="xs">
-            <Button
-              size="xs"
-              variant="light"
-              leftSection={
-                clipboard.copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />
-              }
-              onClick={handleCopy}
-            >
-              {clipboard.copied ? 'Copied' : 'Copy cover letter'}
-            </Button>
             <Menu position="bottom-end" withinPortal>
               <Menu.Target>
                 <Button
@@ -401,6 +391,15 @@ const CoverLetterPanel = ({
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={
+                    clipboard.copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />
+                  }
+                  onClick={handleCopy}
+                >
+                  {clipboard.copied ? 'Copied' : 'Copy to clipboard'}
+                </Menu.Item>
+                <Menu.Divider />
                 <Menu.Item
                   leftSection={<IconFileDescription size={16} />}
                   onClick={() => handleExport('docx')}

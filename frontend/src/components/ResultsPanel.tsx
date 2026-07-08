@@ -402,14 +402,6 @@ const ResultsPanel = ({
             )}
           </Group>
           <Group gap="xs">
-            <Button
-              size="xs"
-              variant="light"
-              leftSection={copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />}
-              onClick={handleCopy}
-            >
-              {copied ? 'Copied' : 'Copy tailored resume'}
-            </Button>
             <Menu position="bottom-end" withinPortal>
               <Menu.Target>
                 <Button
@@ -423,6 +415,15 @@ const ResultsPanel = ({
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={
+                    copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />
+                  }
+                  onClick={handleCopy}
+                >
+                  {copied ? 'Copied' : 'Copy to clipboard'}
+                </Menu.Item>
+                <Menu.Divider />
                 {canPatchOriginal && (
                   <>
                     <Menu.Label>Keep my formatting</Menu.Label>
