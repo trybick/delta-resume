@@ -29,8 +29,7 @@ import {
   IconInfoCircle,
   IconLock,
   IconMail,
-  IconRefresh,
-  IconSparkles,
+  IconRefresh
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import type { CoverLetterResult, CoverLetterStatus } from '../lib/types'
@@ -198,51 +197,6 @@ const WritingLoader = () => {
         </Stack>
       </Stack>
     </Card>
-  )
-}
-
-const TailoredLetterBanner = ({
-  jobTitle,
-  companyName,
-}: {
-  jobTitle: string
-  companyName: string
-}) => {
-  const trimmedJobTitle = jobTitle.trim()
-  const trimmedCompanyName = companyName.trim()
-  const roleDescription =
-    trimmedJobTitle.length > 0 && trimmedCompanyName.length > 0
-      ? `the ${trimmedJobTitle} role at ${trimmedCompanyName}`
-      : trimmedCompanyName.length > 0
-        ? `your application to ${trimmedCompanyName}`
-        : trimmedJobTitle.length > 0
-          ? `the ${trimmedJobTitle} role`
-          : 'this job description'
-
-  return (
-    <Box
-      p="md"
-      style={{
-        borderRadius: 8,
-        border:
-          '1px solid color-mix(in srgb, var(--mantine-primary-color-filled) 40%, transparent)',
-        background:
-          'linear-gradient(135deg, color-mix(in srgb, var(--mantine-primary-color-filled) 14%, transparent), color-mix(in srgb, var(--mantine-color-cyan-4) 10%, transparent))',
-      }}
-    >
-      <Group gap="sm" wrap="nowrap" align="flex-start">
-        <IconSparkles size={22} color="var(--mantine-primary-color-filled)" style={{ flexShrink: 0, marginTop: 2 }} />
-        <Stack gap={2}>
-          <Text fw={600} size="sm">
-            Your tailored cover letter is ready
-          </Text>
-          <Text size="sm" c="dimmed">
-            Written specifically for {roleDescription}, drawing on the strongest matches from
-            your resume.
-          </Text>
-        </Stack>
-      </Group>
-    </Box>
   )
 }
 
@@ -416,7 +370,6 @@ const CoverLetterPanel = ({
             </Menu>
           </Group>
         </Group>
-        <TailoredLetterBanner jobTitle={result.jobTitle} companyName={result.companyName} />
         <Group gap="sm" align="center" wrap="wrap">
           <Group gap={4} align="center" wrap="nowrap">
             <Text size="sm" fw={500} style={{ whiteSpace: 'nowrap' }}>
