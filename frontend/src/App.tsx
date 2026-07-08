@@ -59,6 +59,15 @@ type OriginalDocx = {
   parsedText: string
 }
 
+const PENDING_PAYWALL_KEY = 'deltaResume.pendingPaywallReason'
+const PAYWALL_REASONS: PaywallReason[] = ['credits', 'savedLimit', 'upgrade', 'coverLetter']
+
+const readPendingPaywallReason = (): PaywallReason | null => {
+  const stored = sessionStorage.getItem(PENDING_PAYWALL_KEY)
+  if (!stored) return null
+  return PAYWALL_REASONS.includes(stored as PaywallReason) ? (stored as PaywallReason) : null
+}
+
 const App = () => {
   const { isSignedIn, getToken } = useAuth()
   const [resumeText, setResumeText] = useState('')
@@ -71,6 +80,18 @@ const App = () => {
     jobDescription: string
   } | null>(null)
   const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null)
+
+  const openPaywall = (reason: PaywallReason) => {
+    setPaywallReason(reason)
+    if (!isSignedIn) {
+      sessionStorage.setItem(PENDING_PAYWALL_KEY, reason)
+    }
+  }
+
+  const handlePaywallClose = () => {
+    setPaywallReason(null)
+    sessionStorage.removeItem(PENDING_PAYWALL_KEY)
+  }
   const [showingExample, setShowingExample] = useState(false)
   const [activeTab, setActiveTab] = useState<string | null>('resume')
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null)
@@ -93,7 +114,7 @@ const App = () => {
       void loadSavedResumes()
     },
     onCreditsExhausted: () => {
-      setPaywallReason('credits')
+      openPaywall('credits')
       void loadCredits()
     },
   })
@@ -130,6 +151,14 @@ const App = () => {
     void loadCredits()
     void loadSavedResumes()
   }, [isSignedIn, loadCredits, loadSavedResumes])
+
+  useEffect(() => {
+    if (!isSignedIn) return
+    const pendingReason = readPendingPaywallReason()
+    if (!pendingReason) return
+    sessionStorage.removeItem(PENDING_PAYWALL_KEY)
+    setPaywallReason(pendingReason)
+  }, [isSignedIn])
 
   useEffect(() => {
     if (credits !== null && credits.remaining > 0) {
@@ -204,7 +233,7 @@ const App = () => {
   const handleTailor = async () => {
     if (!canTailor) return
     if (outOfCredits) {
-      setPaywallReason('credits')
+      openPaywall('credits')
       return
     }
     setShowingExample(false)
@@ -252,7 +281,7 @@ const App = () => {
         outOfCredits={outOfCredits}
         isProPlan={isProPlan}
         planLoaded={planLoaded}
-        onUpgradeClick={() => setPaywallReason('upgrade')}
+        onUpgradeClick={() => openPaywall('upgrade')}
       />
 
       <Container size="xl" py="xl" w="100%" style={{ flexGrow: 1 }}>
@@ -284,7 +313,7 @@ const App = () => {
                 onSelectSaved={handleSelectSaved}
                 onRenameSaved={renameResume}
                 onDeleteSaved={deleteResume}
-                onUpgradeClick={() => setPaywallReason('savedLimit')}
+                onUpgradeClick={() => openPaywall('savedLimit')}
               />
               <JobDescriptionInput
                 value={jobDescription}
@@ -403,7 +432,7 @@ const App = () => {
                     isExample={showingExample}
                     exampleResult={SAMPLE_COVER_LETTER_RESULT}
                     onRetry={retryCoverLetter}
-                    onUpgradeClick={() => setPaywallReason('coverLetter')}
+                    onUpgradeClick={() => openPaywall('coverLetter')}
                   />
                 </Tabs.Panel>
               </Tabs>
@@ -417,7 +446,7 @@ const App = () => {
       <PaywallModal
         opened={paywallReason !== null}
         reason={paywallReason ?? 'credits'}
-        onClose={() => setPaywallReason(null)}
+        onClose={handlePaywallClose}
         onSubscriptionChange={loadCredits}
       />
     </Box>

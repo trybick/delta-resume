@@ -10,6 +10,8 @@ const AppBootstrap = () => {
   return (
     <ClerkProvider
       publishableKey={clerkPublishableKey}
+      routerPush={(to: string) => window.history.pushState(null, '', to)}
+      routerReplace={(to: string) => window.history.replaceState(null, '', to)}
       appearance={{
         baseTheme: dark,
         variables: {
