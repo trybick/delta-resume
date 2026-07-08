@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Modal, Stack, Text, Title } from '@mantine/core'
+import { FocusTrap, Modal, Stack, Text, Title } from '@mantine/core'
 import { SignUp, useAuth, useUser } from '@clerk/clerk-react'
 import ProPlanShowcase from './ProPlanShowcase'
 
@@ -104,6 +104,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
       withCloseButton
       title={<Text fw={600}>{isSignedIn ? signedInTitle : 'Create your account'}</Text>}
     >
+      <FocusTrap.InitialFocus />
       {isSignedIn ? (
         <Stack gap="md">
           <div>
