@@ -124,18 +124,6 @@ const ExampleCoverLetter = ({
           Example
         </Badge>
       </Group>
-      <Box
-        p="md"
-        style={{
-          borderRadius: 8,
-          border: '1px solid var(--mantine-color-default-border)',
-          backgroundColor: 'var(--mantine-color-default-hover)',
-        }}
-      >
-        <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-          {prependCoverLetterDate(exampleResult.letter)}
-        </Text>
-      </Box>
       {!isProPlan && (
         <Group justify="space-between" align="center" wrap="wrap">
           <Text size="sm" c="dimmed">
@@ -152,6 +140,18 @@ const ExampleCoverLetter = ({
           </Button>
         </Group>
       )}
+      <Box
+        p="md"
+        style={{
+          borderRadius: 8,
+          border: '1px solid var(--mantine-color-default-border)',
+          backgroundColor: 'var(--mantine-color-default-hover)',
+        }}
+      >
+        <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+          {prependCoverLetterDate(exampleResult.letter)}
+        </Text>
+      </Box>
     </Stack>
   </Card>
 )
