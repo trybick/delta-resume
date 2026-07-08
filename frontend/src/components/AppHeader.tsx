@@ -22,6 +22,7 @@ import {
 import { IconCoins, IconSparkles } from '@tabler/icons-react'
 import DeltaLogo from './DeltaLogo'
 import { ProFeatureList } from './ProPlanShowcase'
+import { AnalyticsEvents, trackEvent } from '../lib/analytics'
 import { useProPlan } from '../lib/proPlan'
 import { appTheme, spaceGroteskStack } from '../lib/theme'
 
@@ -59,7 +60,10 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
           variant="gradient"
           gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
           leftSection={<IconSparkles size={14} />}
-          onClick={onUpgradeClick}
+          onClick={() => {
+            trackEvent(AnalyticsEvents.UpgradeToProHeader)
+            onUpgradeClick()
+          }}
         >
           Upgrade to Pro
         </Button>

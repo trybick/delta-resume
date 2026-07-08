@@ -13,7 +13,7 @@ import { useTailorRun } from './hooks/useTailorRun'
 import { useCoverLetter } from './hooks/useCoverLetter'
 import { useResumeDocument } from './hooks/useResumeDocument'
 import { usePaywall } from './hooks/usePaywall'
-import { trackEvent } from './lib/analytics'
+import { AnalyticsEvents, trackEvent } from './lib/analytics'
 import { registerTokenGetter } from './lib/authToken'
 import { subscribeToRateLimit } from './lib/rateLimitNotice'
 import { formatDefaultResumeName } from './lib/formatDefaultResumeName'
@@ -58,7 +58,7 @@ const App = () => {
 
   const { status, result, runCount, errorMessage, clearError, runTailor } = useTailorRun({
     onSuccess: () => {
-      trackEvent('tailor_resume')
+      trackEvent(AnalyticsEvents.TailorResume)
       void loadCredits()
       void loadSavedResumes()
     },

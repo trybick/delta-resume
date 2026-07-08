@@ -7,6 +7,16 @@ declare global {
   }
 }
 
+export type AnalyticsEventParams = Record<string, string | number | boolean>
+
+export const AnalyticsEvents = {
+  TailorResume: 'tailor_resume',
+  UpgradeToProHeader: 'upgrade_to_pro_header',
+} as const
+
+export type AnalyticsEventName =
+  (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents]
+
 let measurementId: string | null = null
 
 export const initAnalytics = (id: string) => {
@@ -28,8 +38,8 @@ export const initAnalytics = (id: string) => {
 }
 
 export const trackEvent = (
-  name: string,
-  params?: Record<string, string | number | boolean>,
+  name: AnalyticsEventName | (string & {}),
+  params?: AnalyticsEventParams,
 ) => {
   if (!measurementId) return
   window.gtag('event', name, params)
