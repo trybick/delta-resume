@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { ApiError, postCoverLetter } from '../lib/api'
+import { AnalyticsEvents, trackEvent } from '../lib/analytics'
 import type { CoverLetterResult, CoverLetterStatus } from '../lib/types'
 
 type CoverLetterInputs = {
@@ -35,8 +36,10 @@ export const useCoverLetter = (): UseCoverLetterResult => {
       if (requestIdRef.current !== requestId) return
       setResult(coverLetterResult)
       setStatus('done')
+      trackEvent(AnalyticsEvents.CoverLetterSuccess)
     } catch (error) {
       if (requestIdRef.current !== requestId) return
+      trackEvent(AnalyticsEvents.CoverLetterFailure)
       setErrorMessage(
         error instanceof ApiError
           ? error.message

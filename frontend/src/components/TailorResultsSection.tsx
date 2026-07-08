@@ -8,6 +8,7 @@ import {
   IconLock,
   IconMail,
 } from '@tabler/icons-react'
+import { AnalyticsEvents, trackEvent } from '../lib/analytics'
 import ResultsPanel from './ResultsPanel'
 import CoverLetterPanel from './CoverLetterPanel'
 import type { OriginalDocx } from '../hooks/useResumeDocument'
@@ -117,13 +118,26 @@ const TailorResultsSection = ({
             variant="subtle"
             color="cyan"
             leftSection={<IconArrowBackUp size={14} />}
-            onClick={onDismissExample}
+            onClick={() => {
+              trackEvent(AnalyticsEvents.DismissExample)
+              onDismissExample()
+            }}
           >
             Back
           </Button>
         </Group>
       )}
-      <Tabs value={activeTab} onChange={onActiveTabChange}>
+      <Tabs
+        value={activeTab}
+        onChange={(tab) => {
+          if (tab === 'resume') {
+            trackEvent(AnalyticsEvents.ResultsTabResume)
+          } else if (tab === 'coverLetter') {
+            trackEvent(AnalyticsEvents.ResultsTabCoverLetter)
+          }
+          onActiveTabChange(tab)
+        }}
+      >
         <Tabs.List>
           <Tabs.Tab
             value="resume"

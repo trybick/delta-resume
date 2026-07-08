@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { PaywallReason } from '../components/PaywallModal'
+import { AnalyticsEvents, trackEvent } from '../lib/analytics'
 
 const PENDING_PAYWALL_KEY = 'deltaResume.pendingPaywallReason'
 const PAYWALL_REASONS: PaywallReason[] = ['credits', 'savedLimit', 'upgrade', 'coverLetter']
@@ -28,6 +29,7 @@ export const usePaywall = ({
   const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(readPendingPaywallReason)
 
   const openPaywall = (reason: PaywallReason) => {
+    trackEvent(AnalyticsEvents.PaywallOpened, { reason })
     setPaywallReason(reason)
     if (!isSignedIn) {
       sessionStorage.setItem(PENDING_PAYWALL_KEY, reason)
@@ -35,6 +37,9 @@ export const usePaywall = ({
   }
 
   const closePaywall = () => {
+    if (paywallReason) {
+      trackEvent(AnalyticsEvents.PaywallClose, { reason: paywallReason })
+    }
     setPaywallReason(null)
     sessionStorage.removeItem(PENDING_PAYWALL_KEY)
   }
@@ -44,6 +49,7 @@ export const usePaywall = ({
     const pendingReason = readPendingPaywallReason()
     if (!pendingReason) return
     sessionStorage.removeItem(PENDING_PAYWALL_KEY)
+    trackEvent(AnalyticsEvents.PaywallOpened, { reason: pendingReason })
     setPaywallReason(pendingReason)
   }, [isSignedIn])
 

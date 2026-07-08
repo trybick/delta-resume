@@ -9,6 +9,7 @@ import {
   Text,
   Title,
 } from '@mantine/core'
+import { AnalyticsEvents, trackEvent } from '../lib/analytics'
 import {
   PRIVACY_POLICY,
   SUPPORT_EMAIL,
@@ -55,7 +56,12 @@ const LegalModal = ({ document, onClose }: LegalModalProps) => (
 const AppFooter = () => {
   const [openDocument, setOpenDocument] = useState<LegalDocument | null>(null)
 
-  const handleCloseModal = () => setOpenDocument(null)
+  const handleCloseModal = () => {
+    if (openDocument) {
+      trackEvent(AnalyticsEvents.CloseLegalModal, { document: openDocument.title })
+    }
+    setOpenDocument(null)
+  }
 
   return (
     <Box
@@ -76,7 +82,10 @@ const AppFooter = () => {
               c="dimmed"
               component="button"
               type="button"
-              onClick={() => setOpenDocument(TERMS_OF_SERVICE)}
+              onClick={() => {
+                trackEvent(AnalyticsEvents.TermsOfService)
+                setOpenDocument(TERMS_OF_SERVICE)
+              }}
             >
               Terms of Service
             </Anchor>
@@ -85,7 +94,10 @@ const AppFooter = () => {
               c="dimmed"
               component="button"
               type="button"
-              onClick={() => setOpenDocument(PRIVACY_POLICY)}
+              onClick={() => {
+                trackEvent(AnalyticsEvents.PrivacyPolicy)
+                setOpenDocument(PRIVACY_POLICY)
+              }}
             >
               Privacy Policy
             </Anchor>

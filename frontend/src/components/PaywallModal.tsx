@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { FocusTrap, Modal, Stack, Text, Title } from '@mantine/core'
 import { SignUp, useAuth, useUser } from '@clerk/clerk-react'
+import { AnalyticsEvents, trackEvent } from '../lib/analytics'
 import ProPlanShowcase from './ProPlanShowcase'
 
 const embeddedSignUpAppearance = {
@@ -38,8 +39,24 @@ type PaywallModalProps = {
 const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: PaywallModalProps) => {
   const { isSignedIn } = useUser()
   const { has } = useAuth()
+  const wasSignedOutRef = useRef(false)
 
   const hasProPlan = has?.({ plan: 'pro' }) ?? false
+
+  useEffect(() => {
+    if (!opened) {
+      wasSignedOutRef.current = false
+      return
+    }
+    if (!isSignedIn) {
+      wasSignedOutRef.current = true
+      return
+    }
+    if (wasSignedOutRef.current) {
+      trackEvent(AnalyticsEvents.PaywallSignUpAction, { reason })
+      wasSignedOutRef.current = false
+    }
+  }, [opened, isSignedIn, reason])
 
   useEffect(() => {
     if (!opened) return
@@ -91,6 +108,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
           : 'Create a free account to keep tailoring. Signing in with Google takes seconds.'
 
   const handleSubscriptionComplete = () => {
+    trackEvent(AnalyticsEvents.SubscriptionComplete, { reason })
     onSubscriptionChange()
     onClose()
   }

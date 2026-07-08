@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { Button, Stack } from '@mantine/core'
 import { IconRefresh } from '@tabler/icons-react'
+import { AnalyticsEvents, trackEvent } from '../lib/analytics'
 import FullPageError from './FullPageError'
 
 type ErrorBoundaryProps = {
@@ -23,6 +24,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   }
 
   handleReload = () => {
+    trackEvent(AnalyticsEvents.ErrorReload)
     window.location.reload()
   }
 

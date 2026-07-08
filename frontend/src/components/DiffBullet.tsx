@@ -9,6 +9,7 @@ import {
 import { useClipboard } from '@mantine/hooks'
 import { IconArrowBackUp, IconCopy, IconCopyCheck, IconRefresh } from '@tabler/icons-react'
 import { diffWords } from 'diff'
+import { AnalyticsEvents, trackEvent } from '../lib/analytics'
 import type { BulletChange, ChangeDecision } from '../lib/types'
 
 type DiffBulletProps = {
@@ -26,11 +27,24 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
   const clipboard = useClipboard({ timeout: 1500 })
 
   const handleCopyBullet = () => {
-    clipboard.copy(decision === 'reverted' ? change.original : change.tailored)
+    trackEvent(AnalyticsEvents.CopyBullet, { kind: change.kind })
+    try {
+      clipboard.copy(decision === 'reverted' ? change.original : change.tailored)
+      trackEvent(AnalyticsEvents.CopySuccess, { source: 'bullet' })
+    } catch {
+      trackEvent(AnalyticsEvents.CopyFailure, { source: 'bullet' })
+    }
   }
 
   const handleToggleRevert = () => {
-    onDecisionChange(change.id, decision === 'reverted' ? 'accepted' : 'reverted')
+    const nextDecision = decision === 'reverted' ? 'accepted' : 'reverted'
+    trackEvent(
+      nextDecision === 'reverted'
+        ? AnalyticsEvents.RevertChange
+        : AnalyticsEvents.ReapplyChange,
+      { kind: change.kind },
+    )
+    onDecisionChange(change.id, nextDecision)
   }
 
   const renderContent = () => {

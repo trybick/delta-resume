@@ -18,8 +18,9 @@ import {
   SignedIn,
   SignedOut,
   UserButton,
+  useClerk,
 } from '@clerk/clerk-react'
-import { IconCoins, IconSparkles } from '@tabler/icons-react'
+import { IconCoins, IconLogout, IconSettings, IconSparkles } from '@tabler/icons-react'
 import DeltaLogo from './DeltaLogo'
 import { ProFeatureList } from './ProPlanShowcase'
 import { AnalyticsEvents, trackEvent } from '../lib/analytics'
@@ -106,13 +107,43 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
             fullWidth
             variant="gradient"
             gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
-            onClick={onUpgradeClick}
+            onClick={() => {
+              trackEvent(AnalyticsEvents.SeePlanDetails)
+              onUpgradeClick()
+            }}
           >
             See plan details
           </Button>
         </Stack>
       </HoverCard.Dropdown>
     </HoverCard>
+  )
+}
+
+const TrackedUserButton = () => {
+  const clerk = useClerk()
+
+  return (
+    <UserButton>
+      <UserButton.MenuItems>
+        <UserButton.Action
+          label="Manage account"
+          labelIcon={<IconSettings size={16} />}
+          onClick={() => {
+            trackEvent(AnalyticsEvents.UserButtonOpen, { action: 'manage_account' })
+            clerk.openUserProfile()
+          }}
+        />
+        <UserButton.Action
+          label="Sign out"
+          labelIcon={<IconLogout size={16} />}
+          onClick={() => {
+            trackEvent(AnalyticsEvents.UserButtonOpen, { action: 'sign_out' })
+            void clerk.signOut()
+          }}
+        />
+      </UserButton.MenuItems>
+    </UserButton>
   )
 }
 
@@ -183,13 +214,16 @@ const AppHeader = ({
           )}
           <SignedOut>
             <SignInButton mode="modal">
-              <ClerkAuthButton variant="outline">
+              <ClerkAuthButton
+                variant="outline"
+                onClick={() => trackEvent(AnalyticsEvents.SignIn)}
+              >
                 Sign in
               </ClerkAuthButton>
             </SignInButton>
           </SignedOut>
           <SignedIn>
-            <UserButton />
+            <TrackedUserButton />
           </SignedIn>
         </Group>
       </Group>

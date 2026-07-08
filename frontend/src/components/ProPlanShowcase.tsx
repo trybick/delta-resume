@@ -14,6 +14,7 @@ import {
 import { SignedIn, useUser } from '@clerk/clerk-react'
 import { CheckoutButton } from '@clerk/clerk-react/experimental'
 import { IconSparkles } from '@tabler/icons-react'
+import { AnalyticsEvents, trackEvent } from '../lib/analytics'
 import { PRO_FEATURES, useProPlan, type ProFeature } from '../lib/proPlan'
 import { appTheme } from '../lib/theme'
 
@@ -129,7 +130,11 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
           <SegmentedControl
             size="xs"
             value={billingPeriod}
-            onChange={(value) => setBillingPeriod(value as BillingPeriod)}
+            onChange={(value) => {
+              const period = value as BillingPeriod
+              trackEvent(AnalyticsEvents.BillingPeriodChange, { period })
+              setBillingPeriod(period)
+            }}
             data={[
               { label: 'Monthly', value: 'month' },
               { label: 'Annual', value: 'annual' },
@@ -157,7 +162,10 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
                 variant="gradient"
                 gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
                 leftSection={<IconSparkles size={18} />}
-                onClick={onCheckoutOpen}
+                onClick={() => {
+                  trackEvent(AnalyticsEvents.SubscribeToPro, { period: billingPeriod })
+                  onCheckoutOpen()
+                }}
               >
                 Subscribe to Pro
               </Button>

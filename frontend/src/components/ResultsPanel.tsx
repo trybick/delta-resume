@@ -26,6 +26,7 @@ import {
   IconSparkles,
   IconTargetArrow,
 } from '@tabler/icons-react'
+import { AnalyticsEvents, trackEvent } from '../lib/analytics'
 import type { BulletChange, ChangeDecision, TailorResult, TailorStatus } from '../lib/types'
 import { copyResumeRichText } from '../lib/copyResume'
 import {
@@ -209,7 +210,8 @@ const ResultsPanel = ({
     [],
   )
 
-  const handleExpandSegment = (startIndex: number) => {
+  const handleExpandSegment = (startIndex: number, hiddenCount: number) => {
+    trackEvent(AnalyticsEvents.ShowHiddenLines, { hidden_count: hiddenCount })
     setExpandedSegments((current) => new Set(current).add(startIndex))
   }
 
@@ -235,12 +237,15 @@ const ResultsPanel = ({
 
   const handleCopy = async () => {
     if (!result) return
+    trackEvent(AnalyticsEvents.ResumeCopy)
     try {
       await copyResumeRichText(buildMergedLines(), result.structure)
+      trackEvent(AnalyticsEvents.CopySuccess, { source: 'resume' })
       setCopied(true)
       if (copiedTimeoutRef.current !== null) window.clearTimeout(copiedTimeoutRef.current)
       copiedTimeoutRef.current = window.setTimeout(() => setCopied(false), 1500)
     } catch {
+      trackEvent(AnalyticsEvents.CopyFailure, { source: 'resume' })
       notifications.show({
         color: 'red',
         title: 'Copy failed',
@@ -280,23 +285,45 @@ const ResultsPanel = ({
 
   const handleExport = async (variant: 'keep' | 'clean', format: 'docx' | 'pdf') => {
     if (!result || isExporting) return
+    trackEvent(AnalyticsEvents.ResumeExport, { variant, format })
     setIsExporting(true)
     try {
       const docxBlob = variant === 'keep' ? await buildPatchedDocx() : await buildCleanDocx()
       if (format === 'docx') {
         downloadDocx(docxBlob, 'tailored-resume.docx')
+        trackEvent(AnalyticsEvents.ExportSuccess, {
+          source: 'resume',
+          variant,
+          format,
+        })
         return
       }
       try {
         const pdfBlob = await convertDocxToPdf(docxBlob)
         downloadPdf(pdfBlob, 'tailored-resume.pdf')
+        trackEvent(AnalyticsEvents.ExportSuccess, {
+          source: 'resume',
+          variant,
+          format,
+        })
       } catch {
+        trackEvent(AnalyticsEvents.ExportFailure, {
+          source: 'resume',
+          variant,
+          format,
+        })
         notifications.show({
           color: 'red',
           title: 'PDF export failed',
           message: 'Could not generate a PDF. Try downloading the .docx instead.',
         })
       }
+    } catch {
+      trackEvent(AnalyticsEvents.ExportFailure, {
+        source: 'resume',
+        variant,
+        format,
+      })
     } finally {
       setIsExporting(false)
     }
@@ -339,7 +366,10 @@ const ResultsPanel = ({
                 mt="xs"
                 variant="light"
                 leftSection={<IconEye size={16} />}
-                onClick={onShowExample}
+                onClick={() => {
+                  trackEvent(AnalyticsEvents.PreviewExample)
+                  onShowExample()
+                }}
               >
                 Preview an example
               </Button>
@@ -402,7 +432,11 @@ const ResultsPanel = ({
             )}
           </Group>
           <Group gap="xs">
-            <Menu position="bottom-end" withinPortal>
+            <Menu
+              position="bottom-end"
+              withinPortal
+              onOpen={() => trackEvent(AnalyticsEvents.ResumeExportMenuOpen)}
+            >
               <Menu.Target>
                 <Button
                   size="xs"
@@ -492,7 +526,7 @@ const ResultsPanel = ({
                 {hidden.length > 0 && (
                   <CollapsedContext
                     hiddenCount={hidden.length}
-                    onExpand={() => handleExpandSegment(segment.startIndex)}
+                    onExpand={() => handleExpandSegment(segment.startIndex, hidden.length)}
                   />
                 )}
                 {trailing.map((line, offset) => (

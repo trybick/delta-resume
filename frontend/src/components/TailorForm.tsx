@@ -1,8 +1,9 @@
 import { Button, Stack, Text } from '@mantine/core'
 import { IconSparkles } from '@tabler/icons-react'
+import { AnalyticsEvents, trackEvent } from '../lib/analytics'
 import ResumeInput from './ResumeInput'
 import JobDescriptionInput from './JobDescriptionInput'
-import type { AttachedFile, OriginalDocx } from '../hooks/useResumeDocument'
+import type { AttachedFile } from '../hooks/useResumeDocument'
 import type { CreditStatus, SavedResume, TailorStatus } from '../lib/types'
 
 type TailorFormProps = {
@@ -73,7 +74,14 @@ const TailorForm = ({
         leftSection={<IconSparkles size={18} />}
         disabled={!canTailor}
         loading={status === 'loading'}
-        onClick={onTailor}
+        onClick={() => {
+          trackEvent(
+            outOfCredits
+              ? AnalyticsEvents.GetMoreCredits
+              : AnalyticsEvents.TailorResumeClick,
+          )
+          onTailor()
+        }}
       >
         {outOfCredits ? 'Get more credits' : 'Tailor Resume'}
       </Button>

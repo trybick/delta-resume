@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActionIcon,
   Alert,
@@ -32,6 +32,11 @@ import {
   IconRefresh
 } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
+import {
+  AnalyticsEvents,
+  createDebouncedTracker,
+  trackEvent,
+} from '../lib/analytics'
 import type { CoverLetterResult, CoverLetterStatus } from '../lib/types'
 import { buildCoverLetterDocx, downloadDocx } from '../lib/exportDocx'
 import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf'
@@ -86,7 +91,13 @@ const LockedTeaser = ({
           polished .docx.
         </Text>
         {!isProPlan && (
-          <Button mt={4} onClick={onUpgradeClick}>
+          <Button
+            mt={4}
+            onClick={() => {
+              trackEvent(AnalyticsEvents.CoverLetterUpgradeTeaser)
+              onUpgradeClick()
+            }}
+          >
             Upgrade to Pro
           </Button>
         )}
@@ -130,7 +141,13 @@ const ExampleCoverLetter = ({
           <Text size="sm" c="dimmed">
             On the Pro plan, every tailor run also writes a cover letter like this one.
           </Text>
-          <Button size="xs" onClick={onUpgradeClick}>
+          <Button
+            size="xs"
+            onClick={() => {
+              trackEvent(AnalyticsEvents.CoverLetterUpgradeExample)
+              onUpgradeClick()
+            }}
+          >
             Upgrade to Pro
           </Button>
         </Group>
@@ -217,6 +234,10 @@ const CoverLetterPanel = ({
   const [isExporting, setIsExporting] = useState(false)
   const hasPrefilledName = useRef(false)
   const clipboard = useClipboard({ timeout: 1500 })
+  const trackEditCandidateName = useMemo(
+    () => createDebouncedTracker(AnalyticsEvents.EditCandidateName),
+    [],
+  )
 
   const clerkFullName = user?.fullName ?? ''
 
@@ -273,7 +294,10 @@ const CoverLetterPanel = ({
               size="xs"
               variant="light"
               leftSection={<IconRefresh size={16} />}
-              onClick={onRetry}
+              onClick={() => {
+                trackEvent(AnalyticsEvents.CoverLetterRetry)
+                onRetry()
+              }}
             >
               Try again
             </Button>
@@ -288,7 +312,13 @@ const CoverLetterPanel = ({
   const displayLetter = formatCoverLetterText(result.letter, candidateName)
 
   const handleCopy = () => {
-    clipboard.copy(displayLetter)
+    trackEvent(AnalyticsEvents.CoverLetterCopy)
+    try {
+      clipboard.copy(displayLetter)
+      trackEvent(AnalyticsEvents.CopySuccess, { source: 'cover_letter' })
+    } catch {
+      trackEvent(AnalyticsEvents.CopyFailure, { source: 'cover_letter' })
+    }
   }
 
   const buildCoverLetterBlob = (): Promise<Blob> =>
@@ -301,23 +331,41 @@ const CoverLetterPanel = ({
 
   const handleExport = async (format: 'docx' | 'pdf') => {
     if (isExporting) return
+    trackEvent(AnalyticsEvents.CoverLetterExport, { format })
     setIsExporting(true)
     try {
       const docxBlob = await buildCoverLetterBlob()
       if (format === 'docx') {
         downloadDocx(docxBlob, 'cover-letter.docx')
+        trackEvent(AnalyticsEvents.ExportSuccess, {
+          source: 'cover_letter',
+          format,
+        })
         return
       }
       try {
         const pdfBlob = await convertDocxToPdf(docxBlob)
         downloadPdf(pdfBlob, 'cover-letter.pdf')
+        trackEvent(AnalyticsEvents.ExportSuccess, {
+          source: 'cover_letter',
+          format,
+        })
       } catch {
+        trackEvent(AnalyticsEvents.ExportFailure, {
+          source: 'cover_letter',
+          format,
+        })
         notifications.show({
           color: 'red',
           title: 'PDF export failed',
           message: 'Could not generate a PDF. Try downloading the .docx instead.',
         })
       }
+    } catch {
+      trackEvent(AnalyticsEvents.ExportFailure, {
+        source: 'cover_letter',
+        format,
+      })
     } finally {
       setIsExporting(false)
     }
@@ -332,7 +380,11 @@ const CoverLetterPanel = ({
             <Title order={4}>Cover letter</Title>
           </Group>
           <Group gap="xs">
-            <Menu position="bottom-end" withinPortal>
+            <Menu
+              position="bottom-end"
+              withinPortal
+              onOpen={() => trackEvent(AnalyticsEvents.CoverLetterExportMenuOpen)}
+            >
               <Menu.Target>
                 <Button
                   size="xs"
@@ -381,6 +433,7 @@ const CoverLetterPanel = ({
                 color="gray"
                 size="xs"
                 aria-label="Used for the signature"
+                onClick={() => trackEvent(AnalyticsEvents.SignatureInfoClick)}
               >
                 <IconInfoCircle size={14} />
               </ActionIcon>
@@ -389,7 +442,10 @@ const CoverLetterPanel = ({
           <TextInput
             placeholder="e.g. Jordan Applicant"
             value={candidateName}
-            onChange={(event) => setCandidateName(event.currentTarget.value)}
+            onChange={(event) => {
+              trackEditCandidateName()
+              setCandidateName(event.currentTarget.value)
+            }}
             maw={280}
           />
         </Group>

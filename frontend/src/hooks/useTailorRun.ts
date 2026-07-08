@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { ApiError, CreditsExhaustedError, postTailor } from '../lib/api'
+import { AnalyticsEvents, trackEvent } from '../lib/analytics'
 import type { TailorResult, TailorStatus } from '../lib/types'
 
 type UseTailorRunOptions = {
@@ -47,6 +48,7 @@ export const useTailorRun = ({
       if (error instanceof CreditsExhaustedError) {
         onCreditsExhausted()
       } else {
+        trackEvent(AnalyticsEvents.TailorFailure)
         setErrorMessage(
           error instanceof ApiError
             ? error.message

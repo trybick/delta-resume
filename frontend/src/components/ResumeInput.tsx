@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import {
   ActionIcon,
   Badge,
@@ -23,6 +23,11 @@ import {
   IconTrash,
   IconX,
 } from '@tabler/icons-react'
+import {
+  AnalyticsEvents,
+  createDebouncedTracker,
+  trackEvent,
+} from '../lib/analytics'
 import { parseResumeFile, ResumeParseError } from '../lib/parseResumeFile'
 import type { SavedResume } from '../lib/types'
 
@@ -87,19 +92,33 @@ const ResumeInput = ({
   const [parseError, setParseError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
+  const trackPasteResumeText = useMemo(
+    () => createDebouncedTracker(AnalyticsEvents.PasteResumeText),
+    [],
+  )
 
   const atSavedLimit = !isProPlan && savedResumes.length >= savedResumeLimit
 
   const handleDrop = async (files: File[]) => {
     const file = files[0]
     if (!file) return
+    trackEvent(AnalyticsEvents.DropzoneDrop, {
+      file_type: file.type || 'unknown',
+      file_size: file.size,
+    })
     const attached = { name: file.name, size: file.size }
     setIsParsing(true)
     setParseError(null)
     try {
       const text = await parseResumeFile(file)
+      trackEvent(AnalyticsEvents.FileParseSuccess, {
+        file_type: file.type || 'unknown',
+      })
       onFileAttach(attached, text, file)
     } catch (error) {
+      trackEvent(AnalyticsEvents.FileParseFailure, {
+        file_type: file.type || 'unknown',
+      })
       setParseError(
         error instanceof ResumeParseError
           ? error.message
@@ -114,6 +133,9 @@ const ResumeInput = ({
     const isTooLarge = rejections.some((rejection) =>
       rejection.errors.some((error) => error.code === 'file-too-large'),
     )
+    trackEvent(AnalyticsEvents.DropzoneReject, {
+      reason: isTooLarge ? 'too_large' : 'bad_type',
+    })
     setParseError(
       isTooLarge
         ? 'That file is too large. The maximum size is 5 MB.'
@@ -122,11 +144,13 @@ const ResumeInput = ({
   }
 
   const handleStartRename = (resume: SavedResume) => {
+    trackEvent(AnalyticsEvents.RenameSavedResume)
     setEditingId(resume.id)
     setEditingName(resume.name)
   }
 
   const handleCancelRename = () => {
+    trackEvent(AnalyticsEvents.CancelRenameResume)
     setEditingId(null)
     setEditingName('')
   }
@@ -135,9 +159,11 @@ const ResumeInput = ({
     if (!editingId) return
     const trimmedName = editingName.trim()
     if (trimmedName.length > 0) {
+      trackEvent(AnalyticsEvents.ConfirmRenameResume)
       onRenameSaved(editingId, trimmedName)
     }
-    handleCancelRename()
+    setEditingId(null)
+    setEditingName('')
   }
 
   const handleRenameKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -153,7 +179,11 @@ const ResumeInput = ({
           <SegmentedControl
             size="xs"
             value={mode}
-            onChange={(value) => setMode(value as InputMode)}
+            onChange={(value) => {
+              const nextMode = value as InputMode
+              trackEvent(AnalyticsEvents.ResumeModeSwitch, { mode: nextMode })
+              setMode(nextMode)
+            }}
             data={[
               { label: 'Upload file', value: 'upload' },
               { label: 'Paste text', value: 'paste' },
@@ -179,7 +209,10 @@ const ResumeInput = ({
               <ActionIcon
                 variant="subtle"
                 color="gray"
-                onClick={onClear}
+                onClick={() => {
+                  trackEvent(AnalyticsEvents.RemoveAttachedResume)
+                  onClear()
+                }}
                 aria-label="Remove attached resume"
               >
                 <IconX size={16} />
@@ -193,6 +226,7 @@ const ResumeInput = ({
             <Dropzone
               onDrop={handleDrop}
               onReject={handleDropReject}
+              onClick={() => trackEvent(AnalyticsEvents.DropzoneBrowse)}
               accept={ACCEPTED_MIME_TYPES}
               maxSize={MAX_FILE_SIZE_BYTES}
               maxFiles={1}
@@ -221,9 +255,10 @@ const ResumeInput = ({
           <Stack gap={4}>
             <Textarea
               value={resumeText}
-              onChange={(event) =>
+              onChange={(event) => {
+                trackPasteResumeText()
                 onResumeTextChange(event.currentTarget.value.slice(0, RESUME_TEXT_MAX_LENGTH))
-              }
+              }}
               placeholder="Paste your resume text here…"
               maxLength={RESUME_TEXT_MAX_LENGTH}
               autosize
@@ -281,7 +316,10 @@ const ResumeInput = ({
                       : undefined,
                   }}
                   onClick={() => {
-                    if (!isEditing) onSelectSaved(resume)
+                    if (!isEditing) {
+                      trackEvent(AnalyticsEvents.SelectSavedResume)
+                      onSelectSaved(resume)
+                    }
                   }}
                 >
                   <Group justify="space-between" wrap="nowrap" align="flex-start">
@@ -341,6 +379,7 @@ const ResumeInput = ({
                         color="red"
                         onClick={(event) => {
                           event.stopPropagation()
+                          trackEvent(AnalyticsEvents.DeleteSavedResume)
                           onDeleteSaved(resume.id)
                         }}
                         aria-label="Delete saved resume"
@@ -361,7 +400,10 @@ const ResumeInput = ({
                   size="compact-xs"
                   variant="light"
                   w="fit-content"
-                  onClick={onUpgradeClick}
+                  onClick={() => {
+                    trackEvent(AnalyticsEvents.UpgradeToSaveMore)
+                    onUpgradeClick()
+                  }}
                 >
                   Upgrade to save more
                 </Button>
