@@ -1,0 +1,174 @@
+import { Alert, Badge, Button, Center, Group, Loader, Stack, Tabs, Text } from '@mantine/core'
+import {
+  IconAlertCircle,
+  IconArrowBackUp,
+  IconCheck,
+  IconEye,
+  IconFileText,
+  IconLock,
+  IconMail,
+} from '@tabler/icons-react'
+import ResultsPanel from './ResultsPanel'
+import CoverLetterPanel from './CoverLetterPanel'
+import type { OriginalDocx } from '../hooks/useResumeDocument'
+import {
+  SAMPLE_COVER_LETTER_RESULT,
+  SAMPLE_MATCH_SCORE,
+  SAMPLE_TAILOR_RESULT,
+} from '../lib/mockTailor'
+import type { CoverLetterResult, CoverLetterStatus, TailorResult, TailorStatus } from '../lib/types'
+
+type TailorResultsSectionProps = {
+  errorMessage: string | null
+  onClearError: () => void
+  showingExample: boolean
+  onDismissExample: () => void
+  activeTab: string | null
+  onActiveTabChange: (tab: string | null) => void
+  status: TailorStatus
+  result: TailorResult | null
+  runCount: number
+  lastRunJobDescription: string
+  originalDocx: OriginalDocx | null
+  onShowExample: () => void
+  planLoaded: boolean
+  isProPlan: boolean
+  coverLetterStatus: CoverLetterStatus
+  coverLetterResult: CoverLetterResult | null
+  coverLetterError: string | null
+  onRetryCoverLetter: () => void
+  onUpgradeClick: () => void
+}
+
+const TailorResultsSection = ({
+  errorMessage,
+  onClearError,
+  showingExample,
+  onDismissExample,
+  activeTab,
+  onActiveTabChange,
+  status,
+  result,
+  runCount,
+  lastRunJobDescription,
+  originalDocx,
+  onShowExample,
+  planLoaded,
+  isProPlan,
+  coverLetterStatus,
+  coverLetterResult,
+  coverLetterError,
+  onRetryCoverLetter,
+  onUpgradeClick,
+}: TailorResultsSectionProps) => {
+  const resumeTabIndicator = showingExample ? null : status === 'loading' ? (
+    <Loader size={12} />
+  ) : status === 'done' ? (
+    <IconCheck size={14} color="var(--mantine-color-green-filled)" />
+  ) : null
+
+  const coverLetterTabIndicator = !planLoaded ? null : !isProPlan ? (
+    <Badge size="xs" variant="light" h={16}>
+      Pro
+    </Badge>
+  ) : showingExample ? null : coverLetterStatus === 'loading' ? (
+    <Loader size={12} />
+  ) : coverLetterStatus === 'done' ? (
+    <IconCheck size={14} color="var(--mantine-color-green-filled)" />
+  ) : coverLetterStatus === 'error' ? (
+    <Badge size="xs" variant="light" color="red" h={16}>
+      Failed
+    </Badge>
+  ) : null
+
+  return (
+    <Stack gap="md">
+      {errorMessage && (
+        <Alert
+          color="red"
+          icon={<IconAlertCircle size={18} />}
+          title="Tailoring failed"
+          withCloseButton
+          onClose={onClearError}
+        >
+          {errorMessage}
+        </Alert>
+      )}
+      {showingExample && (
+        <Group
+          justify="space-between"
+          align="center"
+          wrap="wrap"
+          p="sm"
+          style={{
+            borderRadius: 8,
+            backgroundColor: 'var(--mantine-color-cyan-light)',
+          }}
+        >
+          <Group gap="xs">
+            <IconEye size={16} color="var(--mantine-color-cyan-4)" />
+            <Text size="sm">
+              This is an example. Explore the resume changes and cover letter, then run your own
+              tailor.
+            </Text>
+          </Group>
+          <Button
+            size="xs"
+            variant="subtle"
+            color="cyan"
+            leftSection={<IconArrowBackUp size={14} />}
+            onClick={onDismissExample}
+          >
+            Back
+          </Button>
+        </Group>
+      )}
+      <Tabs value={activeTab} onChange={onActiveTabChange}>
+        <Tabs.List>
+          <Tabs.Tab
+            value="resume"
+            leftSection={<IconFileText size={16} />}
+            rightSection={resumeTabIndicator && <Center h={16}>{resumeTabIndicator}</Center>}
+          >
+            Resume changes
+          </Tabs.Tab>
+          <Tabs.Tab
+            value="coverLetter"
+            leftSection={planLoaded && !isProPlan ? <IconLock size={16} /> : <IconMail size={16} />}
+            rightSection={
+              coverLetterTabIndicator && <Center h={16}>{coverLetterTabIndicator}</Center>
+            }
+          >
+            Cover letter
+          </Tabs.Tab>
+        </Tabs.List>
+        <Tabs.Panel value="resume" pt="md">
+          <ResultsPanel
+            key={showingExample ? 'example' : runCount}
+            status={showingExample ? 'done' : status}
+            result={showingExample ? SAMPLE_TAILOR_RESULT : result}
+            isExample={showingExample}
+            jobDescription={showingExample ? '' : lastRunJobDescription}
+            exampleMatchScore={showingExample ? SAMPLE_MATCH_SCORE : undefined}
+            originalDocx={showingExample ? null : originalDocx}
+            onShowExample={status === 'idle' ? onShowExample : undefined}
+          />
+        </Tabs.Panel>
+        <Tabs.Panel value="coverLetter" pt="md">
+          <CoverLetterPanel
+            isProPlan={isProPlan}
+            status={coverLetterStatus}
+            result={coverLetterResult}
+            errorMessage={coverLetterError}
+            isExample={showingExample}
+            exampleResult={SAMPLE_COVER_LETTER_RESULT}
+            onRetry={onRetryCoverLetter}
+            onUpgradeClick={onUpgradeClick}
+          />
+        </Tabs.Panel>
+      </Tabs>
+    </Stack>
+  )
+}
+
+export default TailorResultsSection
