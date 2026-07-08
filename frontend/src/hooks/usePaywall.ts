@@ -25,7 +25,7 @@ export const usePaywall = ({
   isSignedIn,
   hasCreditsRemaining,
 }: UsePaywallOptions): UsePaywallResult => {
-  const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null)
+  const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(readPendingPaywallReason)
 
   const openPaywall = (reason: PaywallReason) => {
     setPaywallReason(reason)
