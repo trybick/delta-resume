@@ -4,6 +4,7 @@ import {
   Button,
   Card,
   Center,
+  Checkbox,
   Group,
   Menu,
   Stack,
@@ -12,6 +13,7 @@ import {
   Tooltip,
   UnstyledButton,
 } from '@mantine/core'
+import { useLocalStorage } from '@mantine/hooks'
 import { notifications } from '@mantine/notifications'
 import {
   IconArrowsVertical,
@@ -197,6 +199,10 @@ const ResultsPanel = ({
   const [expandedSegments, setExpandedSegments] = useState<Set<number>>(new Set())
   const [isExporting, setIsExporting] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [showReasons, setShowReasons] = useLocalStorage({
+    key: 'delta-resume-show-reasons',
+    defaultValue: true,
+  })
   const copiedTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -388,6 +394,7 @@ const ResultsPanel = ({
 
   const bulletChangeCount = result.changes.filter((change) => change.kind === 'bullet').length
   const skillChangeCount = result.changes.filter((change) => change.kind === 'skill').length
+  const hasReasons = result.changes.some((change) => change.reason)
   const lines = result.resumeText.split('\n')
   const segments = buildSegments(lines, changesByLine)
 
@@ -432,6 +439,18 @@ const ResultsPanel = ({
             )}
           </Group>
           <Group gap="xs">
+            {hasReasons && (
+              <Checkbox
+                size="xs"
+                label="Show reasons"
+                checked={showReasons}
+                onChange={(event) => setShowReasons(event.currentTarget.checked)}
+                styles={{
+                  input: { cursor: 'pointer' },
+                  label: { cursor: 'pointer' },
+                }}
+              />
+            )}
             <Menu
               position="bottom-end"
               withinPortal
@@ -507,6 +526,7 @@ const ResultsPanel = ({
                   key={segment.change.id}
                   change={segment.change}
                   decision={decisions[segment.change.id] ?? 'accepted'}
+                  showReason={showReasons}
                   onDecisionChange={handleDecisionChange}
                 />
               )

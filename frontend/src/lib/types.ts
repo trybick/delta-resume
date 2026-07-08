@@ -8,6 +8,7 @@ export type BulletChange = {
   original: string
   tailored: string
   kind: ChangeKind
+  reason?: string
 }
 
 export type ResumeItemKind = 'paragraph' | 'bullet' | 'subheading'

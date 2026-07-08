@@ -30,7 +30,8 @@ type ProposedChange =
     { LineIndex: int
       Original: string
       Tailored: string
-      Kind: LineKind }
+      Kind: LineKind
+      Reason: string option }
 
 [<RequireQualifiedAccess>]
 type ResumeItemKind =
@@ -99,7 +100,8 @@ type BulletChange =
       LineIndex: int
       Original: string
       Tailored: string
-      Kind: LineKind }
+      Kind: LineKind
+      Reason: string option }
 
 type TailorRun =
     { Id: RunId

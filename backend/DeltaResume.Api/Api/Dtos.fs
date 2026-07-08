@@ -34,7 +34,8 @@ type BulletChangeDto =
       LineIndex: int
       Original: string
       Tailored: string
-      Kind: string }
+      Kind: string
+      Reason: string option }
 
 type ResumeItemDto =
     { Kind: string
@@ -64,7 +65,8 @@ module Mapping =
           LineIndex = change.LineIndex
           Original = change.Original
           Tailored = change.Tailored
-          Kind = LineKind.toString change.Kind }
+          Kind = LineKind.toString change.Kind
+          Reason = change.Reason }
 
     let toStructureDto (structure: ResumeStructure) : ResumeStructureDto =
         { HeaderLines = structure.HeaderLines

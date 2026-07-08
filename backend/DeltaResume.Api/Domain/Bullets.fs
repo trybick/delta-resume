@@ -80,5 +80,6 @@ module Bullets =
               LineIndex = proposal.LineIndex
               Original = original
               Tailored = normalizeTailored original proposal.Tailored
-              Kind = proposal.Kind })
+              Kind = proposal.Kind
+              Reason = proposal.Reason })
         |> List.sortBy (fun change -> change.LineIndex)
