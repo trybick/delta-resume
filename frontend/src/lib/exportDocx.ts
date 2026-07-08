@@ -302,7 +302,7 @@ export const buildCoverLetterDocx = async (
   const dateLine = formatCoverLetterDate()
   paragraphs.push(
     new Paragraph({
-      spacing: { before: headerName.length > 0 ? 240 : 0, after: 120 },
+      spacing: { before: headerName.length > 0 ? 240 : 0, after: 0 },
       children: [new TextRun({ text: dateLine, font: FONT, size: LETTER_META_SIZE })],
     }),
   )

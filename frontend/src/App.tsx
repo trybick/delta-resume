@@ -44,6 +44,7 @@ import { trackEvent } from './lib/analytics'
 import { registerTokenGetter } from './lib/authToken'
 import { subscribeToRateLimit } from './lib/rateLimitNotice'
 import { formatDefaultResumeName } from './lib/formatDefaultResumeName'
+import { normalizeResumeTextForComparison } from './lib/exportDocx'
 import type { PaywallReason } from './components/PaywallModal'
 import type { SavedResume } from './lib/types'
 
@@ -144,8 +145,15 @@ const App = () => {
   }
 
   const handleSelectSaved = (resume: SavedResume) => {
-    setAttachedFile(null)
-    setOriginalDocx(null)
+    const matchesAttachedDocx =
+      originalDocx !== null &&
+      normalizeResumeTextForComparison(originalDocx.parsedText) ===
+        normalizeResumeTextForComparison(resume.resumeText)
+
+    if (!matchesAttachedDocx) {
+      setAttachedFile(null)
+      setOriginalDocx(null)
+    }
     setResumeText(resume.resumeText)
   }
 

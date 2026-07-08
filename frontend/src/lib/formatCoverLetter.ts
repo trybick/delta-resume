@@ -20,7 +20,7 @@ export const formatCoverLetterText = (
 ): string => {
   const dateLine = formatCoverLetterDate(date)
   const body = formatCoverLetterSignature(letter, candidateName)
-  return `${dateLine}\n\n${body}`
+  return `${dateLine}\n${body}`
 }
 
 export const formatCoverLetterSignature = (letter: string, candidateName: string): string => {
@@ -29,4 +29,4 @@ export const formatCoverLetterSignature = (letter: string, candidateName: string
 }
 
 export const prependCoverLetterDate = (letter: string, date: Date = new Date()): string =>
-  `${formatCoverLetterDate(date)}\n\n${letter.trimStart()}`
+  `${formatCoverLetterDate(date)}\n${letter.trimStart()}`
