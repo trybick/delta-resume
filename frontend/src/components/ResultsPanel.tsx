@@ -22,6 +22,7 @@ import {
   IconDownload,
   IconEye,
   IconFileDescription,
+  IconFileTypePdf,
   IconSparkles,
   IconTargetArrow,
 } from '@tabler/icons-react'
@@ -33,6 +34,7 @@ import {
   downloadDocx,
   patchOriginalDocx,
 } from '../lib/exportDocx'
+import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf'
 import { extractKeywords, scoreResume } from '../lib/matchScore'
 import DiffBullet from './DiffBullet'
 import TailoringLoader from './TailoringLoader'
@@ -254,37 +256,43 @@ const ResultsPanel = ({
       ? buildStructuredDocx(buildMergedLines(), result.structure)
       : buildTemplateDocx(buildMergedText())
 
-  const handleDownloadTemplateDocx = async () => {
-    if (!result || isExporting) return
-    setIsExporting(true)
+  const buildPatchedDocx = async (): Promise<Blob> => {
+    if (!result || !originalDocx) return buildCleanDocx()
+    const replacements = result.changes
+      .filter((change) => decisions[change.id] !== 'rejected')
+      .map((change) => ({ original: change.original, tailored: change.tailored }))
     try {
-      const blob = await buildCleanDocx()
-      downloadDocx(blob, 'tailored-resume.docx')
-    } finally {
-      setIsExporting(false)
+      return await patchOriginalDocx(originalDocx.file, replacements)
+    } catch {
+      notifications.show({
+        color: 'orange',
+        title: 'Original layout unavailable',
+        message:
+          'We could not preserve your original formatting, so a clean template was used instead.',
+      })
+      return buildCleanDocx()
     }
   }
 
-  const handleDownloadPatchedDocx = async () => {
-    if (!result || !originalDocx || isExporting) return
+  const handleExport = async (variant: 'keep' | 'clean', format: 'docx' | 'pdf') => {
+    if (!result || isExporting) return
     setIsExporting(true)
     try {
-      const replacements = result.changes
-        .filter((change) => decisions[change.id] !== 'rejected')
-        .map((change) => ({ original: change.original, tailored: change.tailored }))
-      let blob: Blob
+      const docxBlob = variant === 'keep' ? await buildPatchedDocx() : await buildCleanDocx()
+      if (format === 'docx') {
+        downloadDocx(docxBlob, 'tailored-resume.docx')
+        return
+      }
       try {
-        blob = await patchOriginalDocx(originalDocx.file, replacements)
+        const pdfBlob = await convertDocxToPdf(docxBlob)
+        downloadPdf(pdfBlob, 'tailored-resume.pdf')
       } catch {
         notifications.show({
-          color: 'orange',
-          title: 'Original layout unavailable',
-          message:
-            'We could not preserve your original formatting, so a clean template was used instead.',
+          color: 'red',
+          title: 'PDF export failed',
+          message: 'Could not generate a PDF. Try downloading the .docx instead.',
         })
-        blob = await buildCleanDocx()
       }
-      downloadDocx(blob, 'tailored-resume.docx')
     } finally {
       setIsExporting(false)
     }
@@ -398,45 +406,52 @@ const ResultsPanel = ({
             >
               {copied ? 'Copied' : 'Copy tailored resume'}
             </Button>
-            {canPatchOriginal ? (
-              <Menu position="bottom-end" withinPortal>
-                <Menu.Target>
-                  <Button
-                    size="xs"
-                    variant="light"
-                    leftSection={<IconDownload size={16} />}
-                    rightSection={<IconChevronDown size={14} />}
-                    loading={isExporting}
-                  >
-                    Download .docx
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Item
-                    leftSection={<IconFileDescription size={16} />}
-                    onClick={handleDownloadPatchedDocx}
-                  >
-                    Keep my formatting
-                  </Menu.Item>
-                  <Menu.Item
-                    leftSection={<IconSparkles size={16} />}
-                    onClick={handleDownloadTemplateDocx}
-                  >
-                    Clean template
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
-            ) : (
-              <Button
-                size="xs"
-                variant="light"
-                leftSection={<IconDownload size={16} />}
-                loading={isExporting}
-                onClick={handleDownloadTemplateDocx}
-              >
-                Download .docx
-              </Button>
-            )}
+            <Menu position="bottom-end" withinPortal>
+              <Menu.Target>
+                <Button
+                  size="xs"
+                  variant="light"
+                  leftSection={<IconDownload size={16} />}
+                  rightSection={<IconChevronDown size={14} />}
+                  loading={isExporting}
+                >
+                  Export
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {canPatchOriginal && (
+                  <>
+                    <Menu.Label>Keep my formatting</Menu.Label>
+                    <Menu.Item
+                      leftSection={<IconFileDescription size={16} />}
+                      onClick={() => handleExport('keep', 'docx')}
+                    >
+                      Word (.docx)
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconFileTypePdf size={16} />}
+                      onClick={() => handleExport('keep', 'pdf')}
+                    >
+                      PDF (.pdf)
+                    </Menu.Item>
+                    <Menu.Divider />
+                  </>
+                )}
+                <Menu.Label>Clean template</Menu.Label>
+                <Menu.Item
+                  leftSection={<IconFileDescription size={16} />}
+                  onClick={() => handleExport('clean', 'docx')}
+                >
+                  Word (.docx)
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconFileTypePdf size={16} />}
+                  onClick={() => handleExport('clean', 'pdf')}
+                >
+                  PDF (.pdf)
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           </Group>
         </Group>
 
