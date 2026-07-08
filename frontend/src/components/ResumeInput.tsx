@@ -226,7 +226,7 @@ const ResumeInput = ({
             <Dropzone
               onDrop={handleDrop}
               onReject={handleDropReject}
-              onClick={() => trackEvent(AnalyticsEvents.DropzoneBrowse)}
+              onFileDialogOpen={() => trackEvent(AnalyticsEvents.DropzoneBrowse)}
               accept={ACCEPTED_MIME_TYPES}
               maxSize={MAX_FILE_SIZE_BYTES}
               maxFiles={1}
