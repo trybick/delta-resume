@@ -429,6 +429,11 @@ const ResultsPanel = ({
                     <Menu.Label>Keep my formatting</Menu.Label>
                     <Menu.Item
                       leftSection={<IconFileDescription size={16} />}
+                      rightSection={
+                        <Badge size="xs" variant="light" color="teal">
+                          Recommended
+                        </Badge>
+                      }
                       onClick={() => handleExport('keep', 'docx')}
                     >
                       Word (.docx)
