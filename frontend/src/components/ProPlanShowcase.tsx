@@ -97,11 +97,14 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
               >
                 Pro
               </Text>
-              {billingPeriod === 'annual' && (
-                <Badge size="sm" variant="light" color="cyan">
-                  Most popular
-                </Badge>
-              )}
+              <Badge
+                size="sm"
+                variant="light"
+                color="cyan"
+                style={{ visibility: billingPeriod === 'annual' ? 'visible' : 'hidden' }}
+              >
+                Most popular
+              </Badge>
             </Group>
             <Group gap={6} align="baseline">
               {displayedPrice ? (
@@ -115,11 +118,13 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
                 / month
               </Text>
             </Group>
-            {billingPeriod === 'annual' && annualMonthlyPrice && (
-              <Text size="xs" c="cyan.4">
-                Billed annually
-              </Text>
-            )}
+            <Text
+              size="xs"
+              c="cyan.4"
+              style={{ visibility: billingPeriod === 'annual' && annualMonthlyPrice ? 'visible' : 'hidden' }}
+            >
+              Billed annually
+            </Text>
           </Stack>
           <SegmentedControl
             size="xs"
