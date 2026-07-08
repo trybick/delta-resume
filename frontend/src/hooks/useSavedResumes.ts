@@ -4,6 +4,7 @@ import type { SavedResume } from '../lib/types'
 
 type UseSavedResumesResult = {
   savedResumes: SavedResume[]
+  isLoadingSavedResumes: boolean
   loadSavedResumes: () => Promise<void>
   renameResume: (resumeId: string, name: string) => Promise<void>
   deleteResume: (resumeId: string) => Promise<void>
@@ -11,12 +12,16 @@ type UseSavedResumesResult = {
 
 export const useSavedResumes = (): UseSavedResumesResult => {
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([])
+  const [isLoadingSavedResumes, setIsLoadingSavedResumes] = useState(true)
 
   const loadSavedResumes = useCallback(async () => {
+    setIsLoadingSavedResumes(true)
     try {
       setSavedResumes(await getSavedResumes())
     } catch {
       setSavedResumes([])
+    } finally {
+      setIsLoadingSavedResumes(false)
     }
   }, [])
 
@@ -46,5 +51,5 @@ export const useSavedResumes = (): UseSavedResumesResult => {
     [loadSavedResumes],
   )
 
-  return { savedResumes, loadSavedResumes, renameResume, deleteResume }
+  return { savedResumes, isLoadingSavedResumes, loadSavedResumes, renameResume, deleteResume }
 }

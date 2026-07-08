@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   Group,
+  Loader,
   Paper,
   SegmentedControl,
   Stack,
@@ -34,6 +35,7 @@ type ResumeInputProps = {
   resumeText: string
   attachedFile: AttachedFile | null
   savedResumes: SavedResume[]
+  isLoadingSavedResumes: boolean
   savedResumeLimit: number
   isProPlan: boolean
   onResumeTextChange: (text: string) => void
@@ -67,6 +69,7 @@ const ResumeInput = ({
   resumeText,
   attachedFile,
   savedResumes,
+  isLoadingSavedResumes,
   savedResumeLimit,
   isProPlan,
   onResumeTextChange,
@@ -223,7 +226,15 @@ const ResumeInput = ({
           </Stack>
         )}
 
-        {mode === 'saved' && savedResumes.length === 0 && (
+        {mode === 'saved' && isLoadingSavedResumes && (
+          <Paper withBorder p="lg" radius="md">
+            <Stack align="center" gap={4}>
+              <Loader size="sm" />
+            </Stack>
+          </Paper>
+        )}
+
+        {mode === 'saved' && !isLoadingSavedResumes && savedResumes.length === 0 && (
           <Paper withBorder p="lg" radius="md">
             <Stack align="center" gap={4}>
               <IconFileText size={28} color="var(--mantine-primary-color-filled)" />
@@ -237,7 +248,7 @@ const ResumeInput = ({
           </Paper>
         )}
 
-        {mode === 'saved' && savedResumes.length > 0 && (
+        {mode === 'saved' && !isLoadingSavedResumes && savedResumes.length > 0 && (
           <Stack gap="xs">
             {savedResumes.map((resume) => {
               const isSelected = resume.resumeText === resumeText

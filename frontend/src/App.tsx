@@ -74,7 +74,8 @@ const App = () => {
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null)
 
   const { credits, outOfCredits, creditsLabel, loadCredits } = useCredits()
-  const { savedResumes, loadSavedResumes, renameResume, deleteResume } = useSavedResumes()
+  const { savedResumes, isLoadingSavedResumes, loadSavedResumes, renameResume, deleteResume } =
+    useSavedResumes()
   const { status, result, runCount, errorMessage, clearError, runTailor } = useTailorRun({
     onSuccess: () => {
       trackEvent('tailor_resume')
@@ -228,6 +229,7 @@ const App = () => {
                 resumeText={resumeText}
                 attachedFile={attachedFile}
                 savedResumes={savedResumes}
+                isLoadingSavedResumes={isLoadingSavedResumes}
                 savedResumeLimit={isProPlan ? 10 : 1}
                 isProPlan={isProPlan}
                 onResumeTextChange={setResumeText}
