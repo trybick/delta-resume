@@ -401,8 +401,8 @@ const ResultsPanel = ({
   return (
     <Card withBorder shadow="xs" padding="lg">
       <Stack gap="md">
-        <Group justify="space-between" align="center" wrap="wrap">
-          <Group gap="sm">
+        <Stack gap="xs">
+          <Group justify="space-between" align="center" wrap="nowrap">
             <Title order={4}>
               {bulletChangeCount} bullet{bulletChangeCount === 1 ? '' : 's'}
               {skillChangeCount > 0
@@ -410,113 +410,118 @@ const ResultsPanel = ({
                 : ''}{' '}
               updated
             </Title>
-            {isExample && (
-              <Badge color="cyan" variant="light">
-                Example
-              </Badge>
-            )}
-            {skillChangeCount === 0 && (
-              <Tooltip label="Your skills section already matches this job description well, so no skill changes were suggested.">
-                <Badge
-                  color="teal"
-                  variant="light"
-                  leftSection={<IconCircleCheck size={12} />}
-                >
-                  Skills all set
-                </Badge>
-              </Tooltip>
-            )}
-            {showMatchScore && matchScoreIncrease > 0  && (
-              <Tooltip label="How much your keyword match improved based on the applied changes.">
-                <Badge
-                  color="green"
-                  variant="light"
-                  leftSection={<IconTargetArrow size={12} />}
-                >
-                  Match increased by {matchScoreIncrease}%
-                </Badge>
-              </Tooltip>
-            )}
-          </Group>
-          <Group gap="xs">
-            {hasReasons && (
-              <Checkbox
-                size="xs"
-                label="Show reasons"
-                checked={showReasons}
-                onChange={(event) => setShowReasons(event.currentTarget.checked)}
-                styles={{
-                  input: { cursor: 'pointer' },
-                  label: { cursor: 'pointer' },
-                }}
-              />
-            )}
-            <Menu
-              position="bottom-end"
-              withinPortal
-              onOpen={() => trackEvent(AnalyticsEvents.ResumeExportMenuOpen)}
-            >
-              <Menu.Target>
-                <Button
+            <Group gap="sm" wrap="nowrap">
+              {hasReasons && (
+                <Checkbox
                   size="xs"
-                  variant="light"
-                  leftSection={<IconDownload size={16} />}
-                  rightSection={<IconChevronDown size={14} />}
-                  loading={isExporting}
-                >
-                  Export
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={
-                    copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />
-                  }
-                  onClick={handleCopy}
-                >
-                  {copied ? 'Copied' : 'Copy to clipboard'}
-                </Menu.Item>
-                <Menu.Divider />
-                {canPatchOriginal && (
-                  <>
-                    <Menu.Label>Keep my formatting</Menu.Label>
-                    <Menu.Item
-                      leftSection={<IconFileDescription size={16} />}
-                      rightSection={
-                        <Badge size="xs" variant="light" color="teal">
-                          Recommended
-                        </Badge>
-                      }
-                      onClick={() => handleExport('keep', 'docx')}
-                    >
-                      Word (.docx)
-                    </Menu.Item>
-                    <Menu.Item
-                      leftSection={<IconFileTypePdf size={16} />}
-                      onClick={() => handleExport('keep', 'pdf')}
-                    >
-                      PDF (.pdf)
-                    </Menu.Item>
-                    <Menu.Divider />
-                  </>
-                )}
-                <Menu.Label>Clean template</Menu.Label>
-                <Menu.Item
-                  leftSection={<IconFileDescription size={16} />}
-                  onClick={() => handleExport('clean', 'docx')}
-                >
-                  Word (.docx)
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconFileTypePdf size={16} />}
-                  onClick={() => handleExport('clean', 'pdf')}
-                >
-                  PDF (.pdf)
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+                  label="Show reasons"
+                  checked={showReasons}
+                  onChange={(event) => setShowReasons(event.currentTarget.checked)}
+                  styles={{
+                    body: { gap: 4 },
+                    input: { cursor: 'pointer' },
+                    label: { cursor: 'pointer', paddingInlineStart: 4 },
+                  }}
+                />
+              )}
+              <Menu
+                position="bottom-end"
+                withinPortal
+                onOpen={() => trackEvent(AnalyticsEvents.ResumeExportMenuOpen)}
+              >
+                <Menu.Target>
+                  <Button
+                    size="xs"
+                    variant="light"
+                    leftSection={<IconDownload size={16} />}
+                    rightSection={<IconChevronDown size={14} />}
+                    loading={isExporting}
+                  >
+                    Export
+                  </Button>
+                </Menu.Target>
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={
+                      copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />
+                    }
+                    onClick={handleCopy}
+                  >
+                    {copied ? 'Copied' : 'Copy to clipboard'}
+                  </Menu.Item>
+                  <Menu.Divider />
+                  {canPatchOriginal && (
+                    <>
+                      <Menu.Label>Keep my formatting</Menu.Label>
+                      <Menu.Item
+                        leftSection={<IconFileDescription size={16} />}
+                        rightSection={
+                          <Badge size="xs" variant="light" color="teal">
+                            Recommended
+                          </Badge>
+                        }
+                        onClick={() => handleExport('keep', 'docx')}
+                      >
+                        Word (.docx)
+                      </Menu.Item>
+                      <Menu.Item
+                        leftSection={<IconFileTypePdf size={16} />}
+                        onClick={() => handleExport('keep', 'pdf')}
+                      >
+                        PDF (.pdf)
+                      </Menu.Item>
+                      <Menu.Divider />
+                    </>
+                  )}
+                  <Menu.Label>Clean template</Menu.Label>
+                  <Menu.Item
+                    leftSection={<IconFileDescription size={16} />}
+                    onClick={() => handleExport('clean', 'docx')}
+                  >
+                    Word (.docx)
+                  </Menu.Item>
+                  <Menu.Item
+                    leftSection={<IconFileTypePdf size={16} />}
+                    onClick={() => handleExport('clean', 'pdf')}
+                  >
+                    PDF (.pdf)
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
+            </Group>
           </Group>
-        </Group>
+          {(isExample || skillChangeCount === 0 || (showMatchScore && matchScoreIncrease > 0)) && (
+            <Group gap="sm">
+              {isExample && (
+                <Badge color="cyan" variant="light">
+                  Example
+                </Badge>
+              )}
+              {skillChangeCount === 0 && (
+                <Tooltip label="Your skills section already matches this job description well, so no skill changes were suggested.">
+                  <Badge
+                    color="teal"
+                    variant="light"
+                    leftSection={<IconCircleCheck size={12} />}
+                  >
+                    Skills all set
+                  </Badge>
+                </Tooltip>
+              )}
+              {showMatchScore && matchScoreIncrease > 0 && (
+                <Tooltip label="How much your keyword match improved based on the applied changes.">
+                  <Badge
+                    color="green"
+                    variant="light"
+                    leftSection={<IconTargetArrow size={12} />}
+                  >
+                    Match increased by {matchScoreIncrease}%
+                  </Badge>
+                </Tooltip>
+              )}
+            </Group>
+          )}
+        </Stack>
 
         <div>
           {segments.map((segment) => {
