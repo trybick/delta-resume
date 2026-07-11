@@ -11,6 +11,8 @@ export const getClerkPublishableKey = (): string => {
 }
 
 export const getGaMeasurementId = (): string | null => {
+  if (!import.meta.env.PROD) return null
+
   const id = import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined
   return id?.trim() || null
 }
