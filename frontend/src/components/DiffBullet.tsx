@@ -7,7 +7,7 @@ import {
   Tooltip,
 } from '@mantine/core'
 import { useClipboard } from '@mantine/hooks'
-import { IconArrowBackUp, IconCopy, IconCopyCheck, IconRefresh, IconSparkles } from '@tabler/icons-react'
+import { IconArrowBackUp, IconCopy, IconCopyCheck, IconRefresh } from '@tabler/icons-react'
 import { diffWords } from 'diff'
 import { AnalyticsEvents, trackEvent } from '../lib/analytics'
 import type { BulletChange, ChangeDecision } from '../lib/types'
@@ -15,7 +15,6 @@ import type { BulletChange, ChangeDecision } from '../lib/types'
 type DiffBulletProps = {
   change: BulletChange
   decision: ChangeDecision
-  showReason: boolean
   onDecisionChange: (id: string, decision: ChangeDecision) => void
 }
 
@@ -24,7 +23,7 @@ const borderColorByDecision: Record<ChangeDecision, string> = {
   reverted: 'var(--mantine-color-gray-6)',
 }
 
-const DiffBullet = ({ change, decision, showReason, onDecisionChange }: DiffBulletProps) => {
+const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => {
   const clipboard = useClipboard({ timeout: 1500 })
 
   const handleCopyBullet = () => {
@@ -104,17 +103,6 @@ const DiffBullet = ({ change, decision, showReason, onDecisionChange }: DiffBull
       <Group align="center" wrap="nowrap" gap="sm">
         <Box style={{ flex: 1, minWidth: 0 }}>
           {renderContent()}
-          {showReason && change.reason && (
-            <Group gap={6} mt={6} wrap="nowrap" align="flex-start">
-              <IconSparkles
-                size={13}
-                style={{ color: 'var(--mantine-color-dimmed)', flexShrink: 0, marginTop: 2 }}
-              />
-              <Text size="xs" c="dimmed" style={{ lineHeight: 1.4 }}>
-                {change.reason}
-              </Text>
-            </Group>
-          )}
         </Box>
         <Group gap={4} wrap="nowrap">
           <Tooltip label={decision === 'reverted' ? 'Re-apply change' : 'Revert to original'}>

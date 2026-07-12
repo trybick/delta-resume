@@ -5,7 +5,8 @@ open System.Threading.Tasks
 open DeltaResume.Domain
 
 type EngineProposal =
-    { Changes: ProposedChange list
+    { Summary: string
+      Changes: ProposedChange list
       Structure: ResumeStructure option }
 
 type TailoringEngine =

@@ -35,3 +35,4 @@ frontend/.env
 backend/data/
 *.db
 backend/DeltaResume.Api/.env
+backend/DeltaResume.Api/out/

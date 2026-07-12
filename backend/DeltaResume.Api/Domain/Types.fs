@@ -30,8 +30,7 @@ type ProposedChange =
     { LineIndex: int
       Original: string
       Tailored: string
-      Kind: LineKind
-      Reason: string option }
+      Kind: LineKind }
 
 [<RequireQualifiedAccess>]
 type ResumeItemKind =
@@ -100,14 +99,14 @@ type BulletChange =
       LineIndex: int
       Original: string
       Tailored: string
-      Kind: LineKind
-      Reason: string option }
+      Kind: LineKind }
 
 type TailorRun =
     { Id: RunId
       ResumeText: string
       JobDescription: string
       CreatedAt: DateTimeOffset
+      Summary: string
       Changes: BulletChange list
       Structure: ResumeStructure option }
 

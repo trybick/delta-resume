@@ -30,6 +30,7 @@ type TailoringService(engine: TailoringEngine) =
                               ResumeText = resumeText
                               JobDescription = jobDescription
                               CreatedAt = DateTimeOffset.UtcNow
+                              Summary = proposal.Summary
                               Changes = changes
                               Structure = proposal.Structure }
 

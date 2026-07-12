@@ -74,6 +74,8 @@ Jordan Ellis`,
 
 export const SAMPLE_TAILOR_RESULT: TailorResult = {
   resumeText: SAMPLE_RESUME,
+  summary:
+    'The role emphasizes React, TypeScript, cloud infrastructure, and performance-minded product development. The suggested changes strengthen those themes with relevant technologies and measurable outcomes already supported by the resume.',
   changes: [
     {
       id: 'sample-change-1',
@@ -82,7 +84,6 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
       tailored:
         '- Rebuilt the checkout flow in React and TypeScript, lifting conversion 12% for the main e-commerce product',
       kind: 'bullet',
-      reason: 'Names React and TypeScript, the two core technologies the job description leads with',
     },
     {
       id: 'sample-change-2',
@@ -91,7 +92,6 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
       tailored:
         '- Built real-time internal dashboards with React and PostgreSQL, cutting weekly reporting time by 6 hours',
       kind: 'bullet',
-      reason: 'Adds a concrete outcome and surfaces PostgreSQL, listed under required experience',
     },
     {
       id: 'sample-change-3',
@@ -100,7 +100,6 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
       tailored:
         '- Led migration of 14 legacy services to AWS with Docker, reducing infrastructure costs by 30%',
       kind: 'bullet',
-      reason: 'The posting mentions AWS and Docker three times across responsibilities and requirements',
     },
     {
       id: 'sample-change-4',
@@ -109,7 +108,6 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
       tailored:
         '- Redesigned the public REST API in Node.js, improving p95 latency by 40% for 200+ integration partners',
       kind: 'bullet',
-      reason: 'Matches the "performance-minded API design" requirement and quantifies the impact',
     },
     {
       id: 'sample-change-5',
@@ -117,7 +115,6 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
       original: 'Frontend: React, Next.js, Redux, HTML/CSS, Vite',
       tailored: 'Frontend: React, Next.js, Redux, HTML/CSS, Vite, React Native',
       kind: 'skill',
-      reason: 'React Native is required by the job and evidenced by your SideQuest project',
     },
   ],
   structure: {
