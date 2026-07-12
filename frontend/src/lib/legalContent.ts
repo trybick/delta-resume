@@ -86,6 +86,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         'Account information such as your email address if you sign up, managed by our authentication provider, Clerk.',
         'For guest users, a browser fingerprint and IP address used solely to enforce free credit limits.',
         'Basic usage analytics to understand how the Service is used.',
+        'Error and performance diagnostics via Sentry, which may include anonymized stack traces, request metadata, and privacy-masked session replays when an error occurs.',
       ],
     },
     {
@@ -101,6 +102,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       paragraphs: [
         'Clerk handles authentication and billing, including payment processing. We never see or store your full payment details.',
         'Anthropic processes resume and job description text to generate suggestions, subject to their data usage policies.',
+        'Sentry receives error and performance diagnostics to help us operate and improve the Service. Session replays are privacy-masked and captured only when an error occurs.',
       ],
     },
     {

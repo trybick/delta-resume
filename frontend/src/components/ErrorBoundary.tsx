@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import * as Sentry from '@sentry/react'
 import { Button, Stack } from '@mantine/core'
 import { IconRefresh } from '@tabler/icons-react'
 import { AnalyticsEvents, trackEvent } from '../lib/analytics'
@@ -21,6 +22,9 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     console.error('Uncaught render error:', error, info.componentStack)
+    Sentry.captureException(error, {
+      contexts: { react: { componentStack: info.componentStack } },
+    })
   }
 
   handleReload = () => {

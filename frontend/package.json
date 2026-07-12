@@ -17,6 +17,7 @@
     "@mantine/dropzone": "^9.4.1",
     "@mantine/hooks": "^9.4.1",
     "@mantine/notifications": "^9.4.1",
+    "@sentry/react": "^10.65.0",
     "@tabler/icons-react": "^3.44.0",
     "diff": "^9.0.0",
     "docx": "^9.7.1",

@@ -67,6 +67,26 @@ let main args =
 
     let builder = WebApplication.CreateBuilder(args)
 
+    let runningLocally = LocalDev.isRunningLocally ()
+
+    if runningLocally then
+        eprintfn "Warning: BACKEND_RUNNING_LOCALLY is set; rate limiting is off and guest credits are unlimited."
+
+    let sentryDsn =
+        Environment.GetEnvironmentVariable "SENTRY_DSN"
+        |> Option.ofObj
+        |> Option.filter (String.IsNullOrWhiteSpace >> not)
+
+    match sentryDsn with
+    | Some dsn ->
+        builder.WebHost.UseSentry(fun (options: Sentry.AspNetCore.SentryAspNetCoreOptions) ->
+            options.Dsn <- dsn
+            options.SendDefaultPii <- false
+            options.TracesSampleRate <- 0.1
+            options.Environment <- if runningLocally then "development" else "production")
+        |> ignore
+    | None -> ()
+
     builder.Services.AddGiraffe() |> ignore
 
     match clerkAuthority with
@@ -115,11 +135,6 @@ let main args =
 
     builder.Services.AddSingleton<IdentityOptions>(identityOptions) |> ignore
 
-    let runningLocally = LocalDev.isRunningLocally ()
-
-    if runningLocally then
-        eprintfn "Warning: BACKEND_RUNNING_LOCALLY is set; rate limiting is off and guest credits are unlimited."
-
     builder.Services.AddSingleton<RateLimiters>(fun _ -> RateLimiters(identityOptions, runningLocally))
     |> ignore
 
@@ -138,6 +153,9 @@ let main args =
     let app = builder.Build()
 
     app.UseCors() |> ignore
+
+    if Option.isSome sentryDsn then
+        app.UseSentryTracing() |> ignore
 
     if Option.isSome clerkAuthority then
         app.UseAuthentication() |> ignore

@@ -16,3 +16,8 @@ export const getGaMeasurementId = (): string | null => {
   const id = import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined
   return id?.trim() || null
 }
+
+export const getSentryDsn = (): string | null => {
+  const dsn = import.meta.env.VITE_SENTRY_DSN as string | undefined
+  return dsn?.trim() || null
+}

@@ -30,6 +30,7 @@ createdb deltaresume
 | `BACKEND_RUNNING_LOCALLY` | No | Set to `true` when running the API on your machine (replaces `UNLIMITED_GUEST_CREDITS`, `DISABLE_RATE_LIMITING`, and `TRUST_FORWARDED_HEADERS=false`). When enabled: guest requests get unlimited tailor credits; API rate limiting is disabled; guest IPs are taken from the direct connection instead of `X-Forwarded-For`. Must be unset or `false` in production. |
 | `TRUST_FORWARDED_HEADERS` | No | Production only (ignored when `BACKEND_RUNNING_LOCALLY` is set). Set to `true` when running behind a reverse proxy so `X-Forwarded-For` is used for guest IP resolution. |
 | `CORS_ORIGINS` | No | Comma-separated allowed browser origins. Defaults to `http://localhost:5200`. In production, include your frontend URL (e.g. `https://app.example.com`). |
+| `SENTRY_DSN` | No | Sentry DSN for API error monitoring and tracing. Leave unset to disable. |
 
 ```bash
 cd backend/DeltaResume.Api
@@ -43,7 +44,7 @@ Tables are created automatically on startup.
 1. Set the service **Root Directory** to `backend/DeltaResume.Api` (uses the included `Dockerfile`).
 2. Add a **PostgreSQL** plugin to the project.
 3. On the API service, add a variable reference from Postgres → `DATABASE_URL`.
-4. Also set: `ANTHROPIC_API_KEY`, `CLERK_FRONTEND_API_URL`, `IP_HASH_SALT`, `TRUST_FORWARDED_HEADERS=true`, `CORS_ORIGINS` = your deployed frontend origin(s).
+4. Also set: `ANTHROPIC_API_KEY`, `CLERK_FRONTEND_API_URL`, `IP_HASH_SALT`, `TRUST_FORWARDED_HEADERS=true`, `CORS_ORIGINS` = your deployed frontend origin(s). Optionally set `SENTRY_DSN`.
 5. Do **not** set `BACKEND_RUNNING_LOCALLY`.
 
 ### Frontend
@@ -57,6 +58,7 @@ Proxies `/api` to the backend. Open http://localhost:5200 after starting.
 | `VITE_CLERK_PUBLISHABLE_KEY` | Yes | Clerk publishable key (`pk_test_…` or `pk_live_…`) |
 | `VITE_API_BASE_URL` | No | Backend URL when not using the Vite dev proxy. Leave unset for local dev — Vite proxies `/api` to `http://localhost:5100`. |
 | `VITE_GA_MEASUREMENT_ID` | No | Google Analytics 4 measurement ID (`G-XXXXXXXXXX`). Used only in production builds; ignored in local/dev. When unset, analytics is disabled. |
+| `VITE_SENTRY_DSN` | No | Sentry DSN for frontend error monitoring, tracing, and error-triggered session replay. Leave unset to disable. |
 
 Pull Clerk keys from the linked **Delta Resume** application, then start the dev server:
 
