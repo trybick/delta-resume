@@ -168,13 +168,12 @@ type PostgresSavedResumeRepository(connectionString: string) =
                     connection.ExecuteAsync(
                         """
                         DELETE FROM saved_resumes
-                        WHERE owner_key = @OwnerKey
-                          AND id NOT IN (
-                              SELECT id FROM saved_resumes
-                              WHERE owner_key = @OwnerKey
-                              ORDER BY created_at DESC
-                              LIMIT @KeepCount
-                          )
+                        WHERE id IN (
+                            SELECT id FROM saved_resumes
+                            WHERE owner_key = @OwnerKey
+                            ORDER BY created_at ASC
+                            OFFSET @KeepCount
+                        )
                         """,
                         {| OwnerKey = ownerKey
                            KeepCount = keepCount |}

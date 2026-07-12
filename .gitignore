@@ -31,5 +31,9 @@ frontend/.env
 .vs/
 *.user
 
+# Local database artifacts
+backend/data/
+*.db
+
 backend/DeltaResume.Api/.env
 backend/DeltaResume.Api/out/

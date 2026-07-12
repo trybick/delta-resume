@@ -40,7 +40,7 @@ type PostgresCreditStore(connectionString: string) =
                                IdentityKey = entry.IdentityKey
                                Kind = entry.Kind
                                Period = entry.Period
-                               UsedAt = DateTime.UtcNow |},
+                               UsedAt = DateTimeOffset.UtcNow |},
                             transaction
                         )
 
