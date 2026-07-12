@@ -110,5 +110,10 @@ let main args =
 
     app.UseGiraffe Routes.webApp
 
-    app.Run("http://localhost:5100")
+    let port =
+        Environment.GetEnvironmentVariable "PORT"
+        |> Option.ofObj
+        |> Option.defaultValue "5100"
+
+    app.Run($"http://0.0.0.0:{port}")
     0
