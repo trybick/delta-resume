@@ -7,18 +7,34 @@ open System.Text.Json.Serialization
 open Giraffe
 open Microsoft.AspNetCore.Authentication.JwtBearer
 open Microsoft.AspNetCore.Builder
+open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
+open Npgsql
 open DeltaResume.Api
 open DeltaResume.Application
 open DeltaResume.Infrastructure
 
 module private Database =
     let normalizeConnectionString (value: string) =
-        if value.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) then
-            "postgresql://" + value.Substring("postgres://".Length)
-        else
+        if not (value.Contains "://") then
             value
+        else
+            let uri = Uri(value.Replace("postgres://", "postgresql://"))
+            let userInfo = uri.UserInfo.Split([| ':' |], 2)
+
+            let builder =
+                NpgsqlConnectionStringBuilder(
+                    Host = uri.Host,
+                    Port = (if uri.Port > 0 then uri.Port else 5432),
+                    Database = uri.AbsolutePath.TrimStart('/'),
+                    Username = Uri.UnescapeDataString(userInfo[0])
+                )
+
+            if userInfo.Length > 1 then
+                builder.Password <- Uri.UnescapeDataString(userInfo[1])
+
+            builder.ConnectionString
 
     let connectionStringFromEnvironment () =
         Environment.GetEnvironmentVariable "DATABASE_URL"
