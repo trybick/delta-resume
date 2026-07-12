@@ -3,21 +3,21 @@ namespace DeltaResume.Infrastructure
 open System
 open System.Threading.Tasks
 open Dapper
-open Microsoft.Data.Sqlite
+open Npgsql
 open DeltaResume.Application
 
-type SqliteCreditStore(connectionString: string) =
+type PostgresCreditStore(connectionString: string) =
 
     interface CreditStore with
 
         member _.CountUsage(identityKey: string, period: string) : Task<int> =
             task {
-                use connection = new SqliteConnection(connectionString)
+                use connection = new NpgsqlConnection(connectionString)
                 do! connection.OpenAsync()
 
                 return!
                     connection.ExecuteScalarAsync<int>(
-                        "SELECT COUNT(*) FROM credit_usage WHERE identity_key = @IdentityKey AND period = @Period",
+                        "SELECT COUNT(*)::int FROM credit_usage WHERE identity_key = @IdentityKey AND period = @Period",
                         {| IdentityKey = identityKey
                            Period = period |}
                     )
@@ -25,7 +25,7 @@ type SqliteCreditStore(connectionString: string) =
 
         member _.RecordUsage(entries: CreditUsageEntry list) : Task<unit> =
             task {
-                use connection = new SqliteConnection(connectionString)
+                use connection = new NpgsqlConnection(connectionString)
                 do! connection.OpenAsync()
                 use transaction = connection.BeginTransaction()
 
@@ -40,7 +40,7 @@ type SqliteCreditStore(connectionString: string) =
                                IdentityKey = entry.IdentityKey
                                Kind = entry.Kind
                                Period = entry.Period
-                               UsedAt = DateTime.UtcNow.ToString "O" |},
+                               UsedAt = DateTime.UtcNow |},
                             transaction
                         )
 

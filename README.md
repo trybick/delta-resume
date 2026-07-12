@@ -11,7 +11,13 @@ A resume tailoring service: attach a base resume, paste a job description, and r
 
 ### Backend
 
-Requires .NET SDK. Listens on http://localhost:5100.
+Requires .NET SDK and PostgreSQL. Listens on http://localhost:5100.
+
+Create the local database once:
+
+```bash
+createdb deltaresume
+```
 
 **Environment variables** (in `backend/DeltaResume.Api/.env`; loaded automatically on `dotnet run` via DotNetEnv):
 
@@ -20,13 +26,25 @@ Requires .NET SDK. Listens on http://localhost:5100.
 | `ANTHROPIC_API_KEY` | Yes | Anthropic API key for tailoring |
 | `CLERK_FRONTEND_API_URL` | Yes | Clerk Frontend API URL (e.g. `https://in-aphid-71.clerk.accounts.dev`). Found in the Clerk Dashboard under **API keys** → **Advanced** → **Frontend API URL**. If unset, all requests are treated as guests. |
 | `IP_HASH_SALT` | Yes | Secret key for HMAC-SHA256 hashing of guest IPs for credit tracking. Generate with `openssl rand -hex 32`. |
+| `DATABASE_URL` | No | Postgres connection string or URI. Defaults to `Host=localhost;Database=deltaresume`. On Railway, reference the Postgres plugin’s `DATABASE_URL`. |
 | `BACKEND_RUNNING_LOCALLY` | No | Set to `true` when running the API on your machine (replaces `UNLIMITED_GUEST_CREDITS`, `DISABLE_RATE_LIMITING`, and `TRUST_FORWARDED_HEADERS=false`). When enabled: guest requests get unlimited tailor credits; API rate limiting is disabled; guest IPs are taken from the direct connection instead of `X-Forwarded-For`. Must be unset or `false` in production. |
 | `TRUST_FORWARDED_HEADERS` | No | Production only (ignored when `BACKEND_RUNNING_LOCALLY` is set). Set to `true` when running behind a reverse proxy so `X-Forwarded-For` is used for guest IP resolution. |
+| `CORS_ORIGINS` | No | Comma-separated allowed browser origins. Defaults to `http://localhost:5200`. In production, include your frontend URL (e.g. `https://app.example.com`). |
 
 ```bash
 cd backend/DeltaResume.Api
 dotnet run
 ```
+
+Tables are created automatically on startup.
+
+### Backend on Railway
+
+1. Set the service **Root Directory** to `backend/DeltaResume.Api` (uses the included `Dockerfile`).
+2. Add a **PostgreSQL** plugin to the project.
+3. On the API service, add a variable reference from Postgres → `DATABASE_URL`.
+4. Also set: `ANTHROPIC_API_KEY`, `CLERK_FRONTEND_API_URL`, `IP_HASH_SALT`, `TRUST_FORWARDED_HEADERS=true`, `CORS_ORIGINS` = your deployed frontend origin(s).
+5. Do **not** set `BACKEND_RUNNING_LOCALLY`.
 
 ### Frontend
 
@@ -57,4 +75,3 @@ Authentication and billing are handled by [Clerk](https://clerk.com) (Clerk Bill
 - Free accounts get 3 lifetime credits keyed to their Clerk user id.
 - Pro subscribers ($19/month, or $12/month billed annually) get 200 credits per calendar month.
 - One credit is spent per successful tailor run. When credits run out the API returns `402 credits_exhausted` and the UI opens a paywall: sign-up (Google prominent) for guests, the Clerk `PricingTable` in-app checkout for signed-in users.
-

@@ -1,7 +1,6 @@
 ﻿module DeltaResume.Program
 
 open System
-open System.IO
 open System.Net.Http
 open System.Text.Json
 open System.Text.Json.Serialization
@@ -14,14 +13,25 @@ open DeltaResume.Api
 open DeltaResume.Application
 open DeltaResume.Infrastructure
 
+module private Database =
+    let normalizeConnectionString (value: string) =
+        if value.StartsWith("postgres://", StringComparison.OrdinalIgnoreCase) then
+            "postgresql://" + value.Substring("postgres://".Length)
+        else
+            value
+
+    let connectionStringFromEnvironment () =
+        Environment.GetEnvironmentVariable "DATABASE_URL"
+        |> Option.ofObj
+        |> Option.filter (String.IsNullOrWhiteSpace >> not)
+        |> Option.map normalizeConnectionString
+        |> Option.defaultValue "Host=localhost;Database=deltaresume"
+
 [<EntryPoint>]
 let main args =
     DotNetEnv.Env.Load() |> ignore
 
-    let dbPath =
-        Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "data", "delta-resume.db")
-
-    let connectionString = sprintf "Data Source=%s" (Path.GetFullPath dbPath)
+    let connectionString = Database.connectionStringFromEnvironment ()
 
     Schema.init connectionString
 
@@ -30,6 +40,14 @@ let main args =
         |> Option.ofObj
         |> Option.filter (String.IsNullOrWhiteSpace >> not)
         |> Option.map (fun url -> url.TrimEnd '/')
+
+    let corsOrigins =
+        Environment.GetEnvironmentVariable "CORS_ORIGINS"
+        |> Option.ofObj
+        |> Option.filter (String.IsNullOrWhiteSpace >> not)
+        |> Option.map (fun value ->
+            value.Split(',', StringSplitOptions.RemoveEmptyEntries ||| StringSplitOptions.TrimEntries))
+        |> Option.defaultValue [| "http://localhost:5200" |]
 
     let builder = WebApplication.CreateBuilder(args)
 
@@ -50,7 +68,7 @@ let main args =
 
     builder.Services.AddCors(fun options ->
         options.AddDefaultPolicy(fun policy ->
-            policy.WithOrigins("http://localhost:5200").AllowAnyHeader().AllowAnyMethod() |> ignore))
+            policy.WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod() |> ignore))
     |> ignore
 
     let jsonOptions =
@@ -74,7 +92,7 @@ let main args =
 
     builder.Services.AddSingleton<TailoringService>() |> ignore
 
-    builder.Services.AddSingleton<CreditStore>(fun _ -> SqliteCreditStore(connectionString) :> CreditStore)
+    builder.Services.AddSingleton<CreditStore>(fun _ -> PostgresCreditStore(connectionString) :> CreditStore)
     |> ignore
 
     let identityOptions = IdentityOptions.fromEnvironment ()
@@ -94,7 +112,7 @@ let main args =
     |> ignore
 
     builder.Services.AddSingleton<SavedResumeRepository>(fun _ ->
-        SqliteSavedResumeRepository(connectionString) :> SavedResumeRepository)
+        PostgresSavedResumeRepository(connectionString) :> SavedResumeRepository)
     |> ignore
 
     builder.Services.AddSingleton<SavedResumeService>(fun provider ->

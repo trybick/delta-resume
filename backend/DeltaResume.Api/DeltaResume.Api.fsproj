@@ -13,7 +13,7 @@
     <Compile Include="Application/Identity.fs" />
     <Compile Include="Application/CreditService.fs" />
     <Compile Include="Application/SavedResumeService.fs" />
-    <Compile Include="Infrastructure/SqliteRepository.fs" />
+    <Compile Include="Infrastructure/PostgresRepository.fs" />
     <Compile Include="Infrastructure/CreditStore.fs" />
     <Compile Include="Infrastructure/AnthropicEngine.fs" />
     <Compile Include="Infrastructure/AnthropicCoverLetterEngine.fs" />
@@ -29,8 +29,7 @@
     <PackageReference Include="DotNetEnv" Version="3.2.0" />
     <PackageReference Include="Giraffe" Version="8.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
-    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.9" />
-    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+    <PackageReference Include="Npgsql" Version="9.0.4" />
   </ItemGroup>
 
 </Project>

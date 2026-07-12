@@ -31,8 +31,5 @@ frontend/.env
 .vs/
 *.user
 
-# Local SQLite database
-backend/data/
-*.db
 backend/DeltaResume.Api/.env
 backend/DeltaResume.Api/out/
