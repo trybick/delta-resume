@@ -1,33 +1,35 @@
-import { Button, Stack, Text } from '@mantine/core'
-import { IconSparkles } from '@tabler/icons-react'
-import { AnalyticsEvents, trackEvent } from '../lib/analytics'
-import ResumeInput from './ResumeInput'
-import JobDescriptionInput from './JobDescriptionInput'
-import type { AttachedFile } from '../hooks/useResumeDocument'
-import type { CreditStatus, SavedResume, TailorStatus } from '../lib/types'
+import { Anchor, Button, Stack, Text } from '@mantine/core';
+import { IconSparkles } from '@tabler/icons-react';
+import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import ResumeInput from './ResumeInput';
+import JobDescriptionInput from './JobDescriptionInput';
+import type { AttachedFile } from '../hooks/useResumeDocument';
+import type { CreditStatus, SavedResume, TailorStatus } from '../lib/types';
 
 type TailorFormProps = {
-  resumeText: string
-  attachedFile: AttachedFile | null
-  savedResumes: SavedResume[]
-  isLoadingSavedResumes: boolean
-  isProPlan: boolean
-  jobDescription: string
-  onJobDescriptionChange: (value: string) => void
-  onResumeTextChange: (text: string) => void
-  onFileAttach: (file: AttachedFile, text: string, sourceFile: File) => void
-  onClearResume: () => void
-  onSelectSaved: (resume: SavedResume) => void
-  onRenameSaved: (id: string, name: string) => void
-  onDeleteSaved: (id: string) => void
-  onUpgradeClick: () => void
-  canTailor: boolean
-  status: TailorStatus
-  outOfCredits: boolean
-  credits: CreditStatus | null
-  inputsUnchangedSinceLastRun: boolean
-  onTailor: () => void
-}
+  resumeText: string;
+  attachedFile: AttachedFile | null;
+  savedResumes: SavedResume[];
+  isLoadingSavedResumes: boolean;
+  isProPlan: boolean;
+  jobDescription: string;
+  onJobDescriptionChange: (value: string) => void;
+  onResumeTextChange: (text: string) => void;
+  onFileAttach: (file: AttachedFile, text: string, sourceFile: File) => void;
+  onClearResume: () => void;
+  onSelectSaved: (resume: SavedResume) => void;
+  onRenameSaved: (id: string, name: string) => void;
+  onDeleteSaved: (id: string) => void;
+  onUpgradeClick: () => void;
+  canTailor: boolean;
+  status: TailorStatus;
+  outOfCredits: boolean;
+  credits: CreditStatus | null;
+  creditsError: boolean;
+  inputsUnchangedSinceLastRun: boolean;
+  onTailor: () => void;
+  onRetryCredits: () => void;
+};
 
 const TailorForm = ({
   resumeText,
@@ -48,8 +50,10 @@ const TailorForm = ({
   status,
   outOfCredits,
   credits,
+  creditsError,
   inputsUnchangedSinceLastRun,
   onTailor,
+  onRetryCredits
 }: TailorFormProps) => (
   <Stack gap="lg">
     <ResumeInput
@@ -76,16 +80,22 @@ const TailorForm = ({
         loading={status === 'loading'}
         onClick={() => {
           trackEvent(
-            outOfCredits
-              ? AnalyticsEvents.GetMoreCredits
-              : AnalyticsEvents.TailorResumeClick,
-          )
-          onTailor()
+            outOfCredits ? AnalyticsEvents.GetMoreCredits : AnalyticsEvents.TailorResumeClick
+          );
+          onTailor();
         }}
       >
         {outOfCredits ? 'Get more credits' : 'Tailor Resume'}
       </Button>
-      {inputsUnchangedSinceLastRun && !outOfCredits && (
+      {creditsError && credits === null && (
+        <Text size="xs" c="dimmed" ta="center">
+          Couldn&apos;t load your credits.{' '}
+          <Anchor component="button" type="button" size="xs" onClick={onRetryCredits}>
+            Retry
+          </Anchor>
+        </Text>
+      )}
+      {inputsUnchangedSinceLastRun && !outOfCredits && credits !== null && (
         <Text size="xs" c="dimmed" ta="center">
           Edit your resume or job description to tailor again.
         </Text>
@@ -99,6 +109,6 @@ const TailorForm = ({
       )}
     </Stack>
   </Stack>
-)
+);
 
-export default TailorForm
+export default TailorForm;

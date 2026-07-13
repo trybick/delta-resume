@@ -120,7 +120,10 @@ type AppHeaderProps = {
   outOfCredits: boolean;
   isProPlan: boolean;
   planLoaded: boolean;
+  isLoadingCredits: boolean;
+  creditsError: boolean;
   onUpgradeClick: () => void;
+  onRetryCredits: () => void;
 };
 
 const AppHeader = ({
@@ -128,7 +131,10 @@ const AppHeader = ({
   outOfCredits,
   isProPlan,
   planLoaded,
-  onUpgradeClick
+  isLoadingCredits,
+  creditsError,
+  onUpgradeClick,
+  onRetryCredits
 }: AppHeaderProps) => {
   return (
     <Box
@@ -171,6 +177,18 @@ const AppHeader = ({
                 {creditsLabel}
               </Badge>
             </Tooltip>
+          )}
+          {!creditsLabel && isLoadingCredits && <Skeleton width={110} height={26} radius="xl" />}
+          {!creditsLabel && creditsError && !isLoadingCredits && (
+            <Badge
+              size="lg"
+              variant="light"
+              color="red"
+              style={{ cursor: 'pointer' }}
+              onClick={onRetryCredits}
+            >
+              Credits unavailable · Retry
+            </Badge>
           )}
           {planLoaded && !isProPlan && <UpgradeHoverCard onUpgradeClick={onUpgradeClick} />}
           <SignedOut>

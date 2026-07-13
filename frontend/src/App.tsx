@@ -30,7 +30,14 @@ const App = () => {
   const [activeTab, setActiveTab] = useState<string | null>('resume')
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null)
 
-  const { credits, outOfCredits, creditsLabel, loadCredits } = useCredits()
+  const {
+    credits,
+    outOfCredits,
+    creditsLabel,
+    isLoadingCredits,
+    creditsError,
+    loadCredits,
+  } = useCredits()
   const {
     savedResumes,
     isLoadingSavedResumes,
@@ -85,6 +92,7 @@ const App = () => {
     lastSuccessfulInputs.jobDescription === jobDescription.trim()
 
   const canTailor =
+    credits !== null &&
     resumeText.trim().length > 0 &&
     jobDescription.trim().length > 0 &&
     !inputsUnchangedSinceLastRun
@@ -139,7 +147,10 @@ const App = () => {
         outOfCredits={outOfCredits}
         isProPlan={isProPlan}
         planLoaded={planLoaded}
+        isLoadingCredits={isLoadingCredits}
+        creditsError={creditsError}
         onUpgradeClick={() => openPaywall('upgrade')}
+        onRetryCredits={() => void loadCredits()}
       />
 
       <Container size="xl" py="xl" w="100%" style={{ flexGrow: 1 }}>
@@ -176,8 +187,10 @@ const App = () => {
               status={status}
               outOfCredits={outOfCredits}
               credits={credits}
+              creditsError={creditsError}
               inputsUnchangedSinceLastRun={inputsUnchangedSinceLastRun}
               onTailor={handleTailor}
+              onRetryCredits={() => void loadCredits()}
             />
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 7 }}>
