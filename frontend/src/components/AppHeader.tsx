@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef } from 'react'
+import type { ComponentPropsWithoutRef } from 'react';
 import {
   Badge,
   Box,
@@ -11,39 +11,35 @@ import {
   Text,
   Title,
   Tooltip,
-  type ButtonProps,
-} from '@mantine/core'
-import {
-  SignInButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-  useClerk,
-} from '@clerk/clerk-react'
-import { IconCoins, IconLogout, IconSettings, IconSparkles } from '@tabler/icons-react'
-import DeltaLogo from './DeltaLogo'
-import { ProFeatureList } from './ProPlanShowcase'
-import { AnalyticsEvents, trackEvent } from '../lib/analytics'
-import { useProPlan } from '../lib/proPlan'
-import { appTheme, spaceGroteskStack } from '../lib/theme'
+  type ButtonProps
+} from '@mantine/core';
+import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
+import { IconCoins, IconSparkles } from '@tabler/icons-react';
+import DeltaLogo from './DeltaLogo';
+import { ProFeatureList } from './ProPlanShowcase';
+import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { useProPlan } from '../lib/proPlan';
+import { appTheme, spaceGroteskStack } from '../lib/theme';
 
 type ClerkAuthButtonProps = ButtonProps &
   ComponentPropsWithoutRef<'button'> & {
-    component?: string
-    clerk?: unknown
-  }
+    component?: string;
+    clerk?: unknown;
+  };
 
-const ClerkAuthButton = ({ component: _component, clerk: _clerk, ...props }: ClerkAuthButtonProps) => (
-  <Button {...props} />
-)
+const ClerkAuthButton = ({
+  component: _component,
+  clerk: _clerk,
+  ...props
+}: ClerkAuthButtonProps) => <Button {...props} />;
 
 type UpgradeHoverCardProps = {
-  onUpgradeClick: () => void
-}
+  onUpgradeClick: () => void;
+};
 
 const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
-  const { annualMonthlyPrice, monthlyPrice } = useProPlan()
-  const displayedPrice = annualMonthlyPrice ?? monthlyPrice
+  const { annualMonthlyPrice, monthlyPrice } = useProPlan();
+  const displayedPrice = annualMonthlyPrice ?? monthlyPrice;
 
   return (
     <HoverCard
@@ -62,8 +58,8 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
           gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
           leftSection={<IconSparkles size={14} />}
           onClick={() => {
-            trackEvent(AnalyticsEvents.UpgradeToProHeader)
-            onUpgradeClick()
+            trackEvent(AnalyticsEvents.UpgradeToProHeader);
+            onUpgradeClick();
           }}
         >
           Upgrade to Pro
@@ -73,8 +69,7 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
         style={{
           border: '1px solid var(--mantine-color-dark-4)',
           backgroundColor: 'var(--mantine-color-dark-7)',
-          backgroundImage:
-            'linear-gradient(160deg, rgba(34, 184, 207, 0.12) 0%, transparent 55%)',
+          backgroundImage: 'linear-gradient(160deg, rgba(34, 184, 207, 0.12) 0%, transparent 55%)'
         }}
       >
         <Stack gap="sm">
@@ -108,8 +103,8 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
             variant="gradient"
             gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
             onClick={() => {
-              trackEvent(AnalyticsEvents.SeePlanDetails)
-              onUpgradeClick()
+              trackEvent(AnalyticsEvents.SeePlanDetails);
+              onUpgradeClick();
             }}
           >
             See plan details
@@ -117,50 +112,23 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
         </Stack>
       </HoverCard.Dropdown>
     </HoverCard>
-  )
-}
-
-const TrackedUserButton = () => {
-  const clerk = useClerk()
-
-  return (
-    <UserButton>
-      <UserButton.MenuItems>
-        <UserButton.Action
-          label="Manage account"
-          labelIcon={<IconSettings size={16} />}
-          onClick={() => {
-            trackEvent(AnalyticsEvents.UserButtonOpen, { action: 'manage_account' })
-            clerk.openUserProfile()
-          }}
-        />
-        <UserButton.Action
-          label="Sign out"
-          labelIcon={<IconLogout size={16} />}
-          onClick={() => {
-            trackEvent(AnalyticsEvents.UserButtonOpen, { action: 'sign_out' })
-            void clerk.signOut()
-          }}
-        />
-      </UserButton.MenuItems>
-    </UserButton>
-  )
-}
+  );
+};
 
 type AppHeaderProps = {
-  creditsLabel: string | null
-  outOfCredits: boolean
-  isProPlan: boolean
-  planLoaded: boolean
-  onUpgradeClick: () => void
-}
+  creditsLabel: string | null;
+  outOfCredits: boolean;
+  isProPlan: boolean;
+  planLoaded: boolean;
+  onUpgradeClick: () => void;
+};
 
 const AppHeader = ({
   creditsLabel,
   outOfCredits,
   isProPlan,
   planLoaded,
-  onUpgradeClick,
+  onUpgradeClick
 }: AppHeaderProps) => {
   return (
     <Box
@@ -179,12 +147,7 @@ const AppHeader = ({
               lh={1.2}
               style={{ fontFamily: spaceGroteskStack, letterSpacing: '-0.02em' }}
             >
-              <Text
-                span
-                inherit
-                variant="gradient"
-                gradient={{ ...appTheme.gradient, deg: 45 }}
-              >
+              <Text span inherit variant="gradient" gradient={{ ...appTheme.gradient, deg: 45 }}>
                 Delta
               </Text>{' '}
               <Text span inherit fw={400} c="gray.3">
@@ -209,26 +172,21 @@ const AppHeader = ({
               </Badge>
             </Tooltip>
           )}
-          {planLoaded && !isProPlan && (
-            <UpgradeHoverCard onUpgradeClick={onUpgradeClick} />
-          )}
+          {planLoaded && !isProPlan && <UpgradeHoverCard onUpgradeClick={onUpgradeClick} />}
           <SignedOut>
             <SignInButton mode="modal">
-              <ClerkAuthButton
-                variant="outline"
-                onClick={() => trackEvent(AnalyticsEvents.SignIn)}
-              >
+              <ClerkAuthButton variant="outline" onClick={() => trackEvent(AnalyticsEvents.SignIn)}>
                 Sign in
               </ClerkAuthButton>
             </SignInButton>
           </SignedOut>
           <SignedIn>
-            <TrackedUserButton />
+            <UserButton />
           </SignedIn>
         </Group>
       </Group>
     </Box>
-  )
-}
+  );
+};
 
-export default AppHeader
+export default AppHeader;
