@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react'
-import { FocusTrap, Modal, Stack, Text, Title } from '@mantine/core'
-import { SignUp, useAuth, useUser } from '@clerk/clerk-react'
-import { AnalyticsEvents, trackEvent } from '../lib/analytics'
-import ProPlanShowcase from './ProPlanShowcase'
+import { useEffect, useRef } from 'react';
+import { FocusTrap, Modal, Stack, Text, Title } from '@mantine/core';
+import { SignUp, useAuth, useUser } from '@clerk/clerk-react';
+import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import ProPlanShowcase from './ProPlanShowcase';
 
 const embeddedSignUpAppearance = {
   elements: {
@@ -25,46 +25,46 @@ const embeddedSignUpAppearance = {
     footer: { background: 'none' },
     footerItem: { background: 'none' },
   },
-} as const
+} as const;
 
-export type PaywallReason = 'credits' | 'savedLimit' | 'upgrade' | 'coverLetter'
+export type PaywallReason = 'credits' | 'savedLimit' | 'upgrade' | 'coverLetter';
 
 type PaywallModalProps = {
-  opened: boolean
-  reason: PaywallReason
-  onClose: () => void
-  onSubscriptionChange: () => void
-}
+  opened: boolean;
+  reason: PaywallReason;
+  onClose: () => void;
+  onSubscriptionChange: () => void;
+};
 
 const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: PaywallModalProps) => {
-  const { isSignedIn } = useUser()
-  const { has } = useAuth()
-  const wasSignedOutRef = useRef(false)
+  const { isSignedIn } = useUser();
+  const { has } = useAuth();
+  const wasSignedOutRef = useRef(false);
 
-  const hasProPlan = has?.({ plan: 'pro' }) ?? false
+  const hasProPlan = has?.({ plan: 'pro' }) ?? false;
 
   useEffect(() => {
     if (!opened) {
-      wasSignedOutRef.current = false
-      return
+      wasSignedOutRef.current = false;
+      return;
     }
     if (!isSignedIn) {
-      wasSignedOutRef.current = true
-      return
+      wasSignedOutRef.current = true;
+      return;
     }
     if (wasSignedOutRef.current) {
-      trackEvent(AnalyticsEvents.PaywallSignUpAction, { reason })
-      wasSignedOutRef.current = false
+      trackEvent(AnalyticsEvents.PaywallSignUpAction, { reason });
+      wasSignedOutRef.current = false;
     }
-  }, [opened, isSignedIn, reason])
+  }, [opened, isSignedIn, reason]);
 
   useEffect(() => {
-    if (!opened) return
-    onSubscriptionChange()
+    if (!opened) return;
+    onSubscriptionChange();
     if ((reason === 'savedLimit' || reason === 'coverLetter') && hasProPlan) {
-      onClose()
+      onClose();
     }
-  }, [opened, isSignedIn, hasProPlan, reason, onSubscriptionChange, onClose])
+  }, [opened, isSignedIn, hasProPlan, reason, onSubscriptionChange, onClose]);
 
   const signedInTitle =
     reason === 'savedLimit'
@@ -73,7 +73,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
         ? 'Upgrade to unlock cover letters'
         : reason === 'upgrade'
           ? 'Upgrade to Pro'
-          : 'Upgrade to keep tailoring'
+          : 'Upgrade to keep tailoring';
   const signedInHeading =
     reason === 'savedLimit'
       ? 'You\u2019ve reached your saved resume limit'
@@ -81,7 +81,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
         ? 'Cover letters are a Pro feature'
         : reason === 'upgrade'
           ? 'Get the most out of Delta Resume'
-          : 'You\u2019re out of credits'
+          : 'You\u2019re out of credits';
   const signedInDescription =
     reason === 'savedLimit'
       ? 'Go Pro to save up to 10 resumes and keep tailoring all month.'
@@ -89,7 +89,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
         ? 'Go Pro and every tailor run also writes a matching cover letter.'
         : reason === 'upgrade'
           ? 'Everything you need to land more interviews, in one plan.'
-          : 'Go Pro to keep tailoring without interruption.'
+          : 'Go Pro to keep tailoring without interruption.';
   const signedOutHeading =
     reason === 'savedLimit'
       ? 'Save more resumes with Pro'
@@ -97,7 +97,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
         ? 'Get instant cover letters with Pro'
         : reason === 'upgrade'
           ? 'Go Pro with Delta Resume'
-          : 'You\u2019ve used your 3 free tailors'
+          : 'You\u2019ve used your 3 free tailors';
   const signedOutDescription =
     reason === 'savedLimit'
       ? 'Create a free account and upgrade to Pro to save up to 10 resumes.'
@@ -105,13 +105,13 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
         ? 'Create a free account and upgrade to Pro to get a matching cover letter with every tailor run.'
         : reason === 'upgrade'
           ? 'Sign in to continue \u2014 it takes seconds with Google.'
-          : 'Create a free account to keep tailoring. Signing in with Google takes seconds.'
+          : 'Create a free account to keep tailoring. Signing in with Google takes seconds.';
 
   const handleSubscriptionComplete = () => {
-    trackEvent(AnalyticsEvents.SubscriptionComplete, { reason })
-    onSubscriptionChange()
-    onClose()
-  }
+    trackEvent(AnalyticsEvents.SubscriptionComplete, { reason });
+    onSubscriptionChange();
+    onClose();
+  };
 
   return (
     <Modal
@@ -148,7 +148,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
         </Stack>
       )}
     </Modal>
-  )
-}
+  );
+};
 
-export default PaywallModal
+export default PaywallModal;

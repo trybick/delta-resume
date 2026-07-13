@@ -1,56 +1,54 @@
-import {
-  ActionIcon,
-  Box,
-  Group,
-  Paper,
-  Text,
-  Tooltip,
-} from '@mantine/core'
-import { useClipboard } from '@mantine/hooks'
-import { IconArrowBackUp, IconCopy, IconCopyCheck, IconRefresh } from '@tabler/icons-react'
-import { diffWords } from 'diff'
-import { AnalyticsEvents, trackEvent } from '../lib/analytics'
-import type { BulletChange, ChangeDecision } from '../lib/types'
+import { ActionIcon, Box, Group, Paper, Text, Tooltip } from '@mantine/core';
+import { useClipboard } from '@mantine/hooks';
+import { IconArrowBackUp, IconCopy, IconCopyCheck, IconRefresh } from '@tabler/icons-react';
+import { diffWords } from 'diff';
+import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import type { BulletChange, ChangeDecision } from '../lib/types';
 
 type DiffBulletProps = {
-  change: BulletChange
-  decision: ChangeDecision
-  onDecisionChange: (id: string, decision: ChangeDecision) => void
-}
+  change: BulletChange;
+  decision: ChangeDecision;
+  onDecisionChange: (id: string, decision: ChangeDecision) => void;
+};
 
 const borderColorByDecision: Record<ChangeDecision, string> = {
   accepted: 'var(--mantine-color-green-6)',
   reverted: 'var(--mantine-color-gray-6)',
-}
+};
 
 const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => {
-  const clipboard = useClipboard({ timeout: 1500 })
+  const clipboard = useClipboard({ timeout: 1500 });
 
   const handleCopyBullet = () => {
-    trackEvent(AnalyticsEvents.CopyBullet, { kind: change.kind })
+    trackEvent(AnalyticsEvents.CopyBullet, { kind: change.kind });
     try {
-      clipboard.copy(decision === 'reverted' ? change.original : change.tailored)
-      trackEvent(AnalyticsEvents.CopySuccess, { source: 'bullet' })
+      clipboard.copy(decision === 'reverted' ? change.original : change.tailored);
+      trackEvent(AnalyticsEvents.CopySuccess, { source: 'bullet' });
     } catch {
-      trackEvent(AnalyticsEvents.CopyFailure, { source: 'bullet' })
+      trackEvent(AnalyticsEvents.CopyFailure, { source: 'bullet' });
     }
-  }
+  };
 
   const handleToggleRevert = () => {
-    const nextDecision = decision === 'reverted' ? 'accepted' : 'reverted'
+    const nextDecision = decision === 'reverted' ? 'accepted' : 'reverted';
     trackEvent(
-      nextDecision === 'reverted'
-        ? AnalyticsEvents.RevertChange
-        : AnalyticsEvents.ReapplyChange,
+      nextDecision === 'reverted' ? AnalyticsEvents.RevertChange : AnalyticsEvents.ReapplyChange,
       { kind: change.kind },
-    )
-    onDecisionChange(change.id, nextDecision)
-  }
+    );
+    onDecisionChange(change.id, nextDecision);
+  };
 
   const renderContent = () => {
-    const parts = diffWords(change.original, change.tailored)
+    const parts = diffWords(change.original, change.tailored);
     return (
-      <Text component="div" style={{ fontFamily: 'ui-monospace, monospace', fontSize: 'var(--mantine-font-size-xs)', lineHeight: 1.5 }}>
+      <Text
+        component="div"
+        style={{
+          fontFamily: 'ui-monospace, monospace',
+          fontSize: 'var(--mantine-font-size-xs)',
+          lineHeight: 1.5,
+        }}
+      >
         {parts.map((part, index) => {
           if (part.added) {
             return (
@@ -65,7 +63,7 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
               >
                 {part.value}
               </span>
-            )
+            );
           }
           if (part.removed) {
             return (
@@ -81,13 +79,13 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
               >
                 {part.value}
               </span>
-            )
+            );
           }
-          return <span key={index}>{part.value}</span>
+          return <span key={index}>{part.value}</span>;
         })}
       </Text>
-    )
-  }
+    );
+  };
 
   return (
     <Paper
@@ -101,9 +99,7 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
       }}
     >
       <Group align="center" wrap="nowrap" gap="sm">
-        <Box style={{ flex: 1, minWidth: 0 }}>
-          {renderContent()}
-        </Box>
+        <Box style={{ flex: 1, minWidth: 0 }}>{renderContent()}</Box>
         <Group gap={4} wrap="nowrap">
           <Tooltip label={decision === 'reverted' ? 'Re-apply change' : 'Revert to original'}>
             <ActionIcon
@@ -128,7 +124,7 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
         </Group>
       </Group>
     </Paper>
-  )
-}
+  );
+};
 
-export default DiffBullet
+export default DiffBullet;

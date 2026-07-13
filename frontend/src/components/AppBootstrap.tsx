@@ -1,11 +1,11 @@
-import { ClerkProvider } from '@clerk/clerk-react'
-import { dark } from '@clerk/themes'
-import App from '../App'
-import { getClerkPublishableKey } from '../lib/env'
-import { appTheme } from '../lib/theme'
+import { ClerkProvider } from '@clerk/clerk-react';
+import { dark } from '@clerk/themes';
+import App from '../App';
+import { getClerkPublishableKey } from '../lib/env';
+import { appTheme } from '../lib/theme';
 
 const AppBootstrap = () => {
-  const clerkPublishableKey = getClerkPublishableKey()
+  const clerkPublishableKey = getClerkPublishableKey();
 
   return (
     <ClerkProvider
@@ -22,7 +22,7 @@ const AppBootstrap = () => {
     >
       <App />
     </ClerkProvider>
-  )
-}
+  );
+};
 
-export default AppBootstrap
+export default AppBootstrap;

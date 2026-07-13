@@ -1,7 +1,7 @@
-import * as Sentry from '@sentry/react'
-import { getSentryDsn } from './lib/env'
+import * as Sentry from '@sentry/react';
+import { getSentryDsn } from './lib/env';
 
-const dsn = getSentryDsn()
+const dsn = getSentryDsn();
 
 if (dsn) {
   Sentry.init({
@@ -19,5 +19,5 @@ if (dsn) {
     tracePropagationTargets: [/^\//, /^https?:\/\/localhost(:\d+)?\/api/],
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 1.0,
-  })
+  });
 }

@@ -1,14 +1,9 @@
 type DeltaLogoProps = {
-  size?: number
-}
+  size?: number;
+};
 
 const DeltaLogo = ({ size = 40 }: DeltaLogoProps) => (
-  <img
-    src="/favicon.svg"
-    width={size}
-    height={size}
-    alt="Delta Resume logo"
-  />
-)
+  <img src="/favicon.svg" width={size} height={size} alt="Delta Resume logo" />
+);
 
-export default DeltaLogo
+export default DeltaLogo;

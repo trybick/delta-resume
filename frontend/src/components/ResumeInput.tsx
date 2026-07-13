@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState } from 'react';
 import {
   ActionIcon,
   Badge,
@@ -13,8 +13,8 @@ import {
   TextInput,
   Textarea,
   Title,
-} from '@mantine/core'
-import { Dropzone, type FileRejection } from '@mantine/dropzone'
+} from '@mantine/core';
+import { Dropzone, type FileRejection } from '@mantine/dropzone';
 import {
   IconCheck,
   IconFileText,
@@ -22,41 +22,37 @@ import {
   IconPencil,
   IconTrash,
   IconX,
-} from '@tabler/icons-react'
-import {
-  AnalyticsEvents,
-  createDebouncedTracker,
-  trackEvent,
-} from '../lib/analytics'
-import { parseResumeFile, ResumeParseError } from '../lib/parseResumeFile'
-import type { SavedResume } from '../lib/types'
+} from '@tabler/icons-react';
+import { AnalyticsEvents, createDebouncedTracker, trackEvent } from '../lib/analytics';
+import { parseResumeFile, ResumeParseError } from '../lib/parseResumeFile';
+import type { SavedResume } from '../lib/types';
 
 type AttachedFile = {
-  name: string
-  size: number
-}
+  name: string;
+  size: number;
+};
 
 type ResumeInputProps = {
-  resumeText: string
-  attachedFile: AttachedFile | null
-  savedResumes: SavedResume[]
-  isLoadingSavedResumes: boolean
-  savedResumeLimit: number
-  isProPlan: boolean
-  onResumeTextChange: (text: string) => void
-  onFileAttach: (file: AttachedFile, text: string, sourceFile: File) => void
-  onClear: () => void
-  onSelectSaved: (resume: SavedResume) => void
-  onRenameSaved: (resumeId: string, name: string) => void
-  onDeleteSaved: (resumeId: string) => void
-  onUpgradeClick: () => void
-}
+  resumeText: string;
+  attachedFile: AttachedFile | null;
+  savedResumes: SavedResume[];
+  isLoadingSavedResumes: boolean;
+  savedResumeLimit: number;
+  isProPlan: boolean;
+  onResumeTextChange: (text: string) => void;
+  onFileAttach: (file: AttachedFile, text: string, sourceFile: File) => void;
+  onClear: () => void;
+  onSelectSaved: (resume: SavedResume) => void;
+  onRenameSaved: (resumeId: string, name: string) => void;
+  onDeleteSaved: (resumeId: string) => void;
+  onUpgradeClick: () => void;
+};
 
-type InputMode = 'upload' | 'paste' | 'saved'
+type InputMode = 'upload' | 'paste' | 'saved';
 
-export const RESUME_TEXT_MAX_LENGTH = 15000
+export const RESUME_TEXT_MAX_LENGTH = 15000;
 
-const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
 
 const ACCEPTED_MIME_TYPES = [
   'text/plain',
@@ -64,13 +60,13 @@ const ACCEPTED_MIME_TYPES = [
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-]
+];
 
 const formatFileSize = (bytes: number): string => {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
-}
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
 
 const ResumeInput = ({
   resumeText,
@@ -87,89 +83,89 @@ const ResumeInput = ({
   onDeleteSaved,
   onUpgradeClick,
 }: ResumeInputProps) => {
-  const [mode, setMode] = useState<InputMode>('upload')
-  const [isParsing, setIsParsing] = useState(false)
-  const [parseError, setParseError] = useState<string | null>(null)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editingName, setEditingName] = useState('')
+  const [mode, setMode] = useState<InputMode>('upload');
+  const [isParsing, setIsParsing] = useState(false);
+  const [parseError, setParseError] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingName, setEditingName] = useState('');
   const trackPasteResumeText = useMemo(
     () => createDebouncedTracker(AnalyticsEvents.PasteResumeText),
     [],
-  )
+  );
 
-  const atSavedLimit = !isProPlan && savedResumes.length >= savedResumeLimit
+  const atSavedLimit = !isProPlan && savedResumes.length >= savedResumeLimit;
 
   const handleDrop = async (files: File[]) => {
-    const file = files[0]
-    if (!file) return
+    const file = files[0];
+    if (!file) return;
     trackEvent(AnalyticsEvents.DropzoneDrop, {
       file_type: file.type || 'unknown',
       file_size: file.size,
-    })
-    const attached = { name: file.name, size: file.size }
-    setIsParsing(true)
-    setParseError(null)
+    });
+    const attached = { name: file.name, size: file.size };
+    setIsParsing(true);
+    setParseError(null);
     try {
-      const text = await parseResumeFile(file)
+      const text = await parseResumeFile(file);
       trackEvent(AnalyticsEvents.FileParseSuccess, {
         file_type: file.type || 'unknown',
-      })
-      onFileAttach(attached, text, file)
+      });
+      onFileAttach(attached, text, file);
     } catch (error) {
       trackEvent(AnalyticsEvents.FileParseFailure, {
         file_type: file.type || 'unknown',
-      })
+      });
       setParseError(
         error instanceof ResumeParseError
           ? error.message
           : 'Could not read this file. Try another format or paste your resume text.',
-      )
+      );
     } finally {
-      setIsParsing(false)
+      setIsParsing(false);
     }
-  }
+  };
 
   const handleDropReject = (rejections: FileRejection[]) => {
     const isTooLarge = rejections.some((rejection) =>
       rejection.errors.some((error) => error.code === 'file-too-large'),
-    )
+    );
     trackEvent(AnalyticsEvents.DropzoneReject, {
       reason: isTooLarge ? 'too_large' : 'bad_type',
-    })
+    });
     setParseError(
       isTooLarge
         ? 'That file is too large. The maximum size is 5 MB.'
         : 'That file type is not supported. Use .txt, .md, .pdf, or .docx.',
-    )
-  }
+    );
+  };
 
   const handleStartRename = (resume: SavedResume) => {
-    trackEvent(AnalyticsEvents.RenameSavedResume)
-    setEditingId(resume.id)
-    setEditingName(resume.name)
-  }
+    trackEvent(AnalyticsEvents.RenameSavedResume);
+    setEditingId(resume.id);
+    setEditingName(resume.name);
+  };
 
   const handleCancelRename = () => {
-    trackEvent(AnalyticsEvents.CancelRenameResume)
-    setEditingId(null)
-    setEditingName('')
-  }
+    trackEvent(AnalyticsEvents.CancelRenameResume);
+    setEditingId(null);
+    setEditingName('');
+  };
 
   const handleConfirmRename = () => {
-    if (!editingId) return
-    const trimmedName = editingName.trim()
+    if (!editingId) return;
+    const trimmedName = editingName.trim();
     if (trimmedName.length > 0) {
-      trackEvent(AnalyticsEvents.ConfirmRenameResume)
-      onRenameSaved(editingId, trimmedName)
+      trackEvent(AnalyticsEvents.ConfirmRenameResume);
+      onRenameSaved(editingId, trimmedName);
     }
-    setEditingId(null)
-    setEditingName('')
-  }
+    setEditingId(null);
+    setEditingName('');
+  };
 
   const handleRenameKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter') handleConfirmRename()
-    if (event.key === 'Escape') handleCancelRename()
-  }
+    if (event.key === 'Enter') handleConfirmRename();
+    if (event.key === 'Escape') handleCancelRename();
+  };
 
   return (
     <Card withBorder shadow="xs" padding="lg">
@@ -180,9 +176,9 @@ const ResumeInput = ({
             size="xs"
             value={mode}
             onChange={(value) => {
-              const nextMode = value as InputMode
-              trackEvent(AnalyticsEvents.ResumeModeSwitch, { mode: nextMode })
-              setMode(nextMode)
+              const nextMode = value as InputMode;
+              trackEvent(AnalyticsEvents.ResumeModeSwitch, { mode: nextMode });
+              setMode(nextMode);
             }}
             data={[
               { label: 'Upload file', value: 'upload' },
@@ -210,8 +206,8 @@ const ResumeInput = ({
                 variant="subtle"
                 color="gray"
                 onClick={() => {
-                  trackEvent(AnalyticsEvents.RemoveAttachedResume)
-                  onClear()
+                  trackEvent(AnalyticsEvents.RemoveAttachedResume);
+                  onClear();
                 }}
                 aria-label="Remove attached resume"
               >
@@ -256,15 +252,20 @@ const ResumeInput = ({
             <Textarea
               value={resumeText}
               onChange={(event) => {
-                trackPasteResumeText()
-                onResumeTextChange(event.currentTarget.value.slice(0, RESUME_TEXT_MAX_LENGTH))
+                trackPasteResumeText();
+                onResumeTextChange(event.currentTarget.value.slice(0, RESUME_TEXT_MAX_LENGTH));
               }}
               placeholder="Paste your resume text here…"
               maxLength={RESUME_TEXT_MAX_LENGTH}
               autosize
               minRows={10}
               maxRows={10}
-              styles={{ input: { fontFamily: 'ui-monospace, monospace', fontSize: 'var(--mantine-font-size-xs)' } }}
+              styles={{
+                input: {
+                  fontFamily: 'ui-monospace, monospace',
+                  fontSize: 'var(--mantine-font-size-xs)',
+                },
+              }}
             />
             <Text
               size="xs"
@@ -301,8 +302,8 @@ const ResumeInput = ({
         {mode === 'saved' && !isLoadingSavedResumes && savedResumes.length > 0 && (
           <Stack gap="xs">
             {savedResumes.map((resume) => {
-              const isSelected = resume.resumeText === resumeText
-              const isEditing = editingId === resume.id
+              const isSelected = resume.resumeText === resumeText;
+              const isEditing = editingId === resume.id;
               return (
                 <Paper
                   key={resume.id}
@@ -311,14 +312,12 @@ const ResumeInput = ({
                   radius="md"
                   style={{
                     cursor: 'pointer',
-                    borderColor: isSelected
-                      ? 'var(--mantine-primary-color-filled)'
-                      : undefined,
+                    borderColor: isSelected ? 'var(--mantine-primary-color-filled)' : undefined,
                   }}
                   onClick={() => {
                     if (!isEditing) {
-                      trackEvent(AnalyticsEvents.SelectSavedResume)
-                      onSelectSaved(resume)
+                      trackEvent(AnalyticsEvents.SelectSavedResume);
+                      onSelectSaved(resume);
                     }
                   }}
                 >
@@ -337,8 +336,8 @@ const ResumeInput = ({
                               size="sm"
                               variant="subtle"
                               onClick={(event) => {
-                                event.stopPropagation()
-                                handleConfirmRename()
+                                event.stopPropagation();
+                                handleConfirmRename();
                               }}
                               aria-label="Save name"
                             >
@@ -367,8 +366,8 @@ const ResumeInput = ({
                         variant="subtle"
                         color="gray"
                         onClick={(event) => {
-                          event.stopPropagation()
-                          handleStartRename(resume)
+                          event.stopPropagation();
+                          handleStartRename(resume);
                         }}
                         aria-label="Rename saved resume"
                       >
@@ -378,9 +377,9 @@ const ResumeInput = ({
                         variant="subtle"
                         color="red"
                         onClick={(event) => {
-                          event.stopPropagation()
-                          trackEvent(AnalyticsEvents.DeleteSavedResume)
-                          onDeleteSaved(resume.id)
+                          event.stopPropagation();
+                          trackEvent(AnalyticsEvents.DeleteSavedResume);
+                          onDeleteSaved(resume.id);
                         }}
                         aria-label="Delete saved resume"
                       >
@@ -389,20 +388,21 @@ const ResumeInput = ({
                     </Group>
                   </Group>
                 </Paper>
-              )
+              );
             })}
             {atSavedLimit && (
               <Stack gap="xs" align="center">
                 <Text size="xs" c="dimmed" ta="center">
-                  You can save {savedResumeLimit === 1 ? 'one resume' : `${savedResumeLimit} resumes`}.
+                  You can save{' '}
+                  {savedResumeLimit === 1 ? 'one resume' : `${savedResumeLimit} resumes`}.
                 </Text>
                 <Button
                   size="compact-xs"
                   variant="light"
                   w="fit-content"
                   onClick={() => {
-                    trackEvent(AnalyticsEvents.UpgradeToSaveMore)
-                    onUpgradeClick()
+                    trackEvent(AnalyticsEvents.UpgradeToSaveMore);
+                    onUpgradeClick();
                   }}
                 >
                   Upgrade to save more
@@ -413,7 +413,7 @@ const ResumeInput = ({
         )}
       </Stack>
     </Card>
-  )
-}
+  );
+};
 
-export default ResumeInput
+export default ResumeInput;

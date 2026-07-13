@@ -1,39 +1,39 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react'
-import * as Sentry from '@sentry/react'
-import { Button, Stack } from '@mantine/core'
-import { IconRefresh } from '@tabler/icons-react'
-import { AnalyticsEvents, trackEvent } from '../lib/analytics'
-import FullPageError from './FullPageError'
+import { Component, type ErrorInfo, type ReactNode } from 'react';
+import * as Sentry from '@sentry/react';
+import { Button, Stack } from '@mantine/core';
+import { IconRefresh } from '@tabler/icons-react';
+import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import FullPageError from './FullPageError';
 
 type ErrorBoundaryProps = {
-  children: ReactNode
-}
+  children: ReactNode;
+};
 
 type ErrorBoundaryState = {
-  error: Error | null
-}
+  error: Error | null;
+};
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  state: ErrorBoundaryState = { error: null }
+  state: ErrorBoundaryState = { error: null };
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { error }
+    return { error };
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('Uncaught render error:', error, info.componentStack)
+    console.error('Uncaught render error:', error, info.componentStack);
     Sentry.captureException(error, {
       contexts: { react: { componentStack: info.componentStack } },
-    })
+    });
   }
 
   handleReload = () => {
-    trackEvent(AnalyticsEvents.ErrorReload)
-    window.location.reload()
-  }
+    trackEvent(AnalyticsEvents.ErrorReload);
+    window.location.reload();
+  };
 
   render() {
-    const { error } = this.state
+    const { error } = this.state;
 
     if (error) {
       return (
@@ -47,11 +47,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
             Reload page
           </Button>
         </Stack>
-      )
+      );
     }
 
-    return this.props.children
+    return this.props.children;
   }
 }
 
-export default ErrorBoundary
+export default ErrorBoundary;

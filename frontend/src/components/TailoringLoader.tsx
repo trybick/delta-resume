@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react'
-import { Box, Card, Group, Paper, Skeleton, Stack, Text } from '@mantine/core'
-import { IconSparkles } from '@tabler/icons-react'
+import { useEffect, useState } from 'react';
+import { Box, Card, Group, Paper, Skeleton, Stack, Text } from '@mantine/core';
+import { IconSparkles } from '@tabler/icons-react';
 
 const stageMessages: string[] = [
   'Reading your resume…',
@@ -8,17 +8,17 @@ const stageMessages: string[] = [
   'Matching your experience to the role…',
   'Rewriting bullets for impact…',
   'Polishing the final suggestions…',
-]
+];
 
-const messageIntervalMs = 2600
+const messageIntervalMs = 2600;
 
 type SkeletonLineProps = {
-  width: string
-}
+  width: string;
+};
 
 const SkeletonLine = ({ width }: SkeletonLineProps) => (
   <Skeleton height={10} radius="xl" width={width} />
-)
+);
 
 const SkeletonDiffCard = () => (
   <Paper
@@ -39,17 +39,17 @@ const SkeletonDiffCard = () => (
       <SkeletonLine width="82%" />
     </Stack>
   </Paper>
-)
+);
 
 const TailoringLoader = () => {
-  const [messageIndex, setMessageIndex] = useState(0)
+  const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      setMessageIndex((current) => (current + 1) % stageMessages.length)
-    }, messageIntervalMs)
-    return () => window.clearInterval(interval)
-  }, [])
+      setMessageIndex((current) => (current + 1) % stageMessages.length);
+    }, messageIntervalMs);
+    return () => window.clearInterval(interval);
+  }, []);
 
   return (
     <Card
@@ -86,7 +86,7 @@ const TailoringLoader = () => {
         </Stack>
       </Stack>
     </Card>
-  )
-}
+  );
+};
 
-export default TailoringLoader
+export default TailoringLoader;

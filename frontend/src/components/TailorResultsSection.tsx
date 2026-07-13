@@ -1,4 +1,4 @@
-import { Alert, Badge, Button, Center, Group, Loader, Stack, Tabs, Text } from '@mantine/core'
+import { Alert, Badge, Button, Center, Group, Loader, Stack, Tabs, Text } from '@mantine/core';
 import {
   IconAlertCircle,
   IconArrowBackUp,
@@ -7,39 +7,44 @@ import {
   IconFileText,
   IconLock,
   IconMail,
-} from '@tabler/icons-react'
-import { AnalyticsEvents, trackEvent } from '../lib/analytics'
-import ResultsPanel from './ResultsPanel'
-import CoverLetterPanel from './CoverLetterPanel'
-import type { OriginalDocx } from '../hooks/useResumeDocument'
+} from '@tabler/icons-react';
+import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import ResultsPanel from './ResultsPanel';
+import CoverLetterPanel from './CoverLetterPanel';
+import type { OriginalDocx } from '../hooks/useResumeDocument';
 import {
   SAMPLE_COVER_LETTER_RESULT,
   SAMPLE_MATCH_SCORE,
   SAMPLE_TAILOR_RESULT,
-} from '../lib/mockTailor'
-import type { CoverLetterResult, CoverLetterStatus, TailorResult, TailorStatus } from '../lib/types'
+} from '../lib/mockTailor';
+import type {
+  CoverLetterResult,
+  CoverLetterStatus,
+  TailorResult,
+  TailorStatus,
+} from '../lib/types';
 
 type TailorResultsSectionProps = {
-  errorMessage: string | null
-  onClearError: () => void
-  showingExample: boolean
-  onDismissExample: () => void
-  activeTab: string | null
-  onActiveTabChange: (tab: string | null) => void
-  status: TailorStatus
-  result: TailorResult | null
-  runCount: number
-  lastRunJobDescription: string
-  originalDocx: OriginalDocx | null
-  onShowExample: () => void
-  planLoaded: boolean
-  isProPlan: boolean
-  coverLetterStatus: CoverLetterStatus
-  coverLetterResult: CoverLetterResult | null
-  coverLetterError: string | null
-  onRetryCoverLetter: () => void
-  onUpgradeClick: () => void
-}
+  errorMessage: string | null;
+  onClearError: () => void;
+  showingExample: boolean;
+  onDismissExample: () => void;
+  activeTab: string | null;
+  onActiveTabChange: (tab: string | null) => void;
+  status: TailorStatus;
+  result: TailorResult | null;
+  runCount: number;
+  lastRunJobDescription: string;
+  originalDocx: OriginalDocx | null;
+  onShowExample: () => void;
+  planLoaded: boolean;
+  isProPlan: boolean;
+  coverLetterStatus: CoverLetterStatus;
+  coverLetterResult: CoverLetterResult | null;
+  coverLetterError: string | null;
+  onRetryCoverLetter: () => void;
+  onUpgradeClick: () => void;
+};
 
 const TailorResultsSection = ({
   errorMessage,
@@ -66,7 +71,7 @@ const TailorResultsSection = ({
     <Loader size={12} />
   ) : status === 'done' ? (
     <IconCheck size={14} color="var(--mantine-color-green-filled)" />
-  ) : null
+  ) : null;
 
   const coverLetterTabIndicator = !planLoaded ? null : !isProPlan ? (
     <Badge size="xs" variant="light" h={16}>
@@ -80,7 +85,7 @@ const TailorResultsSection = ({
     <Badge size="xs" variant="light" color="red" h={16}>
       Failed
     </Badge>
-  ) : null
+  ) : null;
 
   return (
     <Stack gap="md">
@@ -119,8 +124,8 @@ const TailorResultsSection = ({
             color="cyan"
             leftSection={<IconArrowBackUp size={14} />}
             onClick={() => {
-              trackEvent(AnalyticsEvents.DismissExample)
-              onDismissExample()
+              trackEvent(AnalyticsEvents.DismissExample);
+              onDismissExample();
             }}
           >
             Back
@@ -131,11 +136,11 @@ const TailorResultsSection = ({
         value={activeTab}
         onChange={(tab) => {
           if (tab === 'resume') {
-            trackEvent(AnalyticsEvents.ResultsTabResume)
+            trackEvent(AnalyticsEvents.ResultsTabResume);
           } else if (tab === 'coverLetter') {
-            trackEvent(AnalyticsEvents.ResultsTabCoverLetter)
+            trackEvent(AnalyticsEvents.ResultsTabCoverLetter);
           }
-          onActiveTabChange(tab)
+          onActiveTabChange(tab);
         }}
       >
         <Tabs.List>
@@ -182,7 +187,7 @@ const TailorResultsSection = ({
         </Tabs.Panel>
       </Tabs>
     </Stack>
-  )
-}
+  );
+};
 
-export default TailorResultsSection
+export default TailorResultsSection;

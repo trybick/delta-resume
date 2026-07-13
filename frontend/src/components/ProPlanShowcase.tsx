@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState } from 'react';
 import {
   Badge,
   Box,
@@ -10,32 +10,27 @@ import {
   Stack,
   Text,
   ThemeIcon,
-} from '@mantine/core'
-import { SignedIn, useUser } from '@clerk/clerk-react'
-import { CheckoutButton } from '@clerk/clerk-react/experimental'
-import { IconSparkles } from '@tabler/icons-react'
-import { AnalyticsEvents, trackEvent } from '../lib/analytics'
-import { PRO_FEATURES, useProPlan, type ProFeature } from '../lib/proPlan'
-import { appTheme } from '../lib/theme'
+} from '@mantine/core';
+import { SignedIn, useUser } from '@clerk/clerk-react';
+import { CheckoutButton } from '@clerk/clerk-react/experimental';
+import { IconSparkles } from '@tabler/icons-react';
+import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { PRO_FEATURES, useProPlan, type ProFeature } from '../lib/proPlan';
+import { appTheme } from '../lib/theme';
 
-type BillingPeriod = 'month' | 'annual'
+type BillingPeriod = 'month' | 'annual';
 
 type FeatureRowProps = {
-  feature: ProFeature
-  compact: boolean
-}
+  feature: ProFeature;
+  compact: boolean;
+};
 
 const FeatureRow = ({ feature, compact }: FeatureRowProps) => {
-  const Icon = feature.icon
+  const Icon = feature.icon;
 
   return (
     <Group gap="sm" wrap="nowrap" align={compact ? 'center' : 'flex-start'}>
-      <ThemeIcon
-        size={compact ? 28 : 36}
-        radius="md"
-        variant="light"
-        color="cyan"
-      >
+      <ThemeIcon size={compact ? 28 : 36} radius="md" variant="light" color="cyan">
         <Icon size={compact ? 15 : 19} />
       </ThemeIcon>
       <Box>
@@ -49,20 +44,20 @@ const FeatureRow = ({ feature, compact }: FeatureRowProps) => {
         )}
       </Box>
     </Group>
-  )
-}
+  );
+};
 
 type ProPlanShowcaseProps = {
-  onCheckoutOpen: () => void
-  onSubscriptionComplete: () => void
-}
+  onCheckoutOpen: () => void;
+  onSubscriptionComplete: () => void;
+};
 
 const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShowcaseProps) => {
-  const { isSignedIn } = useUser()
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('annual')
-  const { monthlyPrice, annualMonthlyPrice, planId } = useProPlan()
+  const { isSignedIn } = useUser();
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('annual');
+  const { monthlyPrice, annualMonthlyPrice, planId } = useProPlan();
 
-  const displayedPrice = billingPeriod === 'annual' ? annualMonthlyPrice : monthlyPrice
+  const displayedPrice = billingPeriod === 'annual' ? annualMonthlyPrice : monthlyPrice;
 
   const subscribeButton = (
     <Button
@@ -74,7 +69,7 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
     >
       Subscribe to Pro
     </Button>
-  )
+  );
 
   return (
     <Paper
@@ -122,7 +117,9 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
             <Text
               size="xs"
               c="cyan.4"
-              style={{ visibility: billingPeriod === 'annual' && annualMonthlyPrice ? 'visible' : 'hidden' }}
+              style={{
+                visibility: billingPeriod === 'annual' && annualMonthlyPrice ? 'visible' : 'hidden',
+              }}
             >
               Billed annually
             </Text>
@@ -131,9 +128,9 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
             size="xs"
             value={billingPeriod}
             onChange={(value) => {
-              const period = value as BillingPeriod
-              trackEvent(AnalyticsEvents.BillingPeriodChange, { period })
-              setBillingPeriod(period)
+              const period = value as BillingPeriod;
+              trackEvent(AnalyticsEvents.BillingPeriodChange, { period });
+              setBillingPeriod(period);
             }}
             data={[
               { label: 'Monthly', value: 'month' },
@@ -163,8 +160,8 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
                 gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
                 leftSection={<IconSparkles size={18} />}
                 onClick={() => {
-                  trackEvent(AnalyticsEvents.SubscribeToPro, { period: billingPeriod })
-                  onCheckoutOpen()
+                  trackEvent(AnalyticsEvents.SubscribeToPro, { period: billingPeriod });
+                  onCheckoutOpen();
                 }}
               >
                 Subscribe to Pro
@@ -180,8 +177,8 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
         </Text>
       </Stack>
     </Paper>
-  )
-}
+  );
+};
 
 export const ProFeatureList = () => (
   <Stack gap="xs">
@@ -189,6 +186,6 @@ export const ProFeatureList = () => (
       <FeatureRow key={feature.title} feature={feature} compact />
     ))}
   </Stack>
-)
+);
 
-export default ProPlanShowcase
+export default ProPlanShowcase;

@@ -1,15 +1,15 @@
 export type LegalSection = {
-  heading: string
-  paragraphs: string[]
-}
+  heading: string;
+  paragraphs: string[];
+};
 
 export type LegalDocument = {
-  title: string
-  lastUpdated: string
-  sections: LegalSection[]
-}
+  title: string;
+  lastUpdated: string;
+  sections: LegalSection[];
+};
 
-export const SUPPORT_EMAIL = 'info@deltaresume.com'
+export const SUPPORT_EMAIL = 'info@deltaresume.com';
 
 export const TERMS_OF_SERVICE: LegalDocument = {
   title: 'Terms of Service',
@@ -67,12 +67,10 @@ export const TERMS_OF_SERVICE: LegalDocument = {
     },
     {
       heading: '9. Contact',
-      paragraphs: [
-        `Questions about these terms can be sent to ${SUPPORT_EMAIL}.`,
-      ],
+      paragraphs: [`Questions about these terms can be sent to ${SUPPORT_EMAIL}.`],
     },
   ],
-}
+};
 
 export const PRIVACY_POLICY: LegalDocument = {
   title: 'Privacy Policy',
@@ -125,9 +123,7 @@ export const PRIVACY_POLICY: LegalDocument = {
     },
     {
       heading: '7. Contact',
-      paragraphs: [
-        `Privacy questions or data deletion requests can be sent to ${SUPPORT_EMAIL}.`,
-      ],
+      paragraphs: [`Privacy questions or data deletion requests can be sent to ${SUPPORT_EMAIL}.`],
     },
   ],
-}
+};

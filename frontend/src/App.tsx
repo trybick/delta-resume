@@ -1,43 +1,37 @@
-import { useEffect, useState } from 'react'
-import { Alert, Box, Container, Grid } from '@mantine/core'
-import { useAuth } from '@clerk/clerk-react'
-import { IconAlertCircle } from '@tabler/icons-react'
-import AppHeader from './components/AppHeader'
-import AppFooter from './components/AppFooter'
-import TailorForm from './components/TailorForm'
-import TailorResultsSection from './components/TailorResultsSection'
-import PaywallModal from './components/PaywallModal'
-import { useCredits } from './hooks/useCredits'
-import { useSavedResumes } from './hooks/useSavedResumes'
-import { useTailorRun } from './hooks/useTailorRun'
-import { useCoverLetter } from './hooks/useCoverLetter'
-import { useResumeDocument } from './hooks/useResumeDocument'
-import { usePaywall } from './hooks/usePaywall'
-import { AnalyticsEvents, trackEvent } from './lib/analytics'
-import { registerTokenGetter } from './lib/authToken'
-import { subscribeToRateLimit } from './lib/rateLimitNotice'
-import { formatDefaultResumeName } from './lib/formatDefaultResumeName'
+import { useEffect, useState } from 'react';
+import { Alert, Box, Container, Grid } from '@mantine/core';
+import { useAuth } from '@clerk/clerk-react';
+import { IconAlertCircle } from '@tabler/icons-react';
+import AppHeader from './components/AppHeader';
+import AppFooter from './components/AppFooter';
+import TailorForm from './components/TailorForm';
+import TailorResultsSection from './components/TailorResultsSection';
+import PaywallModal from './components/PaywallModal';
+import { useCredits } from './hooks/useCredits';
+import { useSavedResumes } from './hooks/useSavedResumes';
+import { useTailorRun } from './hooks/useTailorRun';
+import { useCoverLetter } from './hooks/useCoverLetter';
+import { useResumeDocument } from './hooks/useResumeDocument';
+import { usePaywall } from './hooks/usePaywall';
+import { AnalyticsEvents, trackEvent } from './lib/analytics';
+import { registerTokenGetter } from './lib/authToken';
+import { subscribeToRateLimit } from './lib/rateLimitNotice';
+import { formatDefaultResumeName } from './lib/formatDefaultResumeName';
 
 const App = () => {
-  const { isSignedIn, getToken } = useAuth()
-  const [jobDescription, setJobDescription] = useState('')
-  const [lastRunJobDescription, setLastRunJobDescription] = useState('')
+  const { isSignedIn, getToken } = useAuth();
+  const [jobDescription, setJobDescription] = useState('');
+  const [lastRunJobDescription, setLastRunJobDescription] = useState('');
   const [lastSuccessfulInputs, setLastSuccessfulInputs] = useState<{
-    resumeText: string
-    jobDescription: string
-  } | null>(null)
-  const [showingExample, setShowingExample] = useState(false)
-  const [activeTab, setActiveTab] = useState<string | null>('resume')
-  const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null)
+    resumeText: string;
+    jobDescription: string;
+  } | null>(null);
+  const [showingExample, setShowingExample] = useState(false);
+  const [activeTab, setActiveTab] = useState<string | null>('resume');
+  const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
 
-  const {
-    credits,
-    outOfCredits,
-    creditsLabel,
-    isLoadingCredits,
-    creditsError,
-    loadCredits,
-  } = useCredits()
+  const { credits, outOfCredits, creditsLabel, isLoadingCredits, creditsError, loadCredits } =
+    useCredits();
   const {
     savedResumes,
     isLoadingSavedResumes,
@@ -45,7 +39,7 @@ const App = () => {
     loadSavedResumes,
     renameResume,
     deleteResume,
-  } = useSavedResumes()
+  } = useSavedResumes();
 
   const {
     resumeText,
@@ -56,24 +50,24 @@ const App = () => {
     handleClearResume,
     handleSelectSaved,
     persistOriginalDocx,
-  } = useResumeDocument({ savedResumes, hasLoadedSavedResumes, isLoadingSavedResumes })
+  } = useResumeDocument({ savedResumes, hasLoadedSavedResumes, isLoadingSavedResumes });
 
   const { paywallReason, openPaywall, closePaywall } = usePaywall({
     isSignedIn,
     hasCreditsRemaining: credits !== null && credits.remaining > 0,
-  })
+  });
 
   const { status, result, runCount, errorMessage, clearError, runTailor } = useTailorRun({
     onSuccess: () => {
-      trackEvent(AnalyticsEvents.TailorResume)
-      void loadCredits()
-      void loadSavedResumes()
+      trackEvent(AnalyticsEvents.TailorResume);
+      void loadCredits();
+      void loadSavedResumes();
     },
     onCreditsExhausted: () => {
-      openPaywall('credits')
-      void loadCredits()
+      openPaywall('credits');
+      void loadCredits();
     },
-  })
+  });
 
   const {
     status: coverLetterStatus,
@@ -81,64 +75,68 @@ const App = () => {
     errorMessage: coverLetterError,
     runCoverLetter,
     retryCoverLetter,
-  } = useCoverLetter()
+  } = useCoverLetter();
 
-  const isProPlan = credits?.plan === 'pro'
-  const planLoaded = credits !== null
+  const isProPlan = credits?.plan === 'pro';
+  const planLoaded = credits !== null;
 
   const inputsUnchangedSinceLastRun =
     lastSuccessfulInputs !== null &&
     lastSuccessfulInputs.resumeText === resumeText.trim() &&
-    lastSuccessfulInputs.jobDescription === jobDescription.trim()
+    lastSuccessfulInputs.jobDescription === jobDescription.trim();
 
   const canTailor =
     credits !== null &&
     resumeText.trim().length > 0 &&
     jobDescription.trim().length > 0 &&
-    !inputsUnchangedSinceLastRun
+    !inputsUnchangedSinceLastRun;
 
   useEffect(() => {
-    registerTokenGetter(() => getToken())
-    return () => registerTokenGetter(null)
-  }, [getToken])
+    registerTokenGetter(() => getToken());
+    return () => registerTokenGetter(null);
+  }, [getToken]);
 
-  useEffect(() => subscribeToRateLimit(setRateLimitMessage), [])
+  useEffect(() => subscribeToRateLimit(setRateLimitMessage), []);
 
   useEffect(() => {
-    void loadCredits()
-    void loadSavedResumes()
-  }, [isSignedIn, loadCredits, loadSavedResumes])
+    void loadCredits();
+    void loadSavedResumes();
+  }, [isSignedIn, loadCredits, loadSavedResumes]);
 
   const handleShowExample = () => {
-    setShowingExample(true)
-  }
+    setShowingExample(true);
+  };
 
   const handleDismissExample = () => {
-    setShowingExample(false)
-    setActiveTab('resume')
-  }
+    setShowingExample(false);
+    setActiveTab('resume');
+  };
 
   const handleTailor = async () => {
-    if (!canTailor) return
+    if (!canTailor) return;
     if (outOfCredits) {
-      openPaywall('credits')
-      return
+      openPaywall('credits');
+      return;
     }
-    setShowingExample(false)
-    setActiveTab('resume')
-    setLastRunJobDescription(jobDescription)
+    setShowingExample(false);
+    setActiveTab('resume');
+    setLastRunJobDescription(jobDescription);
     if (isProPlan) {
-      void runCoverLetter(resumeText, jobDescription)
+      void runCoverLetter(resumeText, jobDescription);
     }
-    const succeeded = await runTailor(resumeText, jobDescription, formatDefaultResumeName(new Date()))
+    const succeeded = await runTailor(
+      resumeText,
+      jobDescription,
+      formatDefaultResumeName(new Date()),
+    );
     if (succeeded) {
       setLastSuccessfulInputs({
         resumeText: resumeText.trim(),
         jobDescription: jobDescription.trim(),
-      })
-      persistOriginalDocx()
+      });
+      persistOriginalDocx();
     }
-  }
+  };
 
   return (
     <Box mih="100vh" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -228,7 +226,7 @@ const App = () => {
         onSubscriptionChange={loadCredits}
       />
     </Box>
-  )
-}
+  );
+};
 
-export default App
+export default App;

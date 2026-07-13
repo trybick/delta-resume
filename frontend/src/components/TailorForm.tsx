@@ -53,7 +53,7 @@ const TailorForm = ({
   creditsError,
   inputsUnchangedSinceLastRun,
   onTailor,
-  onRetryCredits
+  onRetryCredits,
 }: TailorFormProps) => (
   <Stack gap="lg">
     <ResumeInput
@@ -80,7 +80,7 @@ const TailorForm = ({
         loading={status === 'loading'}
         onClick={() => {
           trackEvent(
-            outOfCredits ? AnalyticsEvents.GetMoreCredits : AnalyticsEvents.TailorResumeClick
+            outOfCredits ? AnalyticsEvents.GetMoreCredits : AnalyticsEvents.TailorResumeClick,
           );
           onTailor();
         }}

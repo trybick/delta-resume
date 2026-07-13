@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActionIcon,
   Alert,
@@ -15,9 +15,9 @@ import {
   TextInput,
   Title,
   Tooltip,
-} from '@mantine/core'
-import { useClipboard } from '@mantine/hooks'
-import { useAuth, useUser } from '@clerk/clerk-react'
+} from '@mantine/core';
+import { useClipboard } from '@mantine/hooks';
+import { useAuth, useUser } from '@clerk/clerk-react';
 import {
   IconAlertCircle,
   IconChevronDown,
@@ -29,37 +29,37 @@ import {
   IconInfoCircle,
   IconLock,
   IconMail,
-  IconRefresh
-} from '@tabler/icons-react'
-import { notifications } from '@mantine/notifications'
+  IconRefresh,
+} from '@tabler/icons-react';
+import { notifications } from '@mantine/notifications';
+import { AnalyticsEvents, createDebouncedTracker, trackEvent } from '../lib/analytics';
+import type { CoverLetterResult, CoverLetterStatus } from '../lib/types';
+import { buildCoverLetterDocx, downloadDocx } from '../lib/exportDocx';
+import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
 import {
-  AnalyticsEvents,
-  createDebouncedTracker,
-  trackEvent,
-} from '../lib/analytics'
-import type { CoverLetterResult, CoverLetterStatus } from '../lib/types'
-import { buildCoverLetterDocx, downloadDocx } from '../lib/exportDocx'
-import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf'
-import { formatCoverLetterText, formatCoverLetterSignature, prependCoverLetterDate } from '../lib/formatCoverLetter'
-import { SAMPLE_COVER_LETTER_RESULT } from '../lib/mockTailor'
+  formatCoverLetterText,
+  formatCoverLetterSignature,
+  prependCoverLetterDate,
+} from '../lib/formatCoverLetter';
+import { SAMPLE_COVER_LETTER_RESULT } from '../lib/mockTailor';
 
 type CoverLetterPanelProps = {
-  isProPlan: boolean
-  status: CoverLetterStatus
-  result: CoverLetterResult | null
-  errorMessage: string | null
-  isExample?: boolean
-  exampleResult?: CoverLetterResult
-  onRetry: () => void
-  onUpgradeClick: () => void
-}
+  isProPlan: boolean;
+  status: CoverLetterStatus;
+  result: CoverLetterResult | null;
+  errorMessage: string | null;
+  isExample?: boolean;
+  exampleResult?: CoverLetterResult;
+  onRetry: () => void;
+  onUpgradeClick: () => void;
+};
 
 const LockedTeaser = ({
   isProPlan,
   onUpgradeClick,
 }: {
-  isProPlan: boolean
-  onUpgradeClick: () => void
+  isProPlan: boolean;
+  onUpgradeClick: () => void;
 }) => (
   <Card withBorder shadow="xs" padding="lg" style={{ position: 'relative', overflow: 'hidden' }}>
     <Stack gap="md" style={{ filter: 'blur(5px)', userSelect: 'none' }} aria-hidden>
@@ -94,8 +94,8 @@ const LockedTeaser = ({
           <Button
             mt={4}
             onClick={() => {
-              trackEvent(AnalyticsEvents.CoverLetterUpgradeTeaser)
-              onUpgradeClick()
+              trackEvent(AnalyticsEvents.CoverLetterUpgradeTeaser);
+              onUpgradeClick();
             }}
           >
             Upgrade to Pro
@@ -104,16 +104,16 @@ const LockedTeaser = ({
       </Stack>
     </Center>
   </Card>
-)
+);
 
 const ExampleCoverLetter = ({
   exampleResult,
   isProPlan,
   onUpgradeClick,
 }: {
-  exampleResult: CoverLetterResult
-  isProPlan: boolean
-  onUpgradeClick: () => void
+  exampleResult: CoverLetterResult;
+  isProPlan: boolean;
+  onUpgradeClick: () => void;
 }) => (
   <Card withBorder shadow="xs" padding="lg">
     <Stack gap="md">
@@ -132,8 +132,8 @@ const ExampleCoverLetter = ({
           <Button
             size="xs"
             onClick={() => {
-              trackEvent(AnalyticsEvents.CoverLetterUpgradeExample)
-              onUpgradeClick()
+              trackEvent(AnalyticsEvents.CoverLetterUpgradeExample);
+              onUpgradeClick();
             }}
           >
             Upgrade to Pro
@@ -154,7 +154,7 @@ const ExampleCoverLetter = ({
       </Box>
     </Stack>
   </Card>
-)
+);
 
 const writingStageMessages: string[] = [
   'Reading the job description…',
@@ -162,9 +162,9 @@ const writingStageMessages: string[] = [
   'Drafting an opening that hooks the reader…',
   'Writing the body paragraphs…',
   'Wrapping up with a confident closing…',
-]
+];
 
-const writingMessageIntervalMs = 2600
+const writingMessageIntervalMs = 2600;
 
 const SkeletonParagraph = ({ widths }: { widths: string[] }) => (
   <Stack gap={8}>
@@ -172,17 +172,17 @@ const SkeletonParagraph = ({ widths }: { widths: string[] }) => (
       <Skeleton key={index} height={10} radius="xl" width={width} />
     ))}
   </Stack>
-)
+);
 
 const WritingLoader = () => {
-  const [messageIndex, setMessageIndex] = useState(0)
+  const [messageIndex, setMessageIndex] = useState(0);
 
   useEffect(() => {
     const interval = window.setInterval(() => {
-      setMessageIndex((current) => (current + 1) % writingStageMessages.length)
-    }, writingMessageIntervalMs)
-    return () => window.clearInterval(interval)
-  }, [])
+      setMessageIndex((current) => (current + 1) % writingStageMessages.length);
+    }, writingMessageIntervalMs);
+    return () => window.clearInterval(interval);
+  }, []);
 
   return (
     <Card withBorder shadow="xs" padding="xl" style={{ position: 'relative', overflow: 'hidden' }}>
@@ -214,8 +214,8 @@ const WritingLoader = () => {
         </Stack>
       </Stack>
     </Card>
-  )
-}
+  );
+};
 
 const CoverLetterPanel = ({
   isProPlan,
@@ -227,25 +227,25 @@ const CoverLetterPanel = ({
   onRetry,
   onUpgradeClick,
 }: CoverLetterPanelProps) => {
-  const { user } = useUser()
-  const { has } = useAuth()
-  const onProPlan = isProPlan || (has?.({ plan: 'pro' }) ?? false)
-  const [candidateName, setCandidateName] = useState('')
-  const [isExporting, setIsExporting] = useState(false)
-  const hasPrefilledName = useRef(false)
-  const clipboard = useClipboard({ timeout: 1500 })
+  const { user } = useUser();
+  const { has } = useAuth();
+  const onProPlan = isProPlan || (has?.({ plan: 'pro' }) ?? false);
+  const [candidateName, setCandidateName] = useState('');
+  const [isExporting, setIsExporting] = useState(false);
+  const hasPrefilledName = useRef(false);
+  const clipboard = useClipboard({ timeout: 1500 });
   const trackEditCandidateName = useMemo(
     () => createDebouncedTracker(AnalyticsEvents.EditCandidateName),
     [],
-  )
+  );
 
-  const clerkFullName = user?.fullName ?? ''
+  const clerkFullName = user?.fullName ?? '';
 
   useEffect(() => {
-    if (hasPrefilledName.current || clerkFullName.length === 0) return
-    hasPrefilledName.current = true
-    setCandidateName((current) => (current.length === 0 ? clerkFullName : current))
-  }, [clerkFullName])
+    if (hasPrefilledName.current || clerkFullName.length === 0) return;
+    hasPrefilledName.current = true;
+    setCandidateName((current) => (current.length === 0 ? clerkFullName : current));
+  }, [clerkFullName]);
 
   if (isExample && exampleResult) {
     return (
@@ -254,11 +254,11 @@ const CoverLetterPanel = ({
         isProPlan={onProPlan}
         onUpgradeClick={onUpgradeClick}
       />
-    )
+    );
   }
 
   if (!onProPlan) {
-    return <LockedTeaser isProPlan={onProPlan} onUpgradeClick={onUpgradeClick} />
+    return <LockedTeaser isProPlan={onProPlan} onUpgradeClick={onUpgradeClick} />;
   }
 
   if (status === 'idle') {
@@ -268,15 +268,14 @@ const CoverLetterPanel = ({
           <IconMail size={32} color="var(--mantine-primary-color-filled)" />
           <Title order={5}>No cover letter yet</Title>
           <Text size="sm" c="dimmed" ta="center" maw={340}>
-            Your next tailor run will also write a matching cover letter, and it will show up
-            here.
+            Your next tailor run will also write a matching cover letter, and it will show up here.
           </Text>
         </Stack>
       </Card>
-    )
+    );
   }
 
-  if (status === 'loading') return <WritingLoader />
+  if (status === 'loading') return <WritingLoader />;
 
   if (status === 'error') {
     return (
@@ -295,8 +294,8 @@ const CoverLetterPanel = ({
               variant="light"
               leftSection={<IconRefresh size={16} />}
               onClick={() => {
-                trackEvent(AnalyticsEvents.CoverLetterRetry)
-                onRetry()
+                trackEvent(AnalyticsEvents.CoverLetterRetry);
+                onRetry();
               }}
             >
               Try again
@@ -304,22 +303,22 @@ const CoverLetterPanel = ({
           </Group>
         </Stack>
       </Card>
-    )
+    );
   }
 
-  if (!result) return null
+  if (!result) return null;
 
-  const displayLetter = formatCoverLetterText(result.letter, candidateName)
+  const displayLetter = formatCoverLetterText(result.letter, candidateName);
 
   const handleCopy = () => {
-    trackEvent(AnalyticsEvents.CoverLetterCopy)
+    trackEvent(AnalyticsEvents.CoverLetterCopy);
     try {
-      clipboard.copy(displayLetter)
-      trackEvent(AnalyticsEvents.CopySuccess, { source: 'cover_letter' })
+      clipboard.copy(displayLetter);
+      trackEvent(AnalyticsEvents.CopySuccess, { source: 'cover_letter' });
     } catch {
-      trackEvent(AnalyticsEvents.CopyFailure, { source: 'cover_letter' })
+      trackEvent(AnalyticsEvents.CopyFailure, { source: 'cover_letter' });
     }
-  }
+  };
 
   const buildCoverLetterBlob = (): Promise<Blob> =>
     buildCoverLetterDocx(
@@ -327,49 +326,49 @@ const CoverLetterPanel = ({
       candidateName,
       result.jobTitle,
       result.companyName,
-    )
+    );
 
   const handleExport = async (format: 'docx' | 'pdf') => {
-    if (isExporting) return
-    trackEvent(AnalyticsEvents.CoverLetterExport, { format })
-    setIsExporting(true)
+    if (isExporting) return;
+    trackEvent(AnalyticsEvents.CoverLetterExport, { format });
+    setIsExporting(true);
     try {
-      const docxBlob = await buildCoverLetterBlob()
+      const docxBlob = await buildCoverLetterBlob();
       if (format === 'docx') {
-        downloadDocx(docxBlob, 'cover-letter.docx')
+        downloadDocx(docxBlob, 'cover-letter.docx');
         trackEvent(AnalyticsEvents.ExportSuccess, {
           source: 'cover_letter',
           format,
-        })
-        return
+        });
+        return;
       }
       try {
-        const pdfBlob = await convertDocxToPdf(docxBlob)
-        downloadPdf(pdfBlob, 'cover-letter.pdf')
+        const pdfBlob = await convertDocxToPdf(docxBlob);
+        downloadPdf(pdfBlob, 'cover-letter.pdf');
         trackEvent(AnalyticsEvents.ExportSuccess, {
           source: 'cover_letter',
           format,
-        })
+        });
       } catch {
         trackEvent(AnalyticsEvents.ExportFailure, {
           source: 'cover_letter',
           format,
-        })
+        });
         notifications.show({
           color: 'red',
           title: 'PDF export failed',
           message: 'Could not generate a PDF. Try downloading the .docx instead.',
-        })
+        });
       }
     } catch {
       trackEvent(AnalyticsEvents.ExportFailure, {
         source: 'cover_letter',
         format,
-      })
+      });
     } finally {
-      setIsExporting(false)
+      setIsExporting(false);
     }
-  }
+  };
 
   return (
     <Card withBorder shadow="xs" padding="lg">
@@ -443,8 +442,8 @@ const CoverLetterPanel = ({
             placeholder="e.g. Jordan Applicant"
             value={candidateName}
             onChange={(event) => {
-              trackEditCandidateName()
-              setCandidateName(event.currentTarget.value)
+              trackEditCandidateName();
+              setCandidateName(event.currentTarget.value);
             }}
             maw={280}
           />
@@ -463,7 +462,7 @@ const CoverLetterPanel = ({
         </Box>
       </Stack>
     </Card>
-  )
-}
+  );
+};
 
-export default CoverLetterPanel
+export default CoverLetterPanel;

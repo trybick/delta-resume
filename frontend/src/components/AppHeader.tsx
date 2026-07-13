@@ -11,7 +11,7 @@ import {
   Text,
   Title,
   Tooltip,
-  type ButtonProps
+  type ButtonProps,
 } from '@mantine/core';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { IconCoins, IconSparkles } from '@tabler/icons-react';
@@ -69,7 +69,7 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
         style={{
           border: '1px solid var(--mantine-color-dark-4)',
           backgroundColor: 'var(--mantine-color-dark-7)',
-          backgroundImage: 'linear-gradient(160deg, rgba(34, 184, 207, 0.12) 0%, transparent 55%)'
+          backgroundImage: 'linear-gradient(160deg, rgba(34, 184, 207, 0.12) 0%, transparent 55%)',
         }}
       >
         <Stack gap="sm">
@@ -134,7 +134,7 @@ const AppHeader = ({
   isLoadingCredits,
   creditsError,
   onUpgradeClick,
-  onRetryCredits
+  onRetryCredits,
 }: AppHeaderProps) => {
   return (
     <Box

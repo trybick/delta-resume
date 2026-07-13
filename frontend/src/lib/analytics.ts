@@ -1,13 +1,13 @@
-type GtagCommand = 'config' | 'event' | 'js' | 'set'
+type GtagCommand = 'config' | 'event' | 'js' | 'set';
 
 declare global {
   interface Window {
-    dataLayer: unknown[]
-    gtag: (command: GtagCommand, ...args: unknown[]) => void
+    dataLayer: unknown[];
+    gtag: (command: GtagCommand, ...args: unknown[]) => void;
   }
 }
 
-export type AnalyticsEventParams = Record<string, string | number | boolean>
+export type AnalyticsEventParams = Record<string, string | number | boolean>;
 
 export const AnalyticsEvents = {
   UpgradeToProHeader: 'upgrade_to_pro_header',
@@ -79,50 +79,46 @@ export const AnalyticsEvents = {
   ExportFailure: 'export_failure',
   CopySuccess: 'copy_success',
   CopyFailure: 'copy_failure',
-} as const
+} as const;
 
-export type AnalyticsEventName =
-  (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents]
+export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];
 
-let measurementId: string | null = null
+let measurementId: string | null = null;
 
 export const initAnalytics = (id: string) => {
-  if (measurementId) return
+  if (measurementId) return;
 
-  measurementId = id
-  window.dataLayer = window.dataLayer ?? []
+  measurementId = id;
+  window.dataLayer = window.dataLayer ?? [];
   window.gtag = (...args: unknown[]) => {
-    window.dataLayer.push(args)
-  }
+    window.dataLayer.push(args);
+  };
 
-  window.gtag('js', new Date())
-  window.gtag('config', id)
+  window.gtag('js', new Date());
+  window.gtag('config', id);
 
-  const script = document.createElement('script')
-  script.async = true
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${id}`
-  document.head.appendChild(script)
-}
+  const script = document.createElement('script');
+  script.async = true;
+  script.src = `https://www.googletagmanager.com/gtag/js?id=${id}`;
+  document.head.appendChild(script);
+};
 
 export const trackEvent = (
   name: AnalyticsEventName | (string & {}),
   params?: AnalyticsEventParams,
 ) => {
-  if (!measurementId) return
-  window.gtag('event', name, params)
-}
+  if (!measurementId) return;
+  window.gtag('event', name, params);
+};
 
-export const createDebouncedTracker = (
-  name: AnalyticsEventName,
-  waitMs = 1000,
-) => {
-  let timer: number | null = null
+export const createDebouncedTracker = (name: AnalyticsEventName, waitMs = 1000) => {
+  let timer: number | null = null;
 
   return (params?: AnalyticsEventParams) => {
-    if (timer !== null) window.clearTimeout(timer)
+    if (timer !== null) window.clearTimeout(timer);
     timer = window.setTimeout(() => {
-      trackEvent(name, params)
-      timer = null
-    }, waitMs)
-  }
-}
+      trackEvent(name, params);
+      timer = null;
+    }, waitMs);
+  };
+};

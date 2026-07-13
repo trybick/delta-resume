@@ -4,14 +4,14 @@ import {
   IconFolders,
   IconMail,
   IconTargetArrow,
-} from '@tabler/icons-react'
-import { usePlans } from '@clerk/clerk-react/experimental'
+} from '@tabler/icons-react';
+import { usePlans } from '@clerk/clerk-react/experimental';
 
 export type ProFeature = {
-  icon: typeof IconCoins
-  title: string
-  description: string
-}
+  icon: typeof IconCoins;
+  title: string;
+  description: string;
+};
 
 export const PRO_FEATURES: ProFeature[] = [
   {
@@ -39,20 +39,20 @@ export const PRO_FEATURES: ProFeature[] = [
     title: 'DOCX export',
     description: 'Download your tailored resume with formatting intact',
   },
-]
+];
 
 export type ProPriceInfo = {
-  monthlyPrice: string | null
-  annualMonthlyPrice: string | null
-  planId: string | null
-}
+  monthlyPrice: string | null;
+  annualMonthlyPrice: string | null;
+  planId: string | null;
+};
 
 export const useProPlan = (): ProPriceInfo => {
-  const { data: plans } = usePlans({ for: 'user', pageSize: 20 })
-  const proPlan = plans?.find((plan) => plan.slug === 'pro')
+  const { data: plans } = usePlans({ for: 'user', pageSize: 20 });
+  const proPlan = plans?.find((plan) => plan.slug === 'pro');
 
   if (!proPlan) {
-    return { monthlyPrice: null, annualMonthlyPrice: null, planId: null }
+    return { monthlyPrice: null, annualMonthlyPrice: null, planId: null };
   }
 
   return {
@@ -61,5 +61,5 @@ export const useProPlan = (): ProPriceInfo => {
       ? `${proPlan.annualMonthlyFee.currencySymbol}${proPlan.annualMonthlyFee.amountFormatted}`
       : null,
     planId: proPlan.id,
-  }
-}
+  };
+};

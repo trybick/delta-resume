@@ -1,14 +1,14 @@
-type RateLimitListener = (message: string) => void
+type RateLimitListener = (message: string) => void;
 
-const listeners = new Set<RateLimitListener>()
+const listeners = new Set<RateLimitListener>();
 
 export const subscribeToRateLimit = (listener: RateLimitListener): (() => void) => {
-  listeners.add(listener)
+  listeners.add(listener);
   return () => {
-    listeners.delete(listener)
-  }
-}
+    listeners.delete(listener);
+  };
+};
 
 export const notifyRateLimited = (message: string): void => {
-  listeners.forEach((listener) => listener(message))
-}
+  listeners.forEach((listener) => listener(message));
+};

@@ -1,4 +1,4 @@
-import type { CoverLetterResult, TailorResult } from './types'
+import type { CoverLetterResult, TailorResult } from './types';
 
 export const SAMPLE_RESUME = `Jordan Ellis
 Senior Software Engineer | jordan.ellis@email.com | (415) 555-0182 | San Francisco, CA
@@ -46,12 +46,12 @@ SideQuest — Personal habit tracker built with React Native, Supabase, and Expo
 EDUCATION
 
 B.S. Computer Science, State University (2018)
-Graduated with honors; teaching assistant for Intro to Data Structures`
+Graduated with honors; teaching assistant for Intro to Data Structures`;
 
 export const SAMPLE_MATCH_SCORE = {
   before: 54,
   after: 86,
-}
+};
 
 export const SAMPLE_COVER_LETTER_RESULT: CoverLetterResult = {
   jobTitle: 'Senior Frontend Engineer',
@@ -70,7 +70,7 @@ I would welcome the chance to talk about how I can help Acme ship its next chapt
 
 Sincerely,
 Jordan Ellis`,
-}
+};
 
 export const SAMPLE_TAILOR_RESULT: TailorResult = {
   resumeText: SAMPLE_RESUME,
@@ -170,4 +170,4 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
       },
     ],
   },
-}
+};

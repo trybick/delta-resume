@@ -1,26 +1,13 @@
-import { useState } from 'react'
-import {
-  Anchor,
-  Box,
-  Container,
-  Group,
-  Modal,
-  Stack,
-  Text,
-  Title,
-} from '@mantine/core'
-import { AnalyticsEvents, trackEvent } from '../lib/analytics'
-import {
-  PRIVACY_POLICY,
-  SUPPORT_EMAIL,
-  TERMS_OF_SERVICE,
-} from '../lib/legalContent'
-import type { LegalDocument } from '../lib/legalContent'
+import { useState } from 'react';
+import { Anchor, Box, Container, Group, Modal, Stack, Text, Title } from '@mantine/core';
+import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { PRIVACY_POLICY, SUPPORT_EMAIL, TERMS_OF_SERVICE } from '../lib/legalContent';
+import type { LegalDocument } from '../lib/legalContent';
 
 type LegalModalProps = {
-  document: LegalDocument | null
-  onClose: () => void
-}
+  document: LegalDocument | null;
+  onClose: () => void;
+};
 
 const LegalModal = ({ document, onClose }: LegalModalProps) => (
   <Modal
@@ -51,17 +38,17 @@ const LegalModal = ({ document, onClose }: LegalModalProps) => (
       </Stack>
     )}
   </Modal>
-)
+);
 
 const AppFooter = () => {
-  const [openDocument, setOpenDocument] = useState<LegalDocument | null>(null)
+  const [openDocument, setOpenDocument] = useState<LegalDocument | null>(null);
 
   const handleCloseModal = () => {
     if (openDocument) {
-      trackEvent(AnalyticsEvents.CloseLegalModal, { document: openDocument.title })
+      trackEvent(AnalyticsEvents.CloseLegalModal, { document: openDocument.title });
     }
-    setOpenDocument(null)
-  }
+    setOpenDocument(null);
+  };
 
   return (
     <Box
@@ -83,8 +70,8 @@ const AppFooter = () => {
               component="button"
               type="button"
               onClick={() => {
-                trackEvent(AnalyticsEvents.TermsOfService)
-                setOpenDocument(TERMS_OF_SERVICE)
+                trackEvent(AnalyticsEvents.TermsOfService);
+                setOpenDocument(TERMS_OF_SERVICE);
               }}
             >
               Terms of Service
@@ -95,8 +82,8 @@ const AppFooter = () => {
               component="button"
               type="button"
               onClick={() => {
-                trackEvent(AnalyticsEvents.PrivacyPolicy)
-                setOpenDocument(PRIVACY_POLICY)
+                trackEvent(AnalyticsEvents.PrivacyPolicy);
+                setOpenDocument(PRIVACY_POLICY);
               }}
             >
               Privacy Policy
@@ -109,7 +96,7 @@ const AppFooter = () => {
       </Container>
       <LegalModal document={openDocument} onClose={handleCloseModal} />
     </Box>
-  )
-}
+  );
+};
 
-export default AppFooter
+export default AppFooter;

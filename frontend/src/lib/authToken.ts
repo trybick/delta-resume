@@ -1,16 +1,16 @@
-type TokenGetter = () => Promise<string | null>
+type TokenGetter = () => Promise<string | null>;
 
-let tokenGetter: TokenGetter | null = null
+let tokenGetter: TokenGetter | null = null;
 
 export const registerTokenGetter = (getter: TokenGetter | null): void => {
-  tokenGetter = getter
-}
+  tokenGetter = getter;
+};
 
 export const getAuthToken = async (): Promise<string | null> => {
-  if (!tokenGetter) return null
+  if (!tokenGetter) return null;
   try {
-    return await tokenGetter()
+    return await tokenGetter();
   } catch {
-    return null
+    return null;
   }
-}
+};

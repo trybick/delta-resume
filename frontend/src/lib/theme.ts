@@ -1,18 +1,18 @@
-import { createTheme } from '@mantine/core'
-import type { MantineColorsTuple, MantineThemeOverride } from '@mantine/core'
+import { createTheme } from '@mantine/core';
+import type { MantineColorsTuple, MantineThemeOverride } from '@mantine/core';
 
 export type AppTheme = {
-  theme: MantineThemeOverride
-  gradient: { from: string; to: string }
-  upgradeGradient: { from: string; to: string }
-  clerkPrimary: string
-}
+  theme: MantineThemeOverride;
+  gradient: { from: string; to: string };
+  upgradeGradient: { from: string; to: string };
+  clerkPrimary: string;
+};
 
 export const manropeStack =
-  'Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  'Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
 export const spaceGroteskStack =
-  '"Space Grotesk", Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+  '"Space Grotesk", Manrope, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
 
 const deepOceanDark: MantineColorsTuple = [
   '#e7f0f4',
@@ -25,7 +25,7 @@ const deepOceanDark: MantineColorsTuple = [
   '#1f3543',
   '#182b37',
   '#11212b',
-]
+];
 
 export const appTheme: AppTheme = {
   theme: createTheme({
@@ -44,4 +44,4 @@ export const appTheme: AppTheme = {
   gradient: { from: 'cyan.3', to: 'blue.4' },
   upgradeGradient: { from: 'violet.5', to: 'grape.6' },
   clerkPrimary: '#22b8cf',
-}
+};
