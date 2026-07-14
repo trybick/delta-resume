@@ -6,6 +6,7 @@ import {
   Center,
   Group,
   Menu,
+  Paper,
   Stack,
   Text,
   Title,
@@ -493,7 +494,29 @@ const ResultsPanel = ({
           )}
         </Stack>
 
-        <Text size="sm">{result.summary}</Text>
+        <Paper
+          component="section"
+          aria-label="Tailoring summary"
+          px="md"
+          py="xs"
+          style={{
+            borderLeft: '2px solid var(--mantine-color-cyan-6)',
+            borderRadius: '0 var(--mantine-radius-md) var(--mantine-radius-md) 0',
+            background: 'linear-gradient(90deg, rgba(34, 184, 207, 0.07), transparent 65%)',
+          }}
+        >
+          <Stack gap={4}>
+            <Group gap={6} wrap="nowrap">
+              <IconSparkles size={13} color="var(--mantine-color-cyan-4)" stroke={1.8} />
+              <Text size="xs" fw={600} c="cyan.4" tt="uppercase" lts={0.6}>
+                Summary
+              </Text>
+            </Group>
+            <Text size="sm" c="dimmed" lh={1.6}>
+              {result.summary}
+            </Text>
+          </Stack>
+        </Paper>
 
         <div>
           {segments.map((segment) => {
