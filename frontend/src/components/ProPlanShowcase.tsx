@@ -6,10 +6,12 @@ import {
   Group,
   Paper,
   SegmentedControl,
+  SimpleGrid,
   Skeleton,
   Stack,
   Text,
   ThemeIcon,
+  type SimpleGridProps,
 } from '@mantine/core';
 import { SignedIn, useUser } from '@clerk/clerk-react';
 import { CheckoutButton } from '@clerk/clerk-react/experimental';
@@ -180,12 +182,16 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
   );
 };
 
-export const ProFeatureList = () => (
-  <Stack gap="xs">
+type ProFeatureListProps = {
+  columns?: SimpleGridProps['cols'];
+};
+
+export const ProFeatureList = ({ columns = 1 }: ProFeatureListProps) => (
+  <SimpleGrid cols={columns} spacing="md" verticalSpacing="xs">
     {PRO_FEATURES.map((feature) => (
       <FeatureRow key={feature.title} feature={feature} compact />
     ))}
-  </Stack>
+  </SimpleGrid>
 );
 
 export default ProPlanShowcase;

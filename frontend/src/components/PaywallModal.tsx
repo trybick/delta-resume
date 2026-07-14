@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
-import { FocusTrap, Modal, Stack, Text, Title } from '@mantine/core';
+import { FocusTrap, Modal, Paper, Stack, Text, Title } from '@mantine/core';
 import { SignUp, useAuth, useUser } from '@clerk/clerk-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
-import ProPlanShowcase from './ProPlanShowcase';
+import ProPlanShowcase, { ProFeatureList } from './ProPlanShowcase';
 
 const embeddedSignUpAppearance = {
   elements: {
@@ -144,6 +144,29 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
               {signedOutDescription}
             </Text>
           </Stack>
+          <Paper
+            p="md"
+            radius="md"
+            w="100%"
+            style={{
+              border: '1px solid var(--mantine-color-cyan-9)',
+              background:
+                'linear-gradient(160deg, rgba(34, 184, 207, 0.1) 0%, rgba(34, 139, 230, 0.04) 65%, transparent 100%)',
+            }}
+          >
+            <Stack gap="sm">
+              <Text
+                size="xs"
+                fw={700}
+                c="cyan.4"
+                tt="uppercase"
+                style={{ letterSpacing: '0.06em' }}
+              >
+                Everything included with Pro
+              </Text>
+              <ProFeatureList columns={{ base: 1, xs: 2 }} />
+            </Stack>
+          </Paper>
           <SignUp routing="hash" appearance={embeddedSignUpAppearance} />
         </Stack>
       )}
