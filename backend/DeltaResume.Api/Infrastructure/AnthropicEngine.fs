@@ -259,13 +259,11 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                         let! body = response.Content.ReadAsStringAsync()
 
                         if not response.IsSuccessStatusCode then
-                            return
-                                Error(
-                                    sprintf
-                                        "Claude API returned %d: %s"
-                                        (int response.StatusCode)
-                                        (body.Substring(0, min body.Length 500))
-                                )
+                            let statusCode = int response.StatusCode
+                            let bodyPreview = body.Substring(0, min body.Length 500)
+                            ClaudeSentry.captureApiFailure "tailor" statusCode bodyPreview
+
+                            return Error(sprintf "Claude API returned %d: %s" statusCode bodyPreview)
                         else
                             use document = JsonDocument.Parse body
 
@@ -280,5 +278,6 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                             | None -> return Error "Claude response contained no text content."
                             | Some text -> return parseProposals bullets text
                     with ex ->
+                        ClaudeSentry.captureApiException "tailor" ex
                         return Error(sprintf "Failed to reach the Claude API: %s" ex.Message)
             }

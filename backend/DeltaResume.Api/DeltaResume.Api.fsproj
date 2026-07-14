@@ -15,6 +15,7 @@
     <Compile Include="Application/SavedResumeService.fs" />
     <Compile Include="Infrastructure/PostgresRepository.fs" />
     <Compile Include="Infrastructure/CreditStore.fs" />
+    <Compile Include="Infrastructure/ClaudeSentry.fs" />
     <Compile Include="Infrastructure/AnthropicEngine.fs" />
     <Compile Include="Infrastructure/AnthropicCoverLetterEngine.fs" />
     <Compile Include="Api/Dtos.fs" />

@@ -156,6 +156,8 @@ let main args =
 
     if Option.isSome sentryDsn then
         app.UseSentryTracing() |> ignore
+        Sentry.SentrySdk.CaptureMessage("Sentry backend startup test", Sentry.SentryLevel.Info)
+        |> ignore
 
     if Option.isSome clerkAuthority then
         app.UseAuthentication() |> ignore
