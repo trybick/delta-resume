@@ -250,6 +250,9 @@ const ResumeInput = ({
         {mode === 'paste' && (
           <Stack gap={4}>
             <Textarea
+              aria-label="Resume text"
+              name="resume-text"
+              autoComplete="off"
               value={resumeText}
               onChange={(event) => {
                 trackPasteResumeText();
@@ -326,6 +329,9 @@ const ResumeInput = ({
                       {isEditing ? (
                         <TextInput
                           size="xs"
+                          aria-label="Rename saved resume"
+                          name="resume-name"
+                          autoComplete="off"
                           value={editingName}
                           onChange={(event) => setEditingName(event.currentTarget.value)}
                           onKeyDown={handleRenameKeyDown}

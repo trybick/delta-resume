@@ -423,7 +423,13 @@ const CoverLetterPanel = ({
         </Group>
         <Group gap="sm" align="center" wrap="wrap">
           <Group gap={4} align="center" wrap="nowrap">
-            <Text size="sm" fw={500} style={{ whiteSpace: 'nowrap' }}>
+            <Text
+              component="label"
+              htmlFor="cover-letter-candidate-name"
+              size="sm"
+              fw={500}
+              style={{ whiteSpace: 'nowrap' }}
+            >
               Your name
             </Text>
             <Tooltip label="Used for the signature.">
@@ -439,6 +445,9 @@ const CoverLetterPanel = ({
             </Tooltip>
           </Group>
           <TextInput
+            id="cover-letter-candidate-name"
+            name="name"
+            autoComplete="name"
             placeholder="e.g. Jordan Applicant"
             value={candidateName}
             onChange={(event) => {

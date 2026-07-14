@@ -26,6 +26,9 @@ const JobDescriptionInput = ({ value, onChange }: JobDescriptionInputProps) => {
           </Text>
         </Group>
         <Textarea
+          aria-label="Job description"
+          name="job-description"
+          autoComplete="off"
           value={value}
           onChange={(event) => {
             trackEditJobDescription();
