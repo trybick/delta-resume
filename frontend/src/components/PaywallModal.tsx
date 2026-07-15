@@ -61,10 +61,14 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
   useEffect(() => {
     if (!opened) return;
     onSubscriptionChange();
+  }, [opened, isSignedIn, hasProPlan, onSubscriptionChange]);
+
+  useEffect(() => {
+    if (!opened) return;
     if ((reason === 'savedLimit' || reason === 'coverLetter') && hasProPlan) {
       onClose();
     }
-  }, [opened, isSignedIn, hasProPlan, reason, onSubscriptionChange, onClose]);
+  }, [opened, reason, hasProPlan, onClose]);
 
   const signedInTitle =
     reason === 'savedLimit'

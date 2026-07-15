@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { PaywallReason } from '../components/PaywallModal';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 
@@ -30,21 +30,26 @@ export const usePaywall = ({
     readPendingPaywallReason,
   );
 
-  const openPaywall = (reason: PaywallReason) => {
-    trackEvent(AnalyticsEvents.PaywallOpened, { reason });
-    setPaywallReason(reason);
-    if (!isSignedIn) {
-      sessionStorage.setItem(PENDING_PAYWALL_KEY, reason);
-    }
-  };
+  const openPaywall = useCallback(
+    (reason: PaywallReason) => {
+      trackEvent(AnalyticsEvents.PaywallOpened, { reason });
+      setPaywallReason(reason);
+      if (!isSignedIn) {
+        sessionStorage.setItem(PENDING_PAYWALL_KEY, reason);
+      }
+    },
+    [isSignedIn],
+  );
 
-  const closePaywall = () => {
-    if (paywallReason) {
-      trackEvent(AnalyticsEvents.PaywallClose, { reason: paywallReason });
-    }
-    setPaywallReason(null);
+  const closePaywall = useCallback(() => {
+    setPaywallReason((reason) => {
+      if (reason) {
+        trackEvent(AnalyticsEvents.PaywallClose, { reason });
+      }
+      return null;
+    });
     sessionStorage.removeItem(PENDING_PAYWALL_KEY);
-  };
+  }, []);
 
   useEffect(() => {
     if (!isSignedIn) return;
