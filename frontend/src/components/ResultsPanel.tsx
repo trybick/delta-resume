@@ -542,47 +542,54 @@ const ResultsPanel = ({
       <Stack gap="md">
         <Stack gap="xs">
           <Group justify="space-between" align="center" wrap="nowrap">
-            <Group
-              gap={6}
-              align="center"
-              p={4}
-              style={{
-                borderRadius: 999,
-                backgroundColor: 'var(--mantine-color-default-hover)',
-              }}
-            >
-              <Text size="xs" fw={600} c="dimmed" tt="uppercase" lts={0.6} px={8}>
-                Updated
-              </Text>
-              {bulletChangeCount > 0 && (
-                <ChangeStatChip
-                  icon={
-                    <IconList size={14} color="var(--mantine-color-indigo-5)" stroke={1.8} />
-                  }
-                  count={bulletChangeCount}
-                  label={bulletChangeCount === 1 ? 'bullet' : 'bullets'}
-                  color="indigo"
-                />
-              )}
-              {skillChangeCount > 0 && (
-                <ChangeStatChip
-                  icon={
-                    <IconBolt size={14} color="var(--mantine-color-teal-5)" stroke={1.8} />
-                  }
-                  count={skillChangeCount}
-                  label={skillChangeCount === 1 ? 'skill' : 'skills'}
-                  color="teal"
-                />
-              )}
-              {paragraphChangeCount > 0 && (
-                <ChangeStatChip
-                  icon={
-                    <IconFileText size={14} color="var(--mantine-color-grape-5)" stroke={1.8} />
-                  }
-                  count={paragraphChangeCount}
-                  label="summary"
-                  color="grape"
-                />
+            <Group gap="sm" align="center" wrap="nowrap">
+              <Group
+                gap={6}
+                align="center"
+                p={4}
+                style={{
+                  borderRadius: 999,
+                  backgroundColor: 'var(--mantine-color-default-hover)',
+                }}
+              >
+                <Text size="xs" fw={600} c="dimmed" tt="uppercase" lts={0.6} px={8}>
+                  Updated
+                </Text>
+                {bulletChangeCount > 0 && (
+                  <ChangeStatChip
+                    icon={
+                      <IconList size={14} color="var(--mantine-color-indigo-5)" stroke={1.8} />
+                    }
+                    count={bulletChangeCount}
+                    label={bulletChangeCount === 1 ? 'bullet' : 'bullets'}
+                    color="indigo"
+                  />
+                )}
+                {skillChangeCount > 0 && (
+                  <ChangeStatChip
+                    icon={
+                      <IconBolt size={14} color="var(--mantine-color-teal-5)" stroke={1.8} />
+                    }
+                    count={skillChangeCount}
+                    label={skillChangeCount === 1 ? 'skill' : 'skills'}
+                    color="teal"
+                  />
+                )}
+                {paragraphChangeCount > 0 && (
+                  <ChangeStatChip
+                    icon={
+                      <IconFileText size={14} color="var(--mantine-color-grape-5)" stroke={1.8} />
+                    }
+                    count={paragraphChangeCount}
+                    label="summary"
+                    color="grape"
+                  />
+                )}
+              </Group>
+              {isExample && (
+                <Badge color="cyan" variant="light">
+                  Example
+                </Badge>
               )}
             </Group>
             <Group gap="sm" wrap="nowrap">
@@ -661,21 +668,14 @@ const ResultsPanel = ({
               </Menu>
             </Group>
           </Group>
-          {(isExample || requirements.length > 0) && (
+          {requirements.length > 0 && (
             <Group gap="sm">
-              {isExample && (
-                <Badge color="cyan" variant="light">
-                  Example
+              <Tooltip label="How many of the job's key requirements your resume demonstrates, counting the changes you keep applied.">
+                <Badge color="green" variant="light" leftSection={<IconTargetArrow size={12} />}>
+                  Covers {coveredCount} of {requirements.length} requirements
+                  {coveredByChangesCount > 0 ? ` · +${coveredByChangesCount} from changes` : ''}
                 </Badge>
-              )}
-              {requirements.length > 0 && (
-                <Tooltip label="How many of the job's key requirements your resume demonstrates, counting the changes you keep applied.">
-                  <Badge color="green" variant="light" leftSection={<IconTargetArrow size={12} />}>
-                    Covers {coveredCount} of {requirements.length} requirements
-                    {coveredByChangesCount > 0 ? ` · +${coveredByChangesCount} from changes` : ''}
-                  </Badge>
-                </Tooltip>
-              )}
+              </Tooltip>
             </Group>
           )}
         </Stack>
