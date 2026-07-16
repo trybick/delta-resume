@@ -26,8 +26,9 @@ export const PRO_FEATURES: ProFeature[] = [
   },
   {
     icon: IconTargetArrow,
-    title: 'Gap analysis',
-    description: 'See every job requirement your resume doesn\u2019t cover yet',
+    title: 'See missing requirements',
+    description:
+      'See every requirement this job asks for that your resume doesn\u2019t show yet, plus where a bullet would fit',
   },
   {
     icon: IconFolders,

@@ -591,7 +591,7 @@ const ResultsPanel = ({
                       <Group gap={6}>
                         <IconLock size={16} color="var(--mantine-primary-color-filled)" />
                         <Text size="sm" fw={600}>
-                          See all {gaps.length} gaps with Pro
+                          See all {gaps.length} missing requirements with Pro
                         </Text>
                         <Badge variant="gradient" gradient={{ from: 'indigo', to: 'cyan' }}>
                           Pro

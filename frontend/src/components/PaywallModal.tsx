@@ -76,7 +76,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
       : reason === 'coverLetter'
         ? 'Upgrade to unlock cover letters'
         : reason === 'gaps'
-          ? 'Upgrade to see every gap'
+          ? 'Upgrade to unlock missing requirements'
           : reason === 'upgrade'
             ? 'Upgrade to Pro'
             : 'Upgrade to keep tailoring';
@@ -86,7 +86,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
       : reason === 'coverLetter'
         ? 'Cover letters are a Pro feature'
         : reason === 'gaps'
-          ? 'Gap analysis is a Pro feature'
+          ? 'Missing requirements are a Pro feature'
           : reason === 'upgrade'
             ? 'Get the most out of Delta Resume'
             : 'You\u2019re out of credits';
@@ -96,7 +96,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
       : reason === 'coverLetter'
         ? 'Go Pro and every tailor run also writes a matching cover letter.'
         : reason === 'gaps'
-          ? 'Go Pro to see every requirement this job asks for that your resume doesn\u2019t show yet.'
+          ? 'Go Pro to unlock every job requirement your resume doesn\u2019t show yet, plus where a bullet would fit.'
           : reason === 'upgrade'
             ? 'Everything you need to land more interviews, in one plan.'
             : 'Go Pro to keep tailoring without interruption.';
@@ -106,7 +106,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
       : reason === 'coverLetter'
         ? 'Get instant cover letters with Pro'
         : reason === 'gaps'
-          ? 'See your resume\u2019s gaps with Pro'
+          ? 'See missing requirements with Pro'
           : reason === 'upgrade'
             ? 'Go Pro with Delta Resume'
             : 'You\u2019ve used your 3 free tailors';
@@ -116,7 +116,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
       : reason === 'coverLetter'
         ? 'Create a free account and upgrade to Pro to get a matching cover letter with every tailor run.'
         : reason === 'gaps'
-          ? 'Create a free account and upgrade to Pro to see every requirement your resume doesn\u2019t cover yet.'
+          ? 'Create a free account and upgrade to Pro to unlock every job requirement your resume doesn\u2019t cover yet.'
           : reason === 'upgrade'
             ? 'Sign in to continue \u2014 it takes seconds with Google.'
             : 'Create a free account to keep tailoring. Signing in with Google takes seconds.';
