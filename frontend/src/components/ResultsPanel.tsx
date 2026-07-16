@@ -186,12 +186,15 @@ type GapRowProps = {
   onUndo?: (id: string) => void;
 };
 
+const hasDraftBullet = (
+  requirement: JobRequirement,
+): requirement is JobRequirement & { draftBullet: string; insertAfterLine: number } =>
+  typeof requirement.draftBullet === 'string' &&
+  requirement.draftBullet.length > 0 &&
+  typeof requirement.insertAfterLine === 'number';
+
 const GapRow = ({ requirement, addedBullet, onAdd, onUndo }: GapRowProps) => {
-  const canAdd =
-    onAdd !== undefined &&
-    addedBullet === undefined &&
-    requirement.draftBullet !== null &&
-    requirement.insertAfterLine !== null;
+  const canAdd = onAdd !== undefined && addedBullet === undefined && hasDraftBullet(requirement);
 
   return (
     <Stack gap={2}>
@@ -435,16 +438,15 @@ const ResultsPanel = ({
   };
 
   const handleAddGapBullet = (requirement: JobRequirement) => {
-    const { draftBullet, insertAfterLine } = requirement;
-    if (draftBullet === null || insertAfterLine === null) return;
+    if (!hasDraftBullet(requirement)) return;
     trackEvent(AnalyticsEvents.AddGapBullet, { importance: requirement.importance });
     setAddedBullets((current) => [
       ...current,
       {
         id: crypto.randomUUID(),
         requirementText: requirement.text,
-        text: draftBullet,
-        afterLineIndex: insertAfterLine,
+        text: requirement.draftBullet,
+        afterLineIndex: requirement.insertAfterLine,
       },
     ]);
   };
@@ -478,7 +480,9 @@ const ResultsPanel = ({
     [addedBullets],
   );
 
-  const activeAddedBullets = addedBullets.filter((bullet) => bullet.text.trim().length > 0);
+  const activeAddedBullets = addedBullets.filter(
+    (bullet) => typeof bullet.text === 'string' && bullet.text.trim().length > 0,
+  );
 
   const buildMergedLines = (): string[] => {
     if (!result) return [];
@@ -621,8 +625,8 @@ const ResultsPanel = ({
     unresolvedGapCount > 0
       ? `${unresolvedGapCount} requirement${unresolvedGapCount === 1 ? '' : 's'} your resume doesn’t show`
       : 'Requirement gaps addressed';
-  const visibleGaps = isProPlan ? gaps : gaps.slice(0, 1);
-  const lockedGaps = isProPlan ? [] : gaps.slice(1);
+  const visibleGaps = isProPlan || isExample ? gaps : gaps.slice(0, 1);
+  const lockedGaps = isProPlan || isExample ? [] : gaps.slice(1);
 
   const handleGapsUpgradeClick = () => {
     trackEvent(AnalyticsEvents.GapsUpgradeClick);
