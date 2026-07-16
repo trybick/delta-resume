@@ -53,7 +53,9 @@ type JobRequirementDto =
       Importance: string
       SatisfiedBy: int list
       SatisfiedByChanges: int list
-      GapHint: string option }
+      GapHint: string option
+      DraftBullet: string option
+      InsertAfterLine: int option }
 
 type TailorResponseDto =
     { RunId: Guid
@@ -92,7 +94,9 @@ module Mapping =
           Importance = RequirementImportance.toString requirement.Importance
           SatisfiedBy = requirement.SatisfiedBy
           SatisfiedByChanges = requirement.SatisfiedByChanges
-          GapHint = requirement.GapHint }
+          GapHint = requirement.GapHint
+          DraftBullet = requirement.DraftBullet
+          InsertAfterLine = requirement.InsertAfterLine }
 
     let toResponseDto (run: TailorRun) : TailorResponseDto =
         let (RunId runId) = run.Id

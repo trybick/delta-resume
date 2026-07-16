@@ -125,7 +125,9 @@ type JobRequirement =
       Importance: RequirementImportance
       SatisfiedBy: int list
       SatisfiedByChanges: int list
-      GapHint: string option }
+      GapHint: string option
+      DraftBullet: string option
+      InsertAfterLine: int option }
 
 type TailorRun =
     { Id: RunId

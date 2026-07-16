@@ -35,6 +35,15 @@ export type JobRequirement = {
   satisfiedBy: number[];
   satisfiedByChanges: number[];
   gapHint: string | null;
+  draftBullet: string | null;
+  insertAfterLine: number | null;
+};
+
+export type AddedBullet = {
+  id: string;
+  requirementText: string;
+  text: string;
+  afterLineIndex: number;
 };
 
 export type TailorResult = {

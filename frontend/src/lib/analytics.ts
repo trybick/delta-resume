@@ -48,6 +48,8 @@ export const AnalyticsEvents = {
   CopyBullet: 'copy_bullet',
 
   GapsUpgradeClick: 'gaps_upgrade_click',
+  AddGapBullet: 'add_gap_bullet',
+  RemoveGapBullet: 'remove_gap_bullet',
 
   CoverLetterUpgradeTeaser: 'cover_letter_upgrade_teaser',
   CoverLetterUpgradeExample: 'cover_letter_upgrade_example',

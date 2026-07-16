@@ -66,6 +66,8 @@ Requirements rules:
 - "satisfiedBy": lineIndexes of resume lines that genuinely demonstrate the requirement. A requirement is satisfied when the experience exists even if it is worded differently from the job description (e.g. "built SPAs with Next.js" satisfies "React experience"). Use an empty array only when the resume does not demonstrate it at all.
 - "satisfiedByChanges": lineIndexes of your "changes" whose tailored text newly demonstrates a requirement the original line did not clearly show. Usually an empty array.
 - "gapHint": for requirements where both arrays are empty, one short sentence naming where in the resume a bullet about it would fit (e.g. "Would fit under your Acme Corp role"). Never suggest inventing experience. Use null when the requirement is satisfied.
+- "draftBullet": for requirements where both arrays are empty, a template bullet the candidate could add IF they have this experience. Write it in the same style, tense, and voice as the resume's existing bullets, and start it with the same bullet marker and indentation the resume's bullets use (or no marker if they use none). Because the resume shows no evidence for this requirement, you must NOT assert specifics as fact: put every unverifiable specific (metrics, scale, tools beyond the requirement itself, project names) in square brackets as placeholders the candidate fills in, e.g. "- Provisioned [cloud environment] infrastructure with Terraform, cutting setup time by [X%]". Use null when the requirement is satisfied.
+- "insertAfterLine": for requirements with a "draftBullet", the lineIndex of the existing resume line the new bullet should be inserted directly after -- typically the last bullet of the role or section named in "gapHint". Must be a lineIndex that exists in <resume_lines>. Use null when the requirement is satisfied.
 
 You must also return the resume's document structure as "structure", so the app can rebuild a cleanly formatted document. Reference lines ONLY by lineIndex; never repeat line text.
 
@@ -80,7 +82,7 @@ Structure rules:
 - Every lineIndex that appears in <resume_lines> must appear exactly once across headerLines, headingLine values, and item lines. Never drop or duplicate a lineIndex.
 
 Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
-{"changes":[{"lineIndex":0,"kind":"bullet","tailored":"<the rewritten line>"}],"summary":"<1-2 sentences summarizing the job's priorities and the overall tailoring approach>","requirements":[{"text":"<short requirement>","importance":"must","satisfiedBy":[4],"satisfiedByChanges":[],"gapHint":null}],"structure":{"headerLines":[0,1],"sections":[{"headingLine":2,"items":[{"kind":"subheading","lines":[3]},{"kind":"bullet","lines":[4,5]}]}]}}"""
+{"changes":[{"lineIndex":0,"kind":"bullet","tailored":"<the rewritten line>"}],"summary":"<1-2 sentences summarizing the job's priorities and the overall tailoring approach>","requirements":[{"text":"<short requirement>","importance":"must","satisfiedBy":[4],"satisfiedByChanges":[],"gapHint":null,"draftBullet":null,"insertAfterLine":null}],"structure":{"headerLines":[0,1],"sections":[{"headingLine":2,"items":[{"kind":"subheading","lines":[3]},{"kind":"bullet","lines":[4,5]}]}]}}"""
 
     let buildUserMessage (bullets: BulletLine list) (jobDescription: string) : string =
         let resumeLines =
@@ -207,20 +209,33 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                                 parseIntList linesElement |> List.filter validLineIndexes.Contains
                             | false, _ -> []
 
-                        let gapHint =
-                            match element.TryGetProperty "gapHint" with
-                            | true, hintElement when hintElement.ValueKind = JsonValueKind.String ->
-                                hintElement.GetString()
+                        let parseTrimmedString (propertyName: string) : string option =
+                            match element.TryGetProperty propertyName with
+                            | true, stringElement when stringElement.ValueKind = JsonValueKind.String ->
+                                stringElement.GetString()
                                 |> Option.ofObj
                                 |> Option.map _.Trim()
-                                |> Option.filter (fun hint -> not (String.IsNullOrWhiteSpace hint))
+                                |> Option.filter (fun value -> not (String.IsNullOrWhiteSpace value))
                             | _ -> None
+
+                        let insertAfterLine =
+                            match element.TryGetProperty "insertAfterLine" with
+                            | true, lineElement when lineElement.ValueKind = JsonValueKind.Number ->
+                                Some(lineElement.GetInt32())
+                                |> Option.filter validLineIndexes.Contains
+                            | _ -> None
+
+                        let draftBullet =
+                            parseTrimmedString "draftBullet"
+                            |> Option.filter (fun _ -> insertAfterLine.IsSome)
 
                         { Text = text
                           Importance = importance
                           SatisfiedBy = parseLineIndexes "satisfiedBy"
                           SatisfiedByChanges = parseLineIndexes "satisfiedByChanges"
-                          GapHint = gapHint })
+                          GapHint = parseTrimmedString "gapHint"
+                          DraftBullet = draftBullet
+                          InsertAfterLine = insertAfterLine |> Option.filter (fun _ -> draftBullet.IsSome) })
                 | _ -> None)
             |> Seq.toList
         | _ -> []

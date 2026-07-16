@@ -20,6 +20,7 @@ import {
   IconArrowsVertical,
   IconBolt,
   IconChevronDown,
+  IconCircleCheck,
   IconCopy,
   IconCopyCheck,
   IconDownload,
@@ -29,11 +30,13 @@ import {
   IconFileTypePdf,
   IconList,
   IconLock,
+  IconPlus,
   IconSparkles,
   IconTargetArrow,
 } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import type {
+  AddedBullet,
   BulletChange,
   ChangeDecision,
   JobRequirement,
@@ -41,6 +44,7 @@ import type {
   TailorStatus,
 } from '../lib/types';
 import { copyResumeRichText } from '../lib/copyResume';
+import { applyAddedBullets } from '../lib/insertions';
 import {
   buildStructuredDocx,
   buildTemplateDocx,
@@ -49,6 +53,7 @@ import {
   patchOriginalDocx,
 } from '../lib/exportDocx';
 import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
+import AddedBulletRow from './AddedBulletRow';
 import DiffBullet from './DiffBullet';
 import TailoringLoader from './TailoringLoader';
 
@@ -124,25 +129,31 @@ const splitContextLines = (lines: string[], collapsed: boolean): ContextSplit =>
 
 type ResumeSegment =
   | { kind: 'change'; change: BulletChange }
+  | { kind: 'added'; bullet: AddedBullet }
   | { kind: 'context'; startIndex: number; lines: string[] };
 
 const buildSegments = (
   lines: string[],
   changesByLine: Map<number, BulletChange>,
+  addedByAnchor: Map<number, AddedBullet[]>,
 ): ResumeSegment[] => {
   const segments: ResumeSegment[] = [];
   lines.forEach((line, lineIndex) => {
     const change = changesByLine.get(lineIndex);
     if (change) {
       segments.push({ kind: 'change', change });
-      return;
+    } else {
+      const previousSegment = segments[segments.length - 1];
+      if (previousSegment && previousSegment.kind === 'context') {
+        previousSegment.lines.push(line);
+      } else {
+        segments.push({ kind: 'context', startIndex: lineIndex, lines: [line] });
+      }
     }
-    const previousSegment = segments[segments.length - 1];
-    if (previousSegment && previousSegment.kind === 'context') {
-      previousSegment.lines.push(line);
-      return;
+    const addedBullets = addedByAnchor.get(lineIndex);
+    if (addedBullets) {
+      addedBullets.forEach((bullet) => segments.push({ kind: 'added', bullet }));
     }
-    segments.push({ kind: 'context', startIndex: lineIndex, lines: [line] });
   });
   return segments;
 };
@@ -166,28 +177,70 @@ type CollapsedContextProps = {
   onExpand: () => void;
 };
 
-const GapRow = ({ requirement }: { requirement: JobRequirement }) => (
-  <Stack gap={2}>
-    <Group gap="xs" wrap="nowrap" align="center">
-      <Badge
-        size="xs"
-        variant="light"
-        color={requirement.importance === 'must' ? 'orange' : 'gray'}
-        style={{ flexShrink: 0 }}
-      >
-        {requirement.importance === 'must' ? 'Must-have' : 'Nice-to-have'}
-      </Badge>
-      <Text size="sm" fw={500}>
-        {requirement.text}
-      </Text>
-    </Group>
-    {requirement.gapHint && (
-      <Text size="xs" c="dimmed">
-        {requirement.gapHint}
-      </Text>
-    )}
-  </Stack>
-);
+type GapRowProps = {
+  requirement: JobRequirement;
+  addedBullet?: AddedBullet;
+  onAdd?: (requirement: JobRequirement) => void;
+  onUndo?: (id: string) => void;
+};
+
+const GapRow = ({ requirement, addedBullet, onAdd, onUndo }: GapRowProps) => {
+  const canAdd =
+    onAdd !== undefined &&
+    addedBullet === undefined &&
+    requirement.draftBullet !== null &&
+    requirement.insertAfterLine !== null;
+
+  return (
+    <Stack gap={2}>
+      <Group gap="xs" wrap="nowrap" align="center">
+        <Badge
+          size="xs"
+          variant="light"
+          color={requirement.importance === 'must' ? 'orange' : 'gray'}
+          style={{ flexShrink: 0 }}
+        >
+          {requirement.importance === 'must' ? 'Must-have' : 'Nice-to-have'}
+        </Badge>
+        <Text size="sm" fw={500} style={{ flex: 1, minWidth: 0 }}>
+          {requirement.text}
+        </Text>
+        {addedBullet && onUndo && (
+          <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
+            <IconCircleCheck size={14} color="var(--mantine-color-green-5)" />
+            <Text size="xs" fw={600} c="green.5">
+              Added
+            </Text>
+            <Button
+              size="compact-xs"
+              variant="subtle"
+              color="gray"
+              onClick={() => onUndo(addedBullet.id)}
+            >
+              Undo
+            </Button>
+          </Group>
+        )}
+        {canAdd && (
+          <Button
+            size="compact-xs"
+            variant="light"
+            leftSection={<IconPlus size={12} />}
+            style={{ flexShrink: 0 }}
+            onClick={() => onAdd(requirement)}
+          >
+            Add to resume
+          </Button>
+        )}
+      </Group>
+      {requirement.gapHint && !addedBullet && (
+        <Text size="xs" c="dimmed">
+          {requirement.gapHint}
+        </Text>
+      )}
+    </Stack>
+  );
+};
 
 type CollapsibleInsightProps = {
   open: boolean;
@@ -326,6 +379,7 @@ const ResultsPanel = ({
   const [decisions, setDecisions] = useState<Record<string, ChangeDecision>>(() =>
     buildDecisionMap(result),
   );
+  const [addedBullets, setAddedBullets] = useState<AddedBullet[]>([]);
   const [expandedSegments, setExpandedSegments] = useState<Set<number>>(new Set());
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [gapsOpen, setGapsOpen] = useState(() => (result ? hasMustHaveGaps(result) : false));
@@ -358,6 +412,52 @@ const ResultsPanel = ({
     setDecisions((current) => ({ ...current, [id]: decision }));
   };
 
+  const handleAddGapBullet = (requirement: JobRequirement) => {
+    const { draftBullet, insertAfterLine } = requirement;
+    if (draftBullet === null || insertAfterLine === null) return;
+    trackEvent(AnalyticsEvents.AddGapBullet, { importance: requirement.importance });
+    setAddedBullets((current) => [
+      ...current,
+      {
+        id: crypto.randomUUID(),
+        requirementText: requirement.text,
+        text: draftBullet,
+        afterLineIndex: insertAfterLine,
+      },
+    ]);
+  };
+
+  const handleRemoveAddedBullet = (id: string) => {
+    trackEvent(AnalyticsEvents.RemoveGapBullet);
+    setAddedBullets((current) => current.filter((bullet) => bullet.id !== id));
+  };
+
+  const handleAddedBulletTextChange = (id: string, text: string) => {
+    setAddedBullets((current) =>
+      current.map((bullet) => (bullet.id === id ? { ...bullet, text } : bullet)),
+    );
+  };
+
+  const addedByAnchor = useMemo(() => {
+    const map = new Map<number, AddedBullet[]>();
+    addedBullets.forEach((bullet) => {
+      const group = map.get(bullet.afterLineIndex);
+      if (group) {
+        group.push(bullet);
+        return;
+      }
+      map.set(bullet.afterLineIndex, [bullet]);
+    });
+    return map;
+  }, [addedBullets]);
+
+  const addedByRequirement = useMemo(
+    () => new Map(addedBullets.map((bullet) => [bullet.requirementText, bullet])),
+    [addedBullets],
+  );
+
+  const activeAddedBullets = addedBullets.filter((bullet) => bullet.text.trim().length > 0);
+
   const buildMergedLines = (): string[] => {
     if (!result) return [];
     return result.resumeText.split('\n').map((line, lineIndex) => {
@@ -367,13 +467,15 @@ const ResultsPanel = ({
     });
   };
 
-  const buildMergedText = (): string => buildMergedLines().join('\n');
+  const buildMergedResume = () =>
+    applyAddedBullets(buildMergedLines(), result?.structure, activeAddedBullets);
 
   const handleCopy = async () => {
     if (!result || isExample) return;
     trackEvent(AnalyticsEvents.ResumeCopy);
     try {
-      await copyResumeRichText(buildMergedLines(), result.structure);
+      const merged = buildMergedResume();
+      await copyResumeRichText(merged.lines, merged.structure);
       trackEvent(AnalyticsEvents.CopySuccess, { source: 'resume' });
       setCopied(true);
       if (copiedTimeoutRef.current !== null) window.clearTimeout(copiedTimeoutRef.current);
@@ -394,10 +496,12 @@ const ResultsPanel = ({
     normalizeResumeTextForComparison(originalDocx.parsedText) ===
       normalizeResumeTextForComparison(result.resumeText);
 
-  const buildCleanDocx = (): Promise<Blob> =>
-    result?.structure
-      ? buildStructuredDocx(buildMergedLines(), result.structure)
-      : buildTemplateDocx(buildMergedText());
+  const buildCleanDocx = (): Promise<Blob> => {
+    const merged = buildMergedResume();
+    return merged.structure
+      ? buildStructuredDocx(merged.lines, merged.structure)
+      : buildTemplateDocx(merged.lines.join('\n'));
+  };
 
   const buildPatchedDocx = async (): Promise<Blob> => {
     if (!result || !originalDocx) return buildCleanDocx();
@@ -420,6 +524,14 @@ const ResultsPanel = ({
   const handleExport = async (variant: 'keep' | 'clean', format: 'docx' | 'pdf') => {
     if (!result || isExample || isExporting) return;
     trackEvent(AnalyticsEvents.ResumeExport, { variant, format });
+    if (variant === 'keep' && activeAddedBullets.length > 0) {
+      notifications.show({
+        color: 'orange',
+        title: 'Added bullets not included',
+        message:
+          'New bullets can\u2019t be inserted into your original file. Use the clean template or copy to clipboard to include them.',
+      });
+    }
     setIsExporting(true);
     try {
       const docxBlob = variant === 'keep' ? await buildPatchedDocx() : await buildCleanDocx();
@@ -472,11 +584,21 @@ const ResultsPanel = ({
       return change !== undefined && decisions[change.id] !== 'reverted';
     });
 
-  const coveredCount = requirements.filter(isRequirementCovered).length;
+  const isRequirementResolved = (requirement: JobRequirement): boolean =>
+    isRequirementCovered(requirement) || addedByRequirement.has(requirement.text);
+
+  const coveredCount = requirements.filter(isRequirementResolved).length;
   const coveredByChangesCount = requirements.filter(
     (requirement) => requirement.satisfiedBy.length === 0 && isRequirementCovered(requirement),
   ).length;
   const gaps = requirements.filter((requirement) => !isRequirementCovered(requirement));
+  const unresolvedGapCount = gaps.filter(
+    (requirement) => !addedByRequirement.has(requirement.text),
+  ).length;
+  const gapsLabel =
+    unresolvedGapCount > 0
+      ? `${unresolvedGapCount} requirement${unresolvedGapCount === 1 ? '' : 's'} your resume doesn’t show`
+      : 'Requirement gaps addressed';
   const visibleGaps = isProPlan ? gaps : gaps.slice(0, 1);
   const lockedGaps = isProPlan ? [] : gaps.slice(1);
 
@@ -535,7 +657,7 @@ const ResultsPanel = ({
     (change) => change.kind === 'paragraph',
   ).length;
   const lines = result.resumeText.split('\n');
-  const segments = buildSegments(lines, changesByLine);
+  const segments = buildSegments(lines, changesByLine, addedByAnchor);
 
   return (
     <Card withBorder shadow="xs" padding="lg">
@@ -702,7 +824,7 @@ const ResultsPanel = ({
             icon={
               <IconTargetArrow size={13} color="var(--mantine-color-orange-5)" stroke={1.8} />
             }
-            label={`${gaps.length} requirement${gaps.length === 1 ? '' : 's'} your resume doesn’t show`}
+            label={gapsLabel}
             labelColor="orange.5"
             borderColor="var(--mantine-color-orange-6)"
             background="linear-gradient(90deg, rgba(232, 145, 45, 0.07), transparent 65%)"
@@ -714,7 +836,13 @@ const ResultsPanel = ({
                 have the experience, adding a bullet for it would strengthen your match.
               </Text>
               {visibleGaps.map((requirement) => (
-                <GapRow key={requirement.text} requirement={requirement} />
+                <GapRow
+                  key={requirement.text}
+                  requirement={requirement}
+                  addedBullet={addedByRequirement.get(requirement.text)}
+                  onAdd={handleAddGapBullet}
+                  onUndo={handleRemoveAddedBullet}
+                />
               ))}
               {lockedGaps.length > 0 && (
                 <Box style={{ position: 'relative' }}>
@@ -761,6 +889,16 @@ const ResultsPanel = ({
                   change={segment.change}
                   decision={decisions[segment.change.id] ?? 'accepted'}
                   onDecisionChange={handleDecisionChange}
+                />
+              );
+            }
+            if (segment.kind === 'added') {
+              return (
+                <AddedBulletRow
+                  key={segment.bullet.id}
+                  bullet={segment.bullet}
+                  onTextChange={handleAddedBulletTextChange}
+                  onRemove={handleRemoveAddedBullet}
                 />
               );
             }

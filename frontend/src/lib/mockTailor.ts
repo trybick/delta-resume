@@ -55,6 +55,8 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     satisfiedBy: [6, 7],
     satisfiedByChanges: [],
     gapHint: null,
+    draftBullet: null,
+    insertAfterLine: null,
   },
   {
     text: 'Building consumer-facing web products',
@@ -62,6 +64,8 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     satisfiedBy: [13, 20],
     satisfiedByChanges: [],
     gapHint: null,
+    draftBullet: null,
+    insertAfterLine: null,
   },
   {
     text: 'Performance and conversion optimization',
@@ -69,6 +73,8 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     satisfiedBy: [],
     satisfiedByChanges: [20],
     gapHint: null,
+    draftBullet: null,
+    insertAfterLine: null,
   },
   {
     text: 'REST API design and integration',
@@ -76,6 +82,8 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     satisfiedBy: [8, 28],
     satisfiedByChanges: [],
     gapHint: null,
+    draftBullet: null,
+    insertAfterLine: null,
   },
   {
     text: 'GraphQL APIs',
@@ -83,6 +91,9 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     satisfiedBy: [],
     satisfiedByChanges: [],
     gapHint: 'Would fit in your Backend skills line or under your Globex API work.',
+    draftBullet:
+      '- Designed and shipped GraphQL APIs for [product or service], serving [number] of clients',
+    insertAfterLine: 28,
   },
   {
     text: 'Next.js',
@@ -90,6 +101,8 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     satisfiedBy: [7],
     satisfiedByChanges: [],
     gapHint: null,
+    draftBullet: null,
+    insertAfterLine: null,
   },
   {
     text: 'AWS cloud infrastructure',
@@ -97,6 +110,8 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     satisfiedBy: [9, 22],
     satisfiedByChanges: [],
     gapHint: null,
+    draftBullet: null,
+    insertAfterLine: null,
   },
   {
     text: 'Mentoring junior engineers',
@@ -104,6 +119,8 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     satisfiedBy: [15, 23],
     satisfiedByChanges: [],
     gapHint: null,
+    draftBullet: null,
+    insertAfterLine: null,
   },
   {
     text: 'Accessibility (WCAG) standards',
@@ -111,6 +128,9 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     satisfiedBy: [],
     satisfiedByChanges: [],
     gapHint: 'Would fit under your onboarding redesign bullet at Globex.',
+    draftBullet:
+      '- Brought [flow or product] up to WCAG [2.1 AA] accessibility standards, validating with [screen readers and audits]',
+    insertAfterLine: 29,
   },
   {
     text: 'Design systems and component libraries',
@@ -118,6 +138,9 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     satisfiedBy: [],
     satisfiedByChanges: [],
     gapHint: 'Would fit under your Acme Corp role, alongside the checkout work.',
+    draftBullet:
+      '- Built and maintained a design system of [number] reusable React components adopted by [teams or products]',
+    insertAfterLine: 20,
   },
 ];
 
