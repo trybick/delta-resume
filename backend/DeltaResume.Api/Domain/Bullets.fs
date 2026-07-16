@@ -54,6 +54,9 @@ module Bullets =
     [<Literal>]
     let MaxBulletChanges = 4
 
+    [<Literal>]
+    let MaxParagraphChanges = 1
+
     let toChanges (bullets: BulletLine list) (proposals: ProposedChange list) : BulletChange list =
         let bulletsByIndex =
             bullets
@@ -72,7 +75,12 @@ module Bullets =
         let skillProposals =
             validated |> List.filter (fun proposal -> proposal.Kind = Skill)
 
-        cappedBullets @ skillProposals
+        let cappedParagraphs =
+            validated
+            |> List.filter (fun proposal -> proposal.Kind = Paragraph)
+            |> List.truncate MaxParagraphChanges
+
+        cappedBullets @ skillProposals @ cappedParagraphs
         |> List.map (fun proposal ->
             let original = bulletsByIndex[proposal.LineIndex]
 

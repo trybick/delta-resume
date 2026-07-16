@@ -1,6 +1,6 @@
 export type TailorStatus = 'idle' | 'loading' | 'done';
 
-export type ChangeKind = 'bullet' | 'skill';
+export type ChangeKind = 'bullet' | 'skill' | 'paragraph';
 
 export type BulletChange = {
   id: string;

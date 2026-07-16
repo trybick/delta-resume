@@ -500,6 +500,9 @@ const ResultsPanel = ({
 
   const bulletChangeCount = result.changes.filter((change) => change.kind === 'bullet').length;
   const skillChangeCount = result.changes.filter((change) => change.kind === 'skill').length;
+  const paragraphChangeCount = result.changes.filter(
+    (change) => change.kind === 'paragraph',
+  ).length;
   const lines = result.resumeText.split('\n');
   const segments = buildSegments(lines, changesByLine);
 
@@ -512,8 +515,8 @@ const ResultsPanel = ({
               {bulletChangeCount} bullet{bulletChangeCount === 1 ? '' : 's'}
               {skillChangeCount > 0
                 ? `, ${skillChangeCount} skill${skillChangeCount === 1 ? '' : 's'}`
-                : ''}{' '}
-              updated
+                : ''}
+              {paragraphChangeCount > 0 ? ', summary' : ''} updated
             </Title>
             <Group gap="sm" wrap="nowrap">
               <Menu

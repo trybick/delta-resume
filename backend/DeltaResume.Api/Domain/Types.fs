@@ -9,17 +9,20 @@ type ChangeId = ChangeId of Guid
 type LineKind =
     | Bullet
     | Skill
+    | Paragraph
 
 module LineKind =
     let toString (kind: LineKind) : string =
         match kind with
         | Bullet -> "bullet"
         | Skill -> "skill"
+        | Paragraph -> "paragraph"
 
     let tryParse (value: string) : LineKind option =
         match value with
         | "bullet" -> Some Bullet
         | "skill" -> Some Skill
+        | "paragraph" -> Some Paragraph
         | _ -> None
 
 type BulletLine =
