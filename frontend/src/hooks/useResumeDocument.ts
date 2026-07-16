@@ -21,6 +21,7 @@ type UseResumeDocumentOptions = {
 
 type UseResumeDocumentResult = {
   resumeText: string;
+  pasteFieldText: string;
   setResumeText: (text: string) => void;
   attachedFile: AttachedFile | null;
   originalDocx: OriginalDocx | null;
@@ -37,6 +38,7 @@ export const useResumeDocument = ({
   isLoadingSavedResumes,
 }: UseResumeDocumentOptions): UseResumeDocumentResult => {
   const [resumeText, setResumeText] = useState('');
+  const [pasteFieldText, setPasteFieldText] = useState('');
   const [attachedFile, setAttachedFile] = useState<AttachedFile | null>(null);
   const [originalDocx, setOriginalDocx] = useState<OriginalDocx | null>(null);
   const pendingDocxRestoreRef = useRef<string | null>(null);
@@ -50,6 +52,9 @@ export const useResumeDocument = ({
 
   const handleResumeTextChange = (text: string) => {
     pendingDocxRestoreRef.current = null;
+    setAttachedFile(null);
+    setOriginalDocx(null);
+    setPasteFieldText(text);
     setResumeText(text);
   };
 
@@ -57,6 +62,7 @@ export const useResumeDocument = ({
     pendingDocxRestoreRef.current = null;
     setAttachedFile(file);
     setResumeText(text);
+    setPasteFieldText('');
     const isDocx = sourceFile.name.toLowerCase().endsWith('.docx');
     setOriginalDocx(isDocx ? { file: sourceFile, parsedText: text } : null);
     if (isDocx) {
@@ -69,6 +75,7 @@ export const useResumeDocument = ({
     setAttachedFile(null);
     setOriginalDocx(null);
     setResumeText('');
+    setPasteFieldText('');
   };
 
   const restoreSavedDocx = async (savedResumeText: string) => {
@@ -86,6 +93,7 @@ export const useResumeDocument = ({
         normalizeResumeTextForComparison(resume.resumeText);
 
     setResumeText(resume.resumeText);
+    setPasteFieldText(resume.resumeText);
     if (matchesAttachedDocx) {
       pendingDocxRestoreRef.current = null;
       return;
@@ -104,6 +112,7 @@ export const useResumeDocument = ({
 
   return {
     resumeText,
+    pasteFieldText,
     setResumeText,
     attachedFile,
     originalDocx,
