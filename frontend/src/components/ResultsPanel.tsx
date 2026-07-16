@@ -652,13 +652,16 @@ const ResultsPanel = ({
             </ThemeIcon>
             <Title order={4}>Your tailored resume will appear here</Title>
             <Text size="sm" c="dimmed" ta="center" maw={360}>
-              Suggested rewrites show up as inline diffs you can accept, tweak, or revert.
+              AI-suggested rewrites show up as inline diffs you can accept, tweak, or revert.
             </Text>
             <Group gap="xs" justify="center">
               <IdleStep index={1} label="Add your resume" />
               <IdleStep index={2} label="Paste the job post" />
               <IdleStep index={3} label="Review changes" />
             </Group>
+            <Text size="xs" c="dimmed" ta="center" maw={360}>
+              You stay in control of every change, and your resume is never stored.
+            </Text>
             {onShowExample && (
               <Button
                 mt="xs"
