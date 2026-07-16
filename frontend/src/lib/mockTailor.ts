@@ -1,4 +1,4 @@
-import type { CoverLetterResult, TailorResult } from './types';
+import type { CoverLetterResult, JobRequirement, TailorResult } from './types';
 
 export const SAMPLE_RESUME = `Jordan Ellis
 Senior Software Engineer | jordan.ellis@email.com | (415) 555-0182 | San Francisco, CA
@@ -48,10 +48,78 @@ EDUCATION
 B.S. Computer Science, State University (2018)
 Graduated with honors; teaching assistant for Intro to Data Structures`;
 
-export const SAMPLE_MATCH_SCORE = {
-  before: 54,
-  after: 86,
-};
+const SAMPLE_REQUIREMENTS: JobRequirement[] = [
+  {
+    text: 'Expert React and TypeScript development',
+    importance: 'must',
+    satisfiedBy: [6, 7],
+    satisfiedByChanges: [],
+    gapHint: null,
+  },
+  {
+    text: 'Building consumer-facing web products',
+    importance: 'must',
+    satisfiedBy: [13, 20],
+    satisfiedByChanges: [],
+    gapHint: null,
+  },
+  {
+    text: 'Performance and conversion optimization',
+    importance: 'must',
+    satisfiedBy: [],
+    satisfiedByChanges: [20],
+    gapHint: null,
+  },
+  {
+    text: 'REST API design and integration',
+    importance: 'must',
+    satisfiedBy: [8, 28],
+    satisfiedByChanges: [],
+    gapHint: null,
+  },
+  {
+    text: 'GraphQL APIs',
+    importance: 'must',
+    satisfiedBy: [],
+    satisfiedByChanges: [],
+    gapHint: 'Would fit in your Backend skills line or under your Globex API work.',
+  },
+  {
+    text: 'Next.js',
+    importance: 'nice',
+    satisfiedBy: [7],
+    satisfiedByChanges: [],
+    gapHint: null,
+  },
+  {
+    text: 'AWS cloud infrastructure',
+    importance: 'nice',
+    satisfiedBy: [9, 22],
+    satisfiedByChanges: [],
+    gapHint: null,
+  },
+  {
+    text: 'Mentoring junior engineers',
+    importance: 'nice',
+    satisfiedBy: [15, 23],
+    satisfiedByChanges: [],
+    gapHint: null,
+  },
+  {
+    text: 'Accessibility (WCAG) standards',
+    importance: 'nice',
+    satisfiedBy: [],
+    satisfiedByChanges: [],
+    gapHint: 'Would fit under your onboarding redesign bullet at Globex.',
+  },
+  {
+    text: 'Design systems and component libraries',
+    importance: 'nice',
+    satisfiedBy: [],
+    satisfiedByChanges: [],
+    gapHint: 'Would fit under your Acme Corp role, alongside the checkout work.',
+  },
+];
 
 export const SAMPLE_COVER_LETTER_RESULT: CoverLetterResult = {
   jobTitle: 'Senior Frontend Engineer',
@@ -117,6 +185,7 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
       kind: 'skill',
     },
   ],
+  requirements: SAMPLE_REQUIREMENTS,
   structure: {
     headerLines: [0, 1, 2],
     sections: [

@@ -32,6 +32,7 @@ type TailoringService(engine: TailoringEngine) =
                               CreatedAt = DateTimeOffset.UtcNow
                               Summary = proposal.Summary
                               Changes = changes
+                              Requirements = proposal.Requirements
                               Structure = proposal.Structure }
 
                         return Ok run

@@ -3,7 +3,13 @@ import type { PaywallReason } from '../components/PaywallModal';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 
 const PENDING_PAYWALL_KEY = 'deltaResume.pendingPaywallReason';
-const PAYWALL_REASONS: PaywallReason[] = ['credits', 'savedLimit', 'upgrade', 'coverLetter'];
+const PAYWALL_REASONS: PaywallReason[] = [
+  'credits',
+  'savedLimit',
+  'upgrade',
+  'coverLetter',
+  'gaps',
+];
 
 const readPendingPaywallReason = (): PaywallReason | null => {
   const stored = sessionStorage.getItem(PENDING_PAYWALL_KEY);

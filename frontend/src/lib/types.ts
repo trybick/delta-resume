@@ -27,10 +27,21 @@ export type ResumeStructure = {
   sections: ResumeSection[];
 };
 
+export type RequirementImportance = 'must' | 'nice';
+
+export type JobRequirement = {
+  text: string;
+  importance: RequirementImportance;
+  satisfiedBy: number[];
+  satisfiedByChanges: number[];
+  gapHint: string | null;
+};
+
 export type TailorResult = {
   resumeText: string;
   summary: string;
   changes: BulletChange[];
+  requirements: JobRequirement[];
   structure?: ResumeStructure | null;
 };
 

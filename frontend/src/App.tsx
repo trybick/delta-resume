@@ -21,7 +21,6 @@ import { formatDefaultResumeName } from './lib/formatDefaultResumeName';
 const App = () => {
   const { isSignedIn, getToken } = useAuth();
   const [jobDescription, setJobDescription] = useState('');
-  const [lastRunJobDescription, setLastRunJobDescription] = useState('');
   const [lastSuccessfulInputs, setLastSuccessfulInputs] = useState<{
     resumeText: string;
     jobDescription: string;
@@ -120,7 +119,6 @@ const App = () => {
     }
     setShowingExample(false);
     setActiveTab('resume');
-    setLastRunJobDescription(jobDescription);
     if (isProPlan) {
       void runCoverLetter(resumeText, jobDescription);
     }
@@ -202,7 +200,6 @@ const App = () => {
               status={status}
               result={result}
               runCount={runCount}
-              lastRunJobDescription={lastRunJobDescription}
               originalDocx={originalDocx}
               onShowExample={handleShowExample}
               planLoaded={planLoaded}
@@ -212,6 +209,7 @@ const App = () => {
               coverLetterError={coverLetterError}
               onRetryCoverLetter={retryCoverLetter}
               onUpgradeClick={() => openPaywall('coverLetter')}
+              onGapsUpgradeClick={() => openPaywall('gaps')}
             />
           </Grid.Col>
         </Grid>

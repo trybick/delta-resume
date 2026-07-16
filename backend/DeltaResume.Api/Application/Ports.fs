@@ -7,6 +7,7 @@ open DeltaResume.Domain
 type EngineProposal =
     { Summary: string
       Changes: ProposedChange list
+      Requirements: JobRequirement list
       Structure: ResumeStructure option }
 
 type TailoringEngine =

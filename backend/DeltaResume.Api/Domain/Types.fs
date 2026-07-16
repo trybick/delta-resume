@@ -101,6 +101,29 @@ type BulletChange =
       Tailored: string
       Kind: LineKind }
 
+type RequirementImportance =
+    | Must
+    | Nice
+
+module RequirementImportance =
+    let toString (importance: RequirementImportance) : string =
+        match importance with
+        | Must -> "must"
+        | Nice -> "nice"
+
+    let tryParse (value: string) : RequirementImportance option =
+        match value with
+        | "must" -> Some Must
+        | "nice" -> Some Nice
+        | _ -> None
+
+type JobRequirement =
+    { Text: string
+      Importance: RequirementImportance
+      SatisfiedBy: int list
+      SatisfiedByChanges: int list
+      GapHint: string option }
+
 type TailorRun =
     { Id: RunId
       ResumeText: string
@@ -108,6 +131,7 @@ type TailorRun =
       CreatedAt: DateTimeOffset
       Summary: string
       Changes: BulletChange list
+      Requirements: JobRequirement list
       Structure: ResumeStructure option }
 
 type SavedResumeId = SavedResumeId of Guid

@@ -50,6 +50,15 @@ General rules:
 
 After the changes, you must return a "summary" of exactly 1-2 concise sentences. Explain what the job description emphasizes and the overall approach taken in the suggested changes. Mention concrete priorities, skills, or themes from the job description and the corresponding resume content that was strengthened. Do not list or explain changes individually.
 
+You must also return "requirements": the most important requirements from the job description and how the resume covers them.
+
+Requirements rules:
+- Extract 8-12 of the job description's most important requirements: specific skills, technologies, experience areas, and responsibilities. Phrase each in under 12 words. Skip generic filler like "team player" or "strong communication" unless the job clearly centers on it.
+- "importance": "must" for core or required qualifications, "nice" for preferred or bonus ones.
+- "satisfiedBy": lineIndexes of resume lines that genuinely demonstrate the requirement. A requirement is satisfied when the experience exists even if it is worded differently from the job description (e.g. "built SPAs with Next.js" satisfies "React experience"). Use an empty array only when the resume does not demonstrate it at all.
+- "satisfiedByChanges": lineIndexes of your "changes" whose tailored text newly demonstrates a requirement the original line did not clearly show. Usually an empty array.
+- "gapHint": for requirements where both arrays are empty, one short sentence naming where in the resume a bullet about it would fit (e.g. "Would fit under your Acme Corp role"). Never suggest inventing experience. Use null when the requirement is satisfied.
+
 You must also return the resume's document structure as "structure", so the app can rebuild a cleanly formatted document. Reference lines ONLY by lineIndex; never repeat line text.
 
 Structure rules:
@@ -63,7 +72,7 @@ Structure rules:
 - Every lineIndex that appears in <resume_lines> must appear exactly once across headerLines, headingLine values, and item lines. Never drop or duplicate a lineIndex.
 
 Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
-{"changes":[{"lineIndex":0,"kind":"bullet","tailored":"<the rewritten line>"}],"summary":"<1-2 sentences summarizing the job's priorities and the overall tailoring approach>","structure":{"headerLines":[0,1],"sections":[{"headingLine":2,"items":[{"kind":"subheading","lines":[3]},{"kind":"bullet","lines":[4,5]}]}]}}"""
+{"changes":[{"lineIndex":0,"kind":"bullet","tailored":"<the rewritten line>"}],"summary":"<1-2 sentences summarizing the job's priorities and the overall tailoring approach>","requirements":[{"text":"<short requirement>","importance":"must","satisfiedBy":[4],"satisfiedByChanges":[],"gapHint":null}],"structure":{"headerLines":[0,1],"sections":[{"headingLine":2,"items":[{"kind":"subheading","lines":[3]},{"kind":"bullet","lines":[4,5]}]}]}}"""
 
     let buildUserMessage (bullets: BulletLine list) (jobDescription: string) : string =
         let resumeLines =
@@ -160,6 +169,54 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                 { HeaderLines = headerLines
                   Sections = sections }
 
+    let parseRequirements (bullets: BulletLine list) (root: JsonElement) : JobRequirement list =
+        match root.TryGetProperty "requirements" with
+        | true, requirementsElement when requirementsElement.ValueKind = JsonValueKind.Array ->
+            let validLineIndexes =
+                bullets |> List.map (fun bullet -> bullet.LineIndex) |> Set.ofList
+
+            requirementsElement.EnumerateArray()
+            |> Seq.filter (fun element -> element.ValueKind = JsonValueKind.Object)
+            |> Seq.choose (fun element ->
+                match element.TryGetProperty "text" with
+                | true, textElement when textElement.ValueKind = JsonValueKind.String ->
+                    textElement.GetString()
+                    |> Option.ofObj
+                    |> Option.map _.Trim()
+                    |> Option.filter (fun text -> not (String.IsNullOrWhiteSpace text))
+                    |> Option.map (fun text ->
+                        let importance =
+                            match element.TryGetProperty "importance" with
+                            | true, importanceElement when importanceElement.ValueKind = JsonValueKind.String ->
+                                importanceElement.GetString()
+                                |> RequirementImportance.tryParse
+                                |> Option.defaultValue Must
+                            | _ -> Must
+
+                        let parseLineIndexes (propertyName: string) : int list =
+                            match element.TryGetProperty propertyName with
+                            | true, linesElement ->
+                                parseIntList linesElement |> List.filter validLineIndexes.Contains
+                            | false, _ -> []
+
+                        let gapHint =
+                            match element.TryGetProperty "gapHint" with
+                            | true, hintElement when hintElement.ValueKind = JsonValueKind.String ->
+                                hintElement.GetString()
+                                |> Option.ofObj
+                                |> Option.map _.Trim()
+                                |> Option.filter (fun hint -> not (String.IsNullOrWhiteSpace hint))
+                            | _ -> None
+
+                        { Text = text
+                          Importance = importance
+                          SatisfiedBy = parseLineIndexes "satisfiedBy"
+                          SatisfiedByChanges = parseLineIndexes "satisfiedByChanges"
+                          GapHint = gapHint })
+                | _ -> None)
+            |> Seq.toList
+        | _ -> []
+
     let parseProposals (bullets: BulletLine list) (content: string) : Result<EngineProposal, string> =
         let originalsByIndex =
             bullets
@@ -219,6 +276,7 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                 Ok
                     { Summary = summary
                       Changes = changes
+                      Requirements = parseRequirements bullets document.RootElement
                       Structure = parseStructure bullets document.RootElement }
         with ex ->
             Error(sprintf "Failed to parse Claude response as JSON: %s" ex.Message)
@@ -234,7 +292,7 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                 | Some apiKey ->
                     let requestBody =
                         {| model = model
-                           max_tokens = 8192
+                           max_tokens = 10240
                            temperature = 0.2
                            system = systemPrompt
                            messages =

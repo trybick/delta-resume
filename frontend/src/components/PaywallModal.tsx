@@ -27,7 +27,7 @@ const embeddedSignUpAppearance = {
   },
 } as const;
 
-export type PaywallReason = 'credits' | 'savedLimit' | 'upgrade' | 'coverLetter';
+export type PaywallReason = 'credits' | 'savedLimit' | 'upgrade' | 'coverLetter' | 'gaps';
 
 type PaywallModalProps = {
   opened: boolean;
@@ -65,7 +65,7 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
 
   useEffect(() => {
     if (!opened) return;
-    if ((reason === 'savedLimit' || reason === 'coverLetter') && hasProPlan) {
+    if ((reason === 'savedLimit' || reason === 'coverLetter' || reason === 'gaps') && hasProPlan) {
       onClose();
     }
   }, [opened, reason, hasProPlan, onClose]);
@@ -75,41 +75,51 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
       ? 'Upgrade to save more resumes'
       : reason === 'coverLetter'
         ? 'Upgrade to unlock cover letters'
-        : reason === 'upgrade'
-          ? 'Upgrade to Pro'
-          : 'Upgrade to keep tailoring';
+        : reason === 'gaps'
+          ? 'Upgrade to see every gap'
+          : reason === 'upgrade'
+            ? 'Upgrade to Pro'
+            : 'Upgrade to keep tailoring';
   const signedInHeading =
     reason === 'savedLimit'
       ? 'You\u2019ve reached your saved resume limit'
       : reason === 'coverLetter'
         ? 'Cover letters are a Pro feature'
-        : reason === 'upgrade'
-          ? 'Get the most out of Delta Resume'
-          : 'You\u2019re out of credits';
+        : reason === 'gaps'
+          ? 'Gap analysis is a Pro feature'
+          : reason === 'upgrade'
+            ? 'Get the most out of Delta Resume'
+            : 'You\u2019re out of credits';
   const signedInDescription =
     reason === 'savedLimit'
       ? 'Go Pro to save up to 10 resumes and keep tailoring all month.'
       : reason === 'coverLetter'
         ? 'Go Pro and every tailor run also writes a matching cover letter.'
-        : reason === 'upgrade'
-          ? 'Everything you need to land more interviews, in one plan.'
-          : 'Go Pro to keep tailoring without interruption.';
+        : reason === 'gaps'
+          ? 'Go Pro to see every requirement this job asks for that your resume doesn\u2019t show yet.'
+          : reason === 'upgrade'
+            ? 'Everything you need to land more interviews, in one plan.'
+            : 'Go Pro to keep tailoring without interruption.';
   const signedOutHeading =
     reason === 'savedLimit'
       ? 'Save more resumes with Pro'
       : reason === 'coverLetter'
         ? 'Get instant cover letters with Pro'
-        : reason === 'upgrade'
-          ? 'Go Pro with Delta Resume'
-          : 'You\u2019ve used your 3 free tailors';
+        : reason === 'gaps'
+          ? 'See your resume\u2019s gaps with Pro'
+          : reason === 'upgrade'
+            ? 'Go Pro with Delta Resume'
+            : 'You\u2019ve used your 3 free tailors';
   const signedOutDescription =
     reason === 'savedLimit'
       ? 'Create a free account and upgrade to Pro to save up to 10 resumes.'
       : reason === 'coverLetter'
         ? 'Create a free account and upgrade to Pro to get a matching cover letter with every tailor run.'
-        : reason === 'upgrade'
-          ? 'Sign in to continue \u2014 it takes seconds with Google.'
-          : 'Create a free account to keep tailoring. Signing in with Google takes seconds.';
+        : reason === 'gaps'
+          ? 'Create a free account and upgrade to Pro to see every requirement your resume doesn\u2019t cover yet.'
+          : reason === 'upgrade'
+            ? 'Sign in to continue \u2014 it takes seconds with Google.'
+            : 'Create a free account to keep tailoring. Signing in with Google takes seconds.';
 
   const handleSubscriptionComplete = () => {
     trackEvent(AnalyticsEvents.SubscriptionComplete, { reason });

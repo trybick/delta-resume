@@ -48,11 +48,19 @@ type ResumeStructureDto =
     { HeaderLines: int list
       Sections: ResumeSectionDto list }
 
+type JobRequirementDto =
+    { Text: string
+      Importance: string
+      SatisfiedBy: int list
+      SatisfiedByChanges: int list
+      GapHint: string option }
+
 type TailorResponseDto =
     { RunId: Guid
       ResumeText: string
       Summary: string
       Changes: BulletChangeDto list
+      Requirements: JobRequirementDto list
       Structure: ResumeStructureDto option }
 
 type ErrorResponseDto = { Message: string }
@@ -79,6 +87,13 @@ module Mapping =
                         { Kind = ResumeItemKind.toString item.Kind
                           Lines = item.Lines }) }) }
 
+    let toRequirementDto (requirement: JobRequirement) : JobRequirementDto =
+        { Text = requirement.Text
+          Importance = RequirementImportance.toString requirement.Importance
+          SatisfiedBy = requirement.SatisfiedBy
+          SatisfiedByChanges = requirement.SatisfiedByChanges
+          GapHint = requirement.GapHint }
+
     let toResponseDto (run: TailorRun) : TailorResponseDto =
         let (RunId runId) = run.Id
 
@@ -86,6 +101,7 @@ module Mapping =
           ResumeText = run.ResumeText
           Summary = run.Summary
           Changes = run.Changes |> List.map toChangeDto
+          Requirements = run.Requirements |> List.map toRequirementDto
           Structure = run.Structure |> Option.map toStructureDto }
 
     let toSavedResumeDto (resume: SavedResume) : SavedResumeDto =

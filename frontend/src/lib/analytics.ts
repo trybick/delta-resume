@@ -47,6 +47,8 @@ export const AnalyticsEvents = {
   ReapplyChange: 'reapply_change',
   CopyBullet: 'copy_bullet',
 
+  GapsUpgradeClick: 'gaps_upgrade_click',
+
   CoverLetterUpgradeTeaser: 'cover_letter_upgrade_teaser',
   CoverLetterUpgradeExample: 'cover_letter_upgrade_example',
   CoverLetterRetry: 'cover_letter_retry',

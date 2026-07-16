@@ -12,11 +12,7 @@ import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import ResultsPanel from './ResultsPanel';
 import CoverLetterPanel from './CoverLetterPanel';
 import type { OriginalDocx } from '../hooks/useResumeDocument';
-import {
-  SAMPLE_COVER_LETTER_RESULT,
-  SAMPLE_MATCH_SCORE,
-  SAMPLE_TAILOR_RESULT,
-} from '../lib/mockTailor';
+import { SAMPLE_COVER_LETTER_RESULT, SAMPLE_TAILOR_RESULT } from '../lib/mockTailor';
 import type {
   CoverLetterResult,
   CoverLetterStatus,
@@ -34,7 +30,6 @@ type TailorResultsSectionProps = {
   status: TailorStatus;
   result: TailorResult | null;
   runCount: number;
-  lastRunJobDescription: string;
   originalDocx: OriginalDocx | null;
   onShowExample: () => void;
   planLoaded: boolean;
@@ -44,6 +39,7 @@ type TailorResultsSectionProps = {
   coverLetterError: string | null;
   onRetryCoverLetter: () => void;
   onUpgradeClick: () => void;
+  onGapsUpgradeClick: () => void;
 };
 
 const TailorResultsSection = ({
@@ -56,7 +52,6 @@ const TailorResultsSection = ({
   status,
   result,
   runCount,
-  lastRunJobDescription,
   originalDocx,
   onShowExample,
   planLoaded,
@@ -66,6 +61,7 @@ const TailorResultsSection = ({
   coverLetterError,
   onRetryCoverLetter,
   onUpgradeClick,
+  onGapsUpgradeClick,
 }: TailorResultsSectionProps) => {
   const resumeTabIndicator = showingExample ? null : status === 'loading' ? (
     <Loader size={12} />
@@ -167,10 +163,10 @@ const TailorResultsSection = ({
             status={showingExample ? 'done' : status}
             result={showingExample ? SAMPLE_TAILOR_RESULT : result}
             isExample={showingExample}
-            jobDescription={showingExample ? '' : lastRunJobDescription}
-            exampleMatchScore={showingExample ? SAMPLE_MATCH_SCORE : undefined}
+            isProPlan={isProPlan}
             originalDocx={showingExample ? null : originalDocx}
             onShowExample={status === 'idle' ? onShowExample : undefined}
+            onUpgradeClick={onGapsUpgradeClick}
           />
         </Tabs.Panel>
         <Tabs.Panel value="coverLetter" pt="md">

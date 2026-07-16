@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Badge,
+  Box,
   Button,
   Card,
   Center,
@@ -24,11 +25,18 @@ import {
   IconEye,
   IconFileDescription,
   IconFileTypePdf,
+  IconLock,
   IconSparkles,
   IconTargetArrow,
 } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
-import type { BulletChange, ChangeDecision, TailorResult, TailorStatus } from '../lib/types';
+import type {
+  BulletChange,
+  ChangeDecision,
+  JobRequirement,
+  TailorResult,
+  TailorStatus,
+} from '../lib/types';
 import { copyResumeRichText } from '../lib/copyResume';
 import {
   buildStructuredDocx,
@@ -38,7 +46,6 @@ import {
   patchOriginalDocx,
 } from '../lib/exportDocx';
 import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
-import { extractKeywords, scoreResume } from '../lib/matchScore';
 import DiffBullet from './DiffBullet';
 import TailoringLoader from './TailoringLoader';
 
@@ -47,19 +54,14 @@ type OriginalDocx = {
   parsedText: string;
 };
 
-type ExampleMatchScore = {
-  before: number;
-  after: number;
-};
-
 type ResultsPanelProps = {
   status: TailorStatus;
   result: TailorResult | null;
   isExample?: boolean;
-  jobDescription?: string;
-  exampleMatchScore?: ExampleMatchScore;
+  isProPlan: boolean;
   originalDocx?: OriginalDocx | null;
   onShowExample?: () => void;
+  onUpgradeClick: () => void;
 };
 
 const buildDecisionMap = (result: TailorResult | null): Record<string, ChangeDecision> => {
@@ -161,6 +163,29 @@ type CollapsedContextProps = {
   onExpand: () => void;
 };
 
+const GapRow = ({ requirement }: { requirement: JobRequirement }) => (
+  <Stack gap={2}>
+    <Group gap="xs" wrap="nowrap" align="center">
+      <Badge
+        size="xs"
+        variant="light"
+        color={requirement.importance === 'must' ? 'orange' : 'gray'}
+        style={{ flexShrink: 0 }}
+      >
+        {requirement.importance === 'must' ? 'Must-have' : 'Nice-to-have'}
+      </Badge>
+      <Text size="sm" fw={500}>
+        {requirement.text}
+      </Text>
+    </Group>
+    {requirement.gapHint && (
+      <Text size="xs" c="dimmed">
+        {requirement.gapHint}
+      </Text>
+    )}
+  </Stack>
+);
+
 const CollapsedContext = ({ hiddenCount, onExpand }: CollapsedContextProps) => (
   <UnstyledButton
     onClick={onExpand}
@@ -187,10 +212,10 @@ const ResultsPanel = ({
   status,
   result,
   isExample = false,
-  jobDescription = '',
-  exampleMatchScore,
+  isProPlan,
   originalDocx = null,
   onShowExample,
+  onUpgradeClick,
 }: ResultsPanelProps) => {
   const [decisions, setDecisions] = useState<Record<string, ChangeDecision>>(() =>
     buildDecisionMap(result),
@@ -330,26 +355,27 @@ const ResultsPanel = ({
     }
   };
 
-  const matchKeywords = useMemo(() => extractKeywords(jobDescription), [jobDescription]);
-  const computedMatchScoreBefore = useMemo(
-    () => (result ? scoreResume(result.resumeText, matchKeywords) : 0),
-    [result, matchKeywords],
-  );
-  const computedMatchScoreAfter = useMemo(() => {
-    if (!result) return 0;
-    const mergedLines = result.resumeText.split('\n').map((line, lineIndex) => {
+  const requirements = result?.requirements ?? [];
+
+  const isRequirementCovered = (requirement: JobRequirement): boolean =>
+    requirement.satisfiedBy.length > 0 ||
+    requirement.satisfiedByChanges.some((lineIndex) => {
       const change = changesByLine.get(lineIndex);
-      if (!change) return line;
-      return decisions[change.id] === 'reverted' ? change.original : change.tailored;
+      return change !== undefined && decisions[change.id] !== 'reverted';
     });
-    return scoreResume(mergedLines.join('\n'), matchKeywords);
-  }, [result, changesByLine, decisions, matchKeywords]);
-  const matchScoreBefore = exampleMatchScore?.before ?? computedMatchScoreBefore;
-  const matchScoreAfter = exampleMatchScore?.after ?? computedMatchScoreAfter;
-  const matchScoreIncrease = matchScoreAfter - matchScoreBefore;
-  const showMatchScore =
-    exampleMatchScore !== undefined ||
-    (matchKeywords.length > 0 && jobDescription.trim().length > 0);
+
+  const coveredCount = requirements.filter(isRequirementCovered).length;
+  const coveredByChangesCount = requirements.filter(
+    (requirement) => requirement.satisfiedBy.length === 0 && isRequirementCovered(requirement),
+  ).length;
+  const gaps = requirements.filter((requirement) => !isRequirementCovered(requirement));
+  const visibleGaps = isProPlan ? gaps : gaps.slice(0, 1);
+  const lockedGaps = isProPlan ? [] : gaps.slice(1);
+
+  const handleGapsUpgradeClick = () => {
+    trackEvent(AnalyticsEvents.GapsUpgradeClick);
+    onUpgradeClick();
+  };
 
   if (status === 'idle') {
     return (
@@ -469,7 +495,7 @@ const ResultsPanel = ({
               </Menu>
             </Group>
           </Group>
-          {(isExample || skillChangeCount === 0 || (showMatchScore && matchScoreIncrease > 0)) && (
+          {(isExample || skillChangeCount === 0 || requirements.length > 0) && (
             <Group gap="sm">
               {isExample && (
                 <Badge color="cyan" variant="light">
@@ -483,10 +509,11 @@ const ResultsPanel = ({
                   </Badge>
                 </Tooltip>
               )}
-              {showMatchScore && matchScoreIncrease > 0 && (
-                <Tooltip label="How much your keyword match improved based on the applied changes.">
+              {requirements.length > 0 && (
+                <Tooltip label="How many of the job's key requirements your resume demonstrates, counting the changes you keep applied.">
                   <Badge color="green" variant="light" leftSection={<IconTargetArrow size={12} />}>
-                    Match increased by {matchScoreIncrease}%
+                    Covers {coveredCount} of {requirements.length} requirements
+                    {coveredByChangesCount > 0 ? ` · +${coveredByChangesCount} from changes` : ''}
                   </Badge>
                 </Tooltip>
               )}
@@ -517,6 +544,69 @@ const ResultsPanel = ({
             </Text>
           </Stack>
         </Paper>
+
+        {gaps.length > 0 && (
+          <Paper
+            component="section"
+            aria-label="Requirement gaps"
+            px="md"
+            py="sm"
+            style={{
+              borderLeft: '2px solid var(--mantine-color-orange-6)',
+              borderRadius: '0 var(--mantine-radius-md) var(--mantine-radius-md) 0',
+              background: 'linear-gradient(90deg, rgba(232, 145, 45, 0.07), transparent 65%)',
+            }}
+          >
+            <Stack gap="sm">
+              <Group gap={6} wrap="nowrap">
+                <IconTargetArrow size={13} color="var(--mantine-color-orange-5)" stroke={1.8} />
+                <Text size="xs" fw={600} c="orange.5" tt="uppercase" lts={0.6}>
+                  {gaps.length} requirement{gaps.length === 1 ? '' : 's'} your resume doesn&rsquo;t
+                  show
+                </Text>
+              </Group>
+              <Text size="sm" c="dimmed" lh={1.6}>
+                This job asks for these, but your resume doesn&rsquo;t demonstrate them yet. If you
+                have the experience, adding a bullet for it would strengthen your match.
+              </Text>
+              {visibleGaps.map((requirement) => (
+                <GapRow key={requirement.text} requirement={requirement} />
+              ))}
+              {lockedGaps.length > 0 && (
+                <Box style={{ position: 'relative' }}>
+                  <Stack gap="sm" style={{ filter: 'blur(5px)', userSelect: 'none' }} aria-hidden>
+                    {lockedGaps.map((requirement) => (
+                      <GapRow key={requirement.text} requirement={requirement} />
+                    ))}
+                  </Stack>
+                  <Center
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      backgroundColor:
+                        'color-mix(in srgb, var(--mantine-color-body) 55%, transparent)',
+                    }}
+                  >
+                    <Stack align="center" gap={6} p="xs">
+                      <Group gap={6}>
+                        <IconLock size={16} color="var(--mantine-primary-color-filled)" />
+                        <Text size="sm" fw={600}>
+                          See all {gaps.length} gaps with Pro
+                        </Text>
+                        <Badge variant="gradient" gradient={{ from: 'indigo', to: 'cyan' }}>
+                          Pro
+                        </Badge>
+                      </Group>
+                      <Button size="xs" onClick={handleGapsUpgradeClick}>
+                        Upgrade to Pro
+                      </Button>
+                    </Stack>
+                  </Center>
+                </Box>
+              )}
+            </Stack>
+          </Paper>
+        )}
 
         <div>
           {segments.map((segment) => {

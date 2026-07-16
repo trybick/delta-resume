@@ -26,8 +26,8 @@ export const PRO_FEATURES: ProFeature[] = [
   },
   {
     icon: IconTargetArrow,
-    title: 'Match scoring',
-    description: 'See how well your resume fits the job description',
+    title: 'Gap analysis',
+    description: 'See every job requirement your resume doesn\u2019t cover yet',
   },
   {
     icon: IconFolders,
