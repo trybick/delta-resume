@@ -276,12 +276,7 @@ const CollapsibleInsight = ({
       background,
     }}
   >
-    <UnstyledButton
-      onClick={onToggle}
-      w="100%"
-      aria-expanded={open}
-      style={{ display: 'block' }}
-    >
+    <UnstyledButton onClick={onToggle} w="100%" aria-expanded={open} style={{ display: 'block' }}>
       <Group justify="space-between" wrap="nowrap" gap="sm">
         <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
           {icon}
@@ -679,19 +674,15 @@ const ResultsPanel = ({
                 </Text>
                 {bulletChangeCount > 0 && (
                   <ChangeStatChip
-                    icon={
-                      <IconList size={14} color="var(--mantine-color-indigo-5)" stroke={1.8} />
-                    }
+                    icon={<IconList size={14} color="var(--mantine-color-green-5)" stroke={1.8} />}
                     count={bulletChangeCount}
                     label={bulletChangeCount === 1 ? 'bullet' : 'bullets'}
-                    color="indigo"
+                    color="green"
                   />
                 )}
                 {skillChangeCount > 0 && (
                   <ChangeStatChip
-                    icon={
-                      <IconBolt size={14} color="var(--mantine-color-teal-5)" stroke={1.8} />
-                    }
+                    icon={<IconBolt size={14} color="var(--mantine-color-teal-5)" stroke={1.8} />}
                     count={skillChangeCount}
                     label={skillChangeCount === 1 ? 'skill' : 'skills'}
                     color="teal"
@@ -793,9 +784,14 @@ const ResultsPanel = ({
           {requirements.length > 0 && (
             <Group gap="sm">
               <Tooltip label="How many of the job's key requirements your resume demonstrates, counting the changes you keep applied.">
-                <Badge color="green" variant="light" leftSection={<IconTargetArrow size={12} />}>
+                <Badge
+                  size="md"
+                  color="green"
+                  variant="light"
+                  leftSection={<IconTargetArrow size={14} />}
+                >
                   Covers {coveredCount} of {requirements.length} requirements
-                  {coveredByChangesCount > 0 ? ` · +${coveredByChangesCount} from changes` : ''}
+                  {coveredByChangesCount > 0 ? ` (+${coveredByChangesCount} from changes)` : ''}
                 </Badge>
               </Tooltip>
             </Group>
@@ -806,11 +802,11 @@ const ResultsPanel = ({
           open={summaryOpen}
           onToggle={handleSummaryToggle}
           icon={<IconSparkles size={13} color="var(--mantine-color-cyan-4)" stroke={1.8} />}
-          label="Why these changes"
+          label="Summary of changes"
           labelColor="cyan.4"
           borderColor="var(--mantine-color-cyan-6)"
           background="linear-gradient(90deg, rgba(34, 184, 207, 0.07), transparent 65%)"
-          ariaLabel="Why these changes"
+          ariaLabel="Summary of changes"
         >
           <Text size="sm" c="dimmed" lh={1.6}>
             {result.summary}
@@ -821,9 +817,7 @@ const ResultsPanel = ({
           <CollapsibleInsight
             open={gapsOpen}
             onToggle={handleGapsToggle}
-            icon={
-              <IconTargetArrow size={13} color="var(--mantine-color-orange-5)" stroke={1.8} />
-            }
+            icon={<IconTargetArrow size={13} color="var(--mantine-color-orange-5)" stroke={1.8} />}
             label={gapsLabel}
             labelColor="orange.5"
             borderColor="var(--mantine-color-orange-6)"
