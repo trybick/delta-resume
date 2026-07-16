@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   Badge,
   Box,
   Button,
   Card,
   Center,
+  Collapse,
   Group,
   Menu,
   Paper,
@@ -186,6 +187,80 @@ const GapRow = ({ requirement }: { requirement: JobRequirement }) => (
   </Stack>
 );
 
+type CollapsibleInsightProps = {
+  open: boolean;
+  onToggle: () => void;
+  icon: ReactNode;
+  label: string;
+  labelColor: string;
+  borderColor: string;
+  background: string;
+  ariaLabel: string;
+  children: ReactNode;
+};
+
+const CollapsibleInsight = ({
+  open,
+  onToggle,
+  icon,
+  label,
+  labelColor,
+  borderColor,
+  background,
+  ariaLabel,
+  children,
+}: CollapsibleInsightProps) => (
+  <Paper
+    component="section"
+    aria-label={ariaLabel}
+    px="md"
+    py="xs"
+    style={{
+      borderLeft: `2px solid ${borderColor}`,
+      borderRadius: '0 var(--mantine-radius-md) var(--mantine-radius-md) 0',
+      background,
+    }}
+  >
+    <UnstyledButton
+      onClick={onToggle}
+      w="100%"
+      aria-expanded={open}
+      style={{ display: 'block' }}
+    >
+      <Group justify="space-between" wrap="nowrap" gap="sm">
+        <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
+          {icon}
+          <Text size="xs" fw={600} c={labelColor} tt="uppercase" lts={0.6} truncate>
+            {label}
+          </Text>
+        </Group>
+        <IconChevronDown
+          size={14}
+          color="var(--mantine-color-gray-5)"
+          style={{
+            flexShrink: 0,
+            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
+            transition: 'transform 150ms ease',
+          }}
+        />
+      </Group>
+    </UnstyledButton>
+    <Collapse expanded={open}>
+      <Box pt={6}>{children}</Box>
+    </Collapse>
+  </Paper>
+);
+
+const hasMustHaveGaps = (result: TailorResult): boolean => {
+  const changesByLine = new Map(result.changes.map((change) => [change.lineIndex, change]));
+  return result.requirements.some((requirement) => {
+    const covered =
+      requirement.satisfiedBy.length > 0 ||
+      requirement.satisfiedByChanges.some((lineIndex) => changesByLine.has(lineIndex));
+    return !covered && requirement.importance === 'must';
+  });
+};
+
 const CollapsedContext = ({ hiddenCount, onExpand }: CollapsedContextProps) => (
   <UnstyledButton
     onClick={onExpand}
@@ -221,6 +296,8 @@ const ResultsPanel = ({
     buildDecisionMap(result),
   );
   const [expandedSegments, setExpandedSegments] = useState<Set<number>>(new Set());
+  const [summaryOpen, setSummaryOpen] = useState(false);
+  const [gapsOpen, setGapsOpen] = useState(() => (result ? hasMustHaveGaps(result) : false));
   const [isExporting, setIsExporting] = useState(false);
   const [copied, setCopied] = useState(false);
   const copiedTimeoutRef = useRef<number | null>(null);
@@ -375,6 +452,14 @@ const ResultsPanel = ({
   const handleGapsUpgradeClick = () => {
     trackEvent(AnalyticsEvents.GapsUpgradeClick);
     onUpgradeClick();
+  };
+
+  const handleSummaryToggle = () => {
+    setSummaryOpen((current) => !current);
+  };
+
+  const handleGapsToggle = () => {
+    setGapsOpen((current) => !current);
   };
 
   if (status === 'idle') {
@@ -532,50 +617,35 @@ const ResultsPanel = ({
           )}
         </Stack>
 
-        <Paper
-          component="section"
-          aria-label="Tailoring summary"
-          px="md"
-          py="xs"
-          style={{
-            borderLeft: '2px solid var(--mantine-color-cyan-6)',
-            borderRadius: '0 var(--mantine-radius-md) var(--mantine-radius-md) 0',
-            background: 'linear-gradient(90deg, rgba(34, 184, 207, 0.07), transparent 65%)',
-          }}
+        <CollapsibleInsight
+          open={summaryOpen}
+          onToggle={handleSummaryToggle}
+          icon={<IconSparkles size={13} color="var(--mantine-color-cyan-4)" stroke={1.8} />}
+          label="Why these changes"
+          labelColor="cyan.4"
+          borderColor="var(--mantine-color-cyan-6)"
+          background="linear-gradient(90deg, rgba(34, 184, 207, 0.07), transparent 65%)"
+          ariaLabel="Why these changes"
         >
-          <Stack gap={4}>
-            <Group gap={6} wrap="nowrap">
-              <IconSparkles size={13} color="var(--mantine-color-cyan-4)" stroke={1.8} />
-              <Text size="xs" fw={600} c="cyan.4" tt="uppercase" lts={0.6}>
-                Summary
-              </Text>
-            </Group>
-            <Text size="sm" c="dimmed" lh={1.6}>
-              {result.summary}
-            </Text>
-          </Stack>
-        </Paper>
+          <Text size="sm" c="dimmed" lh={1.6}>
+            {result.summary}
+          </Text>
+        </CollapsibleInsight>
 
         {gaps.length > 0 && (
-          <Paper
-            component="section"
-            aria-label="Requirement gaps"
-            px="md"
-            py="sm"
-            style={{
-              borderLeft: '2px solid var(--mantine-color-orange-6)',
-              borderRadius: '0 var(--mantine-radius-md) var(--mantine-radius-md) 0',
-              background: 'linear-gradient(90deg, rgba(232, 145, 45, 0.07), transparent 65%)',
-            }}
+          <CollapsibleInsight
+            open={gapsOpen}
+            onToggle={handleGapsToggle}
+            icon={
+              <IconTargetArrow size={13} color="var(--mantine-color-orange-5)" stroke={1.8} />
+            }
+            label={`${gaps.length} requirement${gaps.length === 1 ? '' : 's'} your resume doesn’t show`}
+            labelColor="orange.5"
+            borderColor="var(--mantine-color-orange-6)"
+            background="linear-gradient(90deg, rgba(232, 145, 45, 0.07), transparent 65%)"
+            ariaLabel="Requirement gaps"
           >
             <Stack gap="sm">
-              <Group gap={6} wrap="nowrap">
-                <IconTargetArrow size={13} color="var(--mantine-color-orange-5)" stroke={1.8} />
-                <Text size="xs" fw={600} c="orange.5" tt="uppercase" lts={0.6}>
-                  {gaps.length} requirement{gaps.length === 1 ? '' : 's'} your resume doesn&rsquo;t
-                  show
-                </Text>
-              </Group>
               <Text size="sm" c="dimmed" lh={1.6}>
                 This job asks for these, but your resume doesn&rsquo;t demonstrate them yet. If you
                 have the experience, adding a bullet for it would strengthen your match.
@@ -616,7 +686,7 @@ const ResultsPanel = ({
                 </Box>
               )}
             </Stack>
-          </Paper>
+          </CollapsibleInsight>
         )}
 
         <div>
