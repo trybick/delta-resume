@@ -5,7 +5,7 @@ const anchorPrefix = (anchorLine: string): string =>
   anchorLine.slice(0, anchorLine.length - stripBulletMarker(anchorLine).length);
 
 export const formatAddedBulletLine = (text: string, anchorLine: string | undefined): string => {
-  const trimmed = text.trim();
+  const trimmed = (text ?? '').trim();
   if (trimmed.length === 0) return trimmed;
   if (isBulletLine(trimmed)) return trimmed;
   if (anchorLine !== undefined && isBulletLine(anchorLine)) {
