@@ -98,27 +98,44 @@ export const postTailor = async (
   resumeText: string,
   jobDescription: string,
   resumeName: string,
+  idempotencyKey: string,
+  signal?: AbortSignal,
 ): Promise<TailorResponse> => {
+  const headers = await buildHeaders();
+  headers['Idempotency-Key'] = idempotencyKey;
+
   const response = await fetch(`${API_BASE_URL}/api/tailor`, {
     method: 'POST',
-    headers: await buildHeaders(),
+    headers,
     body: JSON.stringify({ resumeText, jobDescription, resumeName }),
+    signal,
   });
   if (!response.ok) {
     return throwApiError(response);
   }
-  return (await response.json()) as TailorResponse;
+  const data = (await response.json()) as TailorResponse;
+  return {
+    ...data,
+    requirements: (data.requirements ?? []).map((requirement) => ({
+      ...requirement,
+      gapHint: requirement.gapHint ?? null,
+      draftBullet: requirement.draftBullet ?? null,
+      insertAfterLine: requirement.insertAfterLine ?? null,
+    })),
+  };
 };
 
 export const postCoverLetter = async (
   resumeText: string,
   jobDescription: string,
   candidateName?: string,
+  signal?: AbortSignal,
 ): Promise<CoverLetterResult> => {
   const response = await fetch(`${API_BASE_URL}/api/cover-letter`, {
     method: 'POST',
     headers: await buildHeaders(),
     body: JSON.stringify({ resumeText, jobDescription, candidateName: candidateName ?? null }),
+    signal,
   });
   if (!response.ok) {
     return throwApiError(response);

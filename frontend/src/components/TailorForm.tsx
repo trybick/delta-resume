@@ -13,6 +13,7 @@ type TailorFormProps = {
   attachedFile: AttachedFile | null;
   savedResumes: SavedResume[];
   isLoadingSavedResumes: boolean;
+  isSignedIn: boolean;
   isProPlan: boolean;
   jobDescription: string;
   onJobDescriptionChange: (value: string) => void;
@@ -39,6 +40,7 @@ const TailorForm = ({
   attachedFile,
   savedResumes,
   isLoadingSavedResumes,
+  isSignedIn,
   isProPlan,
   jobDescription,
   onJobDescriptionChange,
@@ -93,6 +95,7 @@ const TailorForm = ({
         attachedFile={attachedFile}
         savedResumes={savedResumes}
         isLoadingSavedResumes={isLoadingSavedResumes}
+        isSignedIn={isSignedIn}
         savedResumeLimit={isProPlan ? 10 : 1}
         isProPlan={isProPlan}
         onResumeTextChange={onResumeTextChange}

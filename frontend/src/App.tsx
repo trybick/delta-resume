@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Box, Container, Grid } from '@mantine/core';
 import { useAuth } from '@clerk/clerk-react';
 import { IconAlertCircle } from '@tabler/icons-react';
@@ -28,6 +28,7 @@ const App = () => {
   const [showingExample, setShowingExample] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>('resume');
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
+  const tailorActionInFlightRef = useRef(false);
 
   const { credits, outOfCredits, creditsLabel, isLoadingCredits, creditsError, loadCredits } =
     useCredits();
@@ -38,10 +39,11 @@ const App = () => {
     loadSavedResumes,
     renameResume,
     deleteResume,
-  } = useSavedResumes();
+  } = useSavedResumes(isSignedIn === true);
 
   const {
     resumeText,
+    pasteFieldText,
     attachedFile,
     originalDocx,
     handleResumeTextChange,
@@ -59,13 +61,12 @@ const App = () => {
   const { status, result, runCount, errorMessage, clearError, runTailor } = useTailorRun({
     onSuccess: () => {
       trackEvent(AnalyticsEvents.TailorResume);
-      void loadCredits();
       void loadSavedResumes();
     },
     onCreditsExhausted: () => {
       openPaywall('credits');
-      void loadCredits();
     },
+    onRequestFinished: () => void loadCredits(),
   });
 
   const {
@@ -116,27 +117,33 @@ const App = () => {
   };
 
   const handleTailor = async () => {
+    if (tailorActionInFlightRef.current) return;
     if (outOfCredits) {
       openPaywall('credits');
       return;
     }
     if (!canTailor) return;
-    setShowingExample(false);
-    setActiveTab('resume');
-    if (isProPlan) {
-      void runCoverLetter(resumeText, jobDescription);
-    }
-    const succeeded = await runTailor(
-      resumeText,
-      jobDescription,
-      formatDefaultResumeName(new Date()),
-    );
-    if (succeeded) {
-      setLastSuccessfulInputs({
-        resumeText: resumeText.trim(),
-        jobDescription: jobDescription.trim(),
-      });
-      persistOriginalDocx();
+    tailorActionInFlightRef.current = true;
+    try {
+      setShowingExample(false);
+      setActiveTab('resume');
+      if (isProPlan) {
+        void runCoverLetter(resumeText, jobDescription);
+      }
+      const succeeded = await runTailor(
+        resumeText,
+        jobDescription,
+        formatDefaultResumeName(new Date()),
+      );
+      if (succeeded) {
+        setLastSuccessfulInputs({
+          resumeText: resumeText.trim(),
+          jobDescription: jobDescription.trim(),
+        });
+        persistOriginalDocx();
+      }
+    } finally {
+      tailorActionInFlightRef.current = false;
     }
   };
 
@@ -171,9 +178,11 @@ const App = () => {
           <Grid.Col span={{ base: 12, md: 5 }}>
             <TailorForm
               resumeText={resumeText}
+              pasteFieldText={pasteFieldText}
               attachedFile={attachedFile}
               savedResumes={savedResumes}
               isLoadingSavedResumes={isLoadingSavedResumes}
+              isSignedIn={isSignedIn === true}
               isProPlan={isProPlan}
               jobDescription={jobDescription}
               onJobDescriptionChange={setJobDescription}

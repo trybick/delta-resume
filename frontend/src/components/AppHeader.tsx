@@ -1,4 +1,3 @@
-import type { ComponentPropsWithoutRef } from 'react';
 import {
   Badge,
   Box,
@@ -11,27 +10,15 @@ import {
   Text,
   Title,
   Tooltip,
-  type ButtonProps,
 } from '@mantine/core';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { IconCoins, IconLogin2, IconSparkles } from '@tabler/icons-react';
+import ClerkAuthButton from './ClerkAuthButton';
 import DeltaLogo from './DeltaLogo';
 import { ProFeatureList } from './ProPlanShowcase';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { useProPlan } from '../lib/proPlan';
 import { appTheme, spaceGroteskStack } from '../lib/theme';
-
-type ClerkAuthButtonProps = ButtonProps &
-  ComponentPropsWithoutRef<'button'> & {
-    component?: string;
-    clerk?: unknown;
-  };
-
-const ClerkAuthButton = ({
-  component: _component,
-  clerk: _clerk,
-  ...props
-}: ClerkAuthButtonProps) => <Button {...props} />;
 
 type UpgradeHoverCardProps = {
   onUpgradeClick: () => void;
@@ -178,7 +165,7 @@ const AppHeader = ({
             </Badge>
           )}
           {creditsLabel && (
-            <Tooltip label="One credit is used per tailor run">
+            <Tooltip label="One credit is used when tailoring starts">
               <Badge
                 size="lg"
                 variant="light"

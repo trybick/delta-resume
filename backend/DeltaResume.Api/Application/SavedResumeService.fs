@@ -20,7 +20,11 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
         value
         |> Option.map (fun name -> name.Trim())
         |> Option.filter (fun name -> name.Length > 0)
-        |> Option.map (fun name -> if name.Length > 120 then name.Substring(0, 120) else name)
+        |> Option.map (fun name ->
+            if name.Length > InputLimits.MaxNameCharacters then
+                name.Substring(0, InputLimits.MaxNameCharacters)
+            else
+                name)
         |> Option.defaultValue (fallbackName now)
 
     // Called after a successful tailor only - upload/paste never hits the server.
@@ -32,28 +36,32 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
     // when the plan's saved-resume limit is exceeded.
     member _.AutoSave(ctx: HttpContext, resumeText: string, requestedName: string option) : Task<unit> =
         task {
-            if not (String.IsNullOrWhiteSpace resumeText) then
-                let identity = Identity.resolve options ctx
-                let ownerKey = Identity.ownerKey identity
-                let limit = CreditPlan.savedResumeLimit (Identity.plan identity)
-                let contentHash = hashContent resumeText
-                let now = DateTimeOffset.UtcNow
+            let identity = Identity.resolve options ctx
 
-                let! existing = repository.FindByHash(ownerKey, contentHash)
+            match identity with
+            | GuestVisitor _ -> ()
+            | AuthenticatedUser _ ->
+                if not (String.IsNullOrWhiteSpace resumeText) then
+                    let ownerKey = Identity.ownerKey identity
+                    let limit = CreditPlan.savedResumeLimit (Identity.plan identity)
+                    let contentHash = hashContent resumeText
+                    let now = DateTimeOffset.UtcNow
 
-                match existing with
-                | Some _ -> ()
-                | None ->
-                    do!
-                        repository.Insert
-                            { Id = SavedResumeId(Guid.NewGuid())
-                              OwnerKey = ownerKey
-                              Name = sanitizeName requestedName now
-                              ResumeText = resumeText
-                              ContentHash = contentHash
-                              CreatedAt = now }
+                    let! existing = repository.FindByHash(ownerKey, contentHash)
 
-                    do! repository.DeleteLeastRecentlyUsed(ownerKey, limit)
+                    match existing with
+                    | Some _ -> ()
+                    | None ->
+                        do!
+                            repository.Insert
+                                { Id = SavedResumeId(Guid.NewGuid())
+                                  OwnerKey = ownerKey
+                                  Name = sanitizeName requestedName now
+                                  ResumeText = resumeText
+                                  ContentHash = contentHash
+                                  CreatedAt = now }
+
+                        do! repository.DeleteLeastRecentlyUsed(ownerKey, limit)
         }
 
     member _.List(ctx: HttpContext) : Task<SavedResume list> =

@@ -15,14 +15,17 @@ import {
   Title,
 } from '@mantine/core';
 import { Dropzone, type FileRejection } from '@mantine/dropzone';
+import { SignInButton } from '@clerk/clerk-react';
 import {
   IconCheck,
   IconFileText,
   IconFileUpload,
+  IconLogin2,
   IconPencil,
   IconTrash,
   IconX,
 } from '@tabler/icons-react';
+import ClerkAuthButton from './ClerkAuthButton';
 import { AnalyticsEvents, createDebouncedTracker, trackEvent } from '../lib/analytics';
 import { parseResumeFile, ResumeParseError } from '../lib/parseResumeFile';
 import type { SavedResume } from '../lib/types';
@@ -34,9 +37,11 @@ type AttachedFile = {
 
 type ResumeInputProps = {
   resumeText: string;
+  pasteFieldText: string;
   attachedFile: AttachedFile | null;
   savedResumes: SavedResume[];
   isLoadingSavedResumes: boolean;
+  isSignedIn: boolean;
   savedResumeLimit: number;
   isProPlan: boolean;
   onResumeTextChange: (text: string) => void;
@@ -70,9 +75,11 @@ const formatFileSize = (bytes: number): string => {
 
 const ResumeInput = ({
   resumeText,
+  pasteFieldText,
   attachedFile,
   savedResumes,
   isLoadingSavedResumes,
+  isSignedIn,
   savedResumeLimit,
   isProPlan,
   onResumeTextChange,
@@ -256,7 +263,7 @@ const ResumeInput = ({
               aria-label="Resume text"
               name="resume-text"
               autoComplete="off"
-              value={resumeText}
+              value={pasteFieldText}
               onChange={(event) => {
                 trackPasteResumeText();
                 onResumeTextChange(event.currentTarget.value.slice(0, RESUME_TEXT_MAX_LENGTH));
@@ -273,19 +280,43 @@ const ResumeInput = ({
                 },
               }}
             />
-            {resumeText.length > 0 && (
+            {pasteFieldText.length > 0 && (
               <Text
                 size="xs"
-                c={RESUME_TEXT_MAX_LENGTH - resumeText.length <= 0 ? 'red' : 'dimmed'}
+                c={RESUME_TEXT_MAX_LENGTH - pasteFieldText.length <= 0 ? 'red' : 'dimmed'}
                 ta="right"
               >
-                {(RESUME_TEXT_MAX_LENGTH - resumeText.length).toLocaleString()} characters left
+                {(RESUME_TEXT_MAX_LENGTH - pasteFieldText.length).toLocaleString()} characters left
               </Text>
             )}
           </Stack>
         )}
 
-        {mode === 'saved' && isLoadingSavedResumes && (
+        {mode === 'saved' && !isSignedIn && (
+          <Paper withBorder p="lg" radius="md">
+            <Stack align="center" gap="xs">
+              <IconFileText size={28} color="var(--mantine-primary-color-filled)" />
+              <Text size="sm" fw={500} ta="center">
+                Sign in to save resumes to your account
+              </Text>
+              <Text size="xs" c="dimmed" ta="center">
+                Resumes are saved automatically after each tailor run.
+              </Text>
+              <SignInButton mode="modal">
+                <ClerkAuthButton
+                  size="compact-xs"
+                  variant="light"
+                  leftSection={<IconLogin2 size={14} />}
+                  onClick={() => trackEvent(AnalyticsEvents.SignIn)}
+                >
+                  Sign in
+                </ClerkAuthButton>
+              </SignInButton>
+            </Stack>
+          </Paper>
+        )}
+
+        {mode === 'saved' && isSignedIn && isLoadingSavedResumes && (
           <Paper withBorder p="lg" radius="md">
             <Stack align="center" gap={4}>
               <Loader size="sm" />
@@ -293,7 +324,7 @@ const ResumeInput = ({
           </Paper>
         )}
 
-        {mode === 'saved' && !isLoadingSavedResumes && savedResumes.length === 0 && (
+        {mode === 'saved' && isSignedIn && !isLoadingSavedResumes && savedResumes.length === 0 && (
           <Paper withBorder p="lg" radius="md">
             <Stack align="center" gap={4}>
               <IconFileText size={28} color="var(--mantine-primary-color-filled)" />
@@ -307,7 +338,7 @@ const ResumeInput = ({
           </Paper>
         )}
 
-        {mode === 'saved' && !isLoadingSavedResumes && savedResumes.length > 0 && (
+        {mode === 'saved' && isSignedIn && !isLoadingSavedResumes && savedResumes.length > 0 && (
           <Stack gap="xs">
             {savedResumes.map((resume) => {
               const isSelected = resume.resumeText === resumeText;

@@ -11,12 +11,18 @@ type UseSavedResumesResult = {
   deleteResume: (resumeId: string) => Promise<void>;
 };
 
-export const useSavedResumes = (): UseSavedResumesResult => {
+export const useSavedResumes = (isSignedIn: boolean): UseSavedResumesResult => {
   const [savedResumes, setSavedResumes] = useState<SavedResume[]>([]);
   const [isLoadingSavedResumes, setIsLoadingSavedResumes] = useState(true);
   const [hasLoadedSavedResumes, setHasLoadedSavedResumes] = useState(false);
 
   const loadSavedResumes = useCallback(async () => {
+    if (!isSignedIn) {
+      setSavedResumes([]);
+      setHasLoadedSavedResumes(false);
+      setIsLoadingSavedResumes(false);
+      return;
+    }
     setIsLoadingSavedResumes(true);
     try {
       setSavedResumes(await getSavedResumes());
@@ -27,7 +33,7 @@ export const useSavedResumes = (): UseSavedResumesResult => {
     } finally {
       setIsLoadingSavedResumes(false);
     }
-  }, []);
+  }, [isSignedIn]);
 
   const renameResume = useCallback(
     async (resumeId: string, name: string) => {
