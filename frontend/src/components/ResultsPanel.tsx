@@ -727,20 +727,20 @@ const ResultsPanel = ({
                 )}
                 {skillChangeCount > 0 && (
                   <ChangeStatChip
-                    icon={<IconBolt size={14} color="var(--mantine-color-teal-5)" stroke={1.8} />}
+                    icon={<IconBolt size={14} color="var(--mantine-color-green-5)" stroke={1.8} />}
                     count={skillChangeCount}
                     label={skillChangeCount === 1 ? 'skill' : 'skills'}
-                    color="teal"
+                    color="green"
                   />
                 )}
                 {paragraphChangeCount > 0 && (
                   <ChangeStatChip
                     icon={
-                      <IconFileText size={14} color="var(--mantine-color-grape-5)" stroke={1.8} />
+                      <IconFileText size={14} color="var(--mantine-color-green-5)" stroke={1.8} />
                     }
                     count={paragraphChangeCount}
                     label="summary"
-                    color="grape"
+                    color="green"
                   />
                 )}
               </Group>
