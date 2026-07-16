@@ -850,7 +850,7 @@ const ResultsPanel = ({
           label="Summary of changes"
           labelColor="cyan.4"
           borderColor="var(--mantine-color-cyan-6)"
-          background="linear-gradient(90deg, rgba(34, 184, 207, 0.07), transparent 65%)"
+          background="rgba(34, 184, 207, 0.07)"
           ariaLabel="Summary of changes"
         >
           <Text size="sm" c="dimmed" lh={1.6}>
@@ -866,7 +866,7 @@ const ResultsPanel = ({
             label={gapsLabel}
             labelColor="orange.5"
             borderColor="var(--mantine-color-orange-6)"
-            background="linear-gradient(90deg, rgba(232, 145, 45, 0.07), transparent 65%)"
+            background="rgba(232, 145, 45, 0.07)"
             ariaLabel="Requirement gaps"
           >
             <Stack gap="sm">
