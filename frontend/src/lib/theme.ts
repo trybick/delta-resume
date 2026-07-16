@@ -42,6 +42,6 @@ export const appTheme: AppTheme = {
     colors: { dark: deepOceanDark },
   }),
   gradient: { from: 'cyan.3', to: 'blue.4' },
-  upgradeGradient: { from: 'violet.5', to: 'grape.6' },
+  upgradeGradient: { from: 'yellow.7', to: 'orange.9' },
   clerkPrimary: '#22b8cf',
 };

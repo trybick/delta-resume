@@ -14,7 +14,7 @@ import {
   type ButtonProps,
 } from '@mantine/core';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
-import { IconCoins, IconSparkles } from '@tabler/icons-react';
+import { IconCoins, IconLogin2, IconSparkles } from '@tabler/icons-react';
 import DeltaLogo from './DeltaLogo';
 import { ProFeatureList } from './ProPlanShowcase';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
@@ -193,7 +193,13 @@ const AppHeader = ({
           {planLoaded && !isProPlan && <UpgradeHoverCard onUpgradeClick={onUpgradeClick} />}
           <SignedOut>
             <SignInButton mode="modal">
-              <ClerkAuthButton variant="outline" onClick={() => trackEvent(AnalyticsEvents.SignIn)}>
+              <ClerkAuthButton
+                size="xs"
+                variant="light"
+                leftSection={<IconLogin2 size={14} />}
+                style={{ border: '1px solid rgba(34, 184, 207, 0.35)' }}
+                onClick={() => trackEvent(AnalyticsEvents.SignIn)}
+              >
                 Sign in
               </ClerkAuthButton>
             </SignInButton>
