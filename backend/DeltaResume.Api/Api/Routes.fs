@@ -8,11 +8,11 @@ module Routes =
         choose
             [ GET >=> route "/api/health" >=> Handlers.health
               GET >=> route "/api/credits" >=> RateLimit.loosePolicy >=> Handlers.credits
-              GET >=> route "/api/resumes" >=> RateLimit.loosePolicy >=> Handlers.listResumes
+              GET >=> route "/api/saved-resumes" >=> RateLimit.loosePolicy >=> Handlers.listSavedResumes
               POST >=> route "/api/tailor" >=> RateLimit.tailorPolicy >=> Handlers.tailor
               POST >=> route "/api/cover-letter" >=> RateLimit.tailorPolicy >=> Handlers.coverLetter
               PATCH
-              >=> routef "/api/resumes/%s" (fun resumeId -> RateLimit.loosePolicy >=> Handlers.renameResume resumeId)
+              >=> routef "/api/saved-resumes/%s" (fun resumeId -> RateLimit.loosePolicy >=> Handlers.renameSavedResume resumeId)
               DELETE
-              >=> routef "/api/resumes/%s" (fun resumeId -> RateLimit.loosePolicy >=> Handlers.deleteResume resumeId)
+              >=> routef "/api/saved-resumes/%s" (fun resumeId -> RateLimit.loosePolicy >=> Handlers.deleteSavedResume resumeId)
               setStatusCode 404 >=> json {| Message = "Not found" |} ]

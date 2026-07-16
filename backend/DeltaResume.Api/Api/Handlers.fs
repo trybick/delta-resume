@@ -107,7 +107,7 @@ module Handlers =
                         | Error message -> return! errorResponse StatusCodes.Status502BadGateway message next ctx
             }
 
-    let listResumes: HttpHandler =
+    let listSavedResumes: HttpHandler =
         fun next ctx ->
             task {
                 let service = ctx.GetService<SavedResumeService>()
@@ -115,11 +115,11 @@ module Handlers =
                 return! json (resumes |> List.map Mapping.toSavedResumeDto) next ctx
             }
 
-    let renameResume (resumeId: string) : HttpHandler =
+    let renameSavedResume (resumeId: string) : HttpHandler =
         fun next ctx ->
             task {
                 let service = ctx.GetService<SavedResumeService>()
-                let! request = ctx.BindJsonAsync<RenameResumeRequestDto>()
+                let! request = ctx.BindJsonAsync<RenameSavedResumeRequestDto>()
 
                 match Guid.TryParse resumeId with
                 | false, _ -> return! errorResponse StatusCodes.Status400BadRequest "Invalid resume id." next ctx
@@ -135,7 +135,7 @@ module Handlers =
                             return! errorResponse StatusCodes.Status404NotFound "Resume not found." next ctx
             }
 
-    let deleteResume (resumeId: string) : HttpHandler =
+    let deleteSavedResume (resumeId: string) : HttpHandler =
         fun next ctx ->
             task {
                 let service = ctx.GetService<SavedResumeService>()

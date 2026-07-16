@@ -127,7 +127,7 @@ export const postCoverLetter = async (
 };
 
 export const getSavedResumes = async (): Promise<SavedResume[]> => {
-  const response = await fetch(`${API_BASE_URL}/api/resumes`, {
+  const response = await fetch(`${API_BASE_URL}/api/saved-resumes`, {
     headers: await buildHeaders(),
   });
   if (!response.ok) {
@@ -137,7 +137,7 @@ export const getSavedResumes = async (): Promise<SavedResume[]> => {
 };
 
 export const renameSavedResume = async (resumeId: string, name: string): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/api/resumes/${resumeId}`, {
+  const response = await fetch(`${API_BASE_URL}/api/saved-resumes/${resumeId}`, {
     method: 'PATCH',
     headers: await buildHeaders(),
     body: JSON.stringify({ name }),
@@ -148,7 +148,7 @@ export const renameSavedResume = async (resumeId: string, name: string): Promise
 };
 
 export const deleteSavedResume = async (resumeId: string): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/api/resumes/${resumeId}`, {
+  const response = await fetch(`${API_BASE_URL}/api/saved-resumes/${resumeId}`, {
     method: 'DELETE',
     headers: await buildHeaders(),
   });

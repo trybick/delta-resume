@@ -10,7 +10,7 @@ type TailorRequestDto =
       ResumeName: string option }
 
 [<CLIMutable>]
-type RenameResumeRequestDto = { Name: string }
+type RenameSavedResumeRequestDto = { Name: string }
 
 [<CLIMutable>]
 type CoverLetterRequestDto =
