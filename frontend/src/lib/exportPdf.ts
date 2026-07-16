@@ -1,6 +1,8 @@
 import { renderAsync } from 'docx-preview';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import * as Sentry from '@sentry/react';
+import { notifications } from '@mantine/notifications';
 import { convertDocxToPdfRemote } from './api';
 import { AnalyticsEvents, trackEvent } from './analytics';
 
@@ -76,8 +78,17 @@ export const convertDocxToPdf = async (docxBlob: Blob): Promise<Blob> => {
 export const convertDocxToPdfWithFallback = async (docxBlob: Blob): Promise<Blob> => {
   try {
     return await convertDocxToPdfRemote(docxBlob);
-  } catch {
+  } catch (error) {
+    console.warn('Server PDF conversion failed; falling back to in-browser image PDF.', error);
+    Sentry.captureException(error, { tags: { feature: 'pdf_server_fallback' } });
     trackEvent(AnalyticsEvents.PdfServerFallback);
+    notifications.show({
+      color: 'yellow',
+      title: 'PDF generated in your browser',
+      message:
+        'The server converter was unavailable, so this PDF has no selectable text. For applications, prefer the .docx export.',
+      autoClose: 8000,
+    });
     return convertDocxToPdf(docxBlob);
   }
 };
