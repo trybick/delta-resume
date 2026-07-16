@@ -132,6 +132,8 @@ let main args =
 
     builder.Services.AddSingleton<TailoringService>() |> ignore
 
+    builder.Services.AddSingleton<PdfConverter>() |> ignore
+
     builder.Services.AddSingleton<CreditStore>(fun _ -> PostgresCreditStore(connectionString) :> CreditStore)
     |> ignore
 

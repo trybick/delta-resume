@@ -54,7 +54,7 @@ import {
   normalizeResumeTextForComparison,
   patchOriginalDocx,
 } from '../lib/exportDocx';
-import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
+import { convertDocxToPdfWithFallback, downloadPdf } from '../lib/exportPdf';
 import AddedBulletRow from './AddedBulletRow';
 import DiffBullet from './DiffBullet';
 import DocumentPreviewModal, { type PreviewVariant } from './DocumentPreviewModal';
@@ -628,7 +628,7 @@ const ResultsPanel = ({
         return;
       }
       try {
-        const pdfBlob = await convertDocxToPdf(docxBlob);
+        const pdfBlob = await convertDocxToPdfWithFallback(docxBlob);
         downloadPdf(pdfBlob, 'tailored-resume.pdf');
         trackEvent(AnalyticsEvents.ExportSuccess, {
           source: 'resume',

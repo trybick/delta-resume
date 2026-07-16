@@ -82,6 +82,7 @@ export const AnalyticsEvents = {
   FileParseFailure: 'file_parse_failure',
   ExportSuccess: 'export_success',
   ExportFailure: 'export_failure',
+  PdfServerFallback: 'pdf_server_fallback',
   CopySuccess: 'copy_success',
   CopyFailure: 'copy_failure',
 } as const;

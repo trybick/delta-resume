@@ -145,6 +145,21 @@ export const postCoverLetter = async (
   return (await response.json()) as CoverLetterResult;
 };
 
+export const convertDocxToPdfRemote = async (docxBlob: Blob): Promise<Blob> => {
+  const headers = await buildHeaders();
+  headers['Content-Type'] =
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  const response = await fetch(`${API_BASE_URL}/api/convert-pdf`, {
+    method: 'POST',
+    headers,
+    body: docxBlob,
+  });
+  if (!response.ok) {
+    return throwApiError(response);
+  }
+  return response.blob();
+};
+
 export const getSettings = async (): Promise<UserSettings> => {
   const response = await fetch(`${API_BASE_URL}/api/settings`, {
     headers: await buildHeaders(),

@@ -12,6 +12,7 @@ module Routes =
               GET >=> route "/api/settings" >=> RateLimit.loosePolicy >=> Handlers.getSettings
               PUT >=> route "/api/settings" >=> RateLimit.loosePolicy >=> Handlers.updateSettings
               POST >=> route "/api/tailor" >=> RateLimit.tailorPolicy >=> Handlers.tailor
+              POST >=> route "/api/convert-pdf" >=> RateLimit.loosePolicy >=> Handlers.convertPdf
               POST >=> route "/api/cover-letter" >=> RateLimit.tailorPolicy >=> Handlers.coverLetter
               PATCH
               >=> routef "/api/saved-resumes/%s" (fun resumeId -> RateLimit.loosePolicy >=> Handlers.renameSavedResume resumeId)

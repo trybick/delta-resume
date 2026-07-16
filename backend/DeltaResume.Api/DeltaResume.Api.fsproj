@@ -19,6 +19,7 @@
     <Compile Include="Infrastructure/ClaudeSentry.fs" />
     <Compile Include="Infrastructure/AnthropicEngine.fs" />
     <Compile Include="Infrastructure/AnthropicCoverLetterEngine.fs" />
+    <Compile Include="Infrastructure/PdfConversion.fs" />
     <Compile Include="Api/BodySizeLimit.fs" />
     <Compile Include="Api/Dtos.fs" />
     <Compile Include="Api/RateLimiting.fs" />
