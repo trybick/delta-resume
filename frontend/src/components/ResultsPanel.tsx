@@ -262,7 +262,7 @@ const ResultsPanel = ({
   const buildMergedText = (): string => buildMergedLines().join('\n');
 
   const handleCopy = async () => {
-    if (!result) return;
+    if (!result || isExample) return;
     trackEvent(AnalyticsEvents.ResumeCopy);
     try {
       await copyResumeRichText(buildMergedLines(), result.structure);
@@ -310,7 +310,7 @@ const ResultsPanel = ({
   };
 
   const handleExport = async (variant: 'keep' | 'clean', format: 'docx' | 'pdf') => {
-    if (!result || isExporting) return;
+    if (!result || isExample || isExporting) return;
     trackEvent(AnalyticsEvents.ResumeExport, { variant, format });
     setIsExporting(true);
     try {
@@ -448,8 +448,15 @@ const ResultsPanel = ({
                   </Button>
                 </Menu.Target>
                 <Menu.Dropdown>
+                  {isExample && (
+                    <>
+                      <Menu.Label>Example preview — export unavailable</Menu.Label>
+                      <Menu.Divider />
+                    </>
+                  )}
                   <Menu.Item
                     leftSection={copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />}
+                    disabled={isExample}
                     onClick={handleCopy}
                   >
                     {copied ? 'Copied' : 'Copy to clipboard'}
@@ -465,12 +472,14 @@ const ResultsPanel = ({
                             Recommended
                           </Badge>
                         }
+                        disabled={isExample}
                         onClick={() => handleExport('keep', 'docx')}
                       >
                         Word (.docx)
                       </Menu.Item>
                       <Menu.Item
                         leftSection={<IconFileTypePdf size={16} />}
+                        disabled={isExample}
                         onClick={() => handleExport('keep', 'pdf')}
                       >
                         PDF (.pdf)
@@ -481,12 +490,14 @@ const ResultsPanel = ({
                   <Menu.Label>Clean template</Menu.Label>
                   <Menu.Item
                     leftSection={<IconFileDescription size={16} />}
+                    disabled={isExample}
                     onClick={() => handleExport('clean', 'docx')}
                   >
                     Word (.docx)
                   </Menu.Item>
                   <Menu.Item
                     leftSection={<IconFileTypePdf size={16} />}
+                    disabled={isExample}
                     onClick={() => handleExport('clean', 'pdf')}
                   >
                     PDF (.pdf)

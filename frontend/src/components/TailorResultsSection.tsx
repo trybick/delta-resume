@@ -100,15 +100,16 @@ const TailorResultsSection = ({
         <Group
           justify="space-between"
           align="center"
-          wrap="wrap"
+          wrap="nowrap"
+          gap="sm"
           p="sm"
           style={{
             borderRadius: 8,
             backgroundColor: 'var(--mantine-color-cyan-light)',
           }}
         >
-          <Group gap="xs">
-            <IconEye size={16} color="var(--mantine-color-cyan-4)" />
+          <Group gap="xs" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+            <IconEye size={16} color="var(--mantine-color-cyan-4)" style={{ flexShrink: 0 }} />
             <Text size="sm">
               This is an example. Explore the resume changes and cover letter, then run your own
               tailor.
@@ -119,6 +120,7 @@ const TailorResultsSection = ({
             variant="subtle"
             color="cyan"
             leftSection={<IconArrowBackUp size={14} />}
+            style={{ flexShrink: 0 }}
             onClick={() => {
               trackEvent(AnalyticsEvents.DismissExample);
               onDismissExample();
