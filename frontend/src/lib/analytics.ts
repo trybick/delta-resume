@@ -40,6 +40,7 @@ export const AnalyticsEvents = {
   ResultsTabCoverLetter: 'results_tab_cover_letter',
 
   ResumeExportMenuOpen: 'resume_export_menu_open',
+  ResumePreviewOpen: 'resume_preview_open',
   ResumeCopy: 'resume_copy',
   ResumeExport: 'resume_export',
   ShowHiddenLines: 'show_hidden_lines',

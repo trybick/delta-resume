@@ -57,6 +57,7 @@ import {
 import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
 import AddedBulletRow from './AddedBulletRow';
 import DiffBullet from './DiffBullet';
+import DocumentPreviewModal, { type PreviewVariant } from './DocumentPreviewModal';
 import TailoringLoader from './TailoringLoader';
 
 type OriginalDocx = {
@@ -409,6 +410,7 @@ const ResultsPanel = ({
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [gapsOpen, setGapsOpen] = useState(() => (result ? hasMustHaveGaps(result) : false));
   const [isExporting, setIsExporting] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const copiedTimeoutRef = useRef<number | null>(null);
 
@@ -601,6 +603,19 @@ const ResultsPanel = ({
     }
   };
 
+  const buildPreviewDocx = (variant: PreviewVariant): Promise<Blob> =>
+    variant === 'keep' ? buildPatchedDocx() : buildCleanDocx();
+
+  const handlePreviewOpen = () => {
+    if (!result || isExample) return;
+    trackEvent(AnalyticsEvents.ResumePreviewOpen);
+    setPreviewOpen(true);
+  };
+
+  const handlePreviewClose = () => {
+    setPreviewOpen(false);
+  };
+
   const requirements = result?.requirements ?? [];
 
   const isRequirementCovered = (requirement: JobRequirement): boolean =>
@@ -751,6 +766,17 @@ const ResultsPanel = ({
               )}
             </Group>
             <Group gap="xs" wrap="nowrap">
+              <Tooltip label="Preview the final document before downloading" withArrow>
+                <Button
+                  size="xs"
+                  variant="light"
+                  leftSection={<IconEye size={16} />}
+                  disabled={isExample}
+                  onClick={handlePreviewOpen}
+                >
+                  Preview
+                </Button>
+              </Tooltip>
               <Tooltip label="Copy the tailored resume with your kept changes" withArrow>
                 <Button
                   size="xs"
@@ -974,6 +1000,14 @@ const ResultsPanel = ({
           })}
         </div>
       </Stack>
+      <DocumentPreviewModal
+        opened={previewOpen}
+        onClose={handlePreviewClose}
+        originalFile={originalDocx?.file ?? null}
+        canPatchOriginal={canPatchOriginal}
+        buildDocx={buildPreviewDocx}
+        onExport={handleExport}
+      />
     </Card>
   );
 };
