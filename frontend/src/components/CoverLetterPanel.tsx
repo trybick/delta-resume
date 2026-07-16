@@ -37,7 +37,7 @@ import { notifications } from '@mantine/notifications';
 import { AnalyticsEvents, createDebouncedTracker, trackEvent } from '../lib/analytics';
 import type { CoverLetterResult, CoverLetterStatus } from '../lib/types';
 import { buildCoverLetterDocx, downloadDocx } from '../lib/exportDocx';
-import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
+import { convertDocxToPdfWithFallback, downloadPdf } from '../lib/exportPdf';
 import {
   formatCoverLetterText,
   formatCoverLetterSignature,
@@ -447,7 +447,7 @@ const CoverLetterPanel = ({
         return;
       }
       try {
-        const pdfBlob = await convertDocxToPdf(docxBlob);
+        const pdfBlob = await convertDocxToPdfWithFallback(docxBlob);
         downloadPdf(pdfBlob, 'cover-letter.pdf');
         trackEvent(AnalyticsEvents.ExportSuccess, {
           source: 'cover_letter',

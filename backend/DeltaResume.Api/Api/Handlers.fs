@@ -1,11 +1,13 @@
 namespace DeltaResume.Api
 
 open System
+open System.IO
 open System.Threading
 open Giraffe
 open Microsoft.AspNetCore.Http
 open DeltaResume.Application
 open DeltaResume.Domain
+open DeltaResume.Infrastructure
 
 module Handlers =
 
@@ -150,6 +152,44 @@ module Handlers =
 
                             return! json response next ctx
                         | Error message -> return! errorResponse StatusCodes.Status502BadGateway message next ctx
+            }
+
+    let convertPdf: HttpHandler =
+        fun next ctx ->
+            task {
+                use bodyStream = new MemoryStream()
+                do! ctx.Request.Body.CopyToAsync(bodyStream, ctx.RequestAborted)
+                let docxBytes = bodyStream.ToArray()
+
+                let isZipHeader =
+                    docxBytes.Length > 4 && docxBytes[0] = 0x50uy && docxBytes[1] = 0x4Buy
+
+                if not isZipHeader then
+                    return!
+                        codedErrorResponse
+                            StatusCodes.Status400BadRequest
+                            "invalid_input"
+                            "Expected a .docx document in the request body."
+                            next
+                            ctx
+                else
+                    let converter = ctx.GetService<PdfConverter>()
+                    let! result = converter.ConvertDocxToPdf(docxBytes, ctx.RequestAborted)
+
+                    match result with
+                    | Ok pdfBytes ->
+                        ctx.SetContentType "application/pdf"
+                        return! ctx.WriteBytesAsync pdfBytes
+                    | Error ConverterUnavailable ->
+                        return!
+                            codedErrorResponse
+                                StatusCodes.Status503ServiceUnavailable
+                                "pdf_converter_unavailable"
+                                "PDF conversion is not available on this server."
+                                next
+                                ctx
+                    | Error (ConversionFailed message) ->
+                        return! codedErrorResponse StatusCodes.Status502BadGateway "pdf_conversion_failed" message next ctx
             }
 
     let getSettings: HttpHandler =

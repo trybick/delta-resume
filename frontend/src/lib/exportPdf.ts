@@ -1,6 +1,8 @@
 import { renderAsync } from 'docx-preview';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
+import { convertDocxToPdfRemote } from './api';
+import { AnalyticsEvents, trackEvent } from './analytics';
 
 const PDF_MIME = 'application/pdf';
 const RENDER_SCALE = 2;
@@ -68,6 +70,15 @@ export const convertDocxToPdf = async (docxBlob: Blob): Promise<Blob> => {
     return pdf.output('blob');
   } finally {
     container.remove();
+  }
+};
+
+export const convertDocxToPdfWithFallback = async (docxBlob: Blob): Promise<Blob> => {
+  try {
+    return await convertDocxToPdfRemote(docxBlob);
+  } catch {
+    trackEvent(AnalyticsEvents.PdfServerFallback);
+    return convertDocxToPdf(docxBlob);
   }
 };
 

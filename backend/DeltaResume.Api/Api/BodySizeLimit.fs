@@ -5,13 +5,23 @@ open System.Text.Json
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Http
+open Microsoft.AspNetCore.Http.Features
 
 module BodySizeLimit =
 
     let maxRequestBodyBytes = 256L * 1024L
 
+    let convertPdfMaxBodyBytes = 10L * 1024L * 1024L
+
+    let private limitForRequest (request: HttpRequest) =
+        if String.Equals(request.Path.Value, "/api/convert-pdf", StringComparison.OrdinalIgnoreCase) then
+            convertPdfMaxBodyBytes
+        else
+            maxRequestBodyBytes
+
     // Kestrel enforces the limit itself; this middleware only exists to turn the
-    // resulting 413 into a JSON body the frontend can display.
+    // resulting 413 into a JSON body the frontend can display, and to raise the
+    // per-request limit for routes that legitimately accept larger bodies.
     let useBodySizeLimit (jsonOptions: JsonSerializerOptions) (app: IApplicationBuilder) : IApplicationBuilder =
         app.Use(fun (context: HttpContext) (next: Func<Task>) ->
             task {
@@ -29,9 +39,17 @@ module BodySizeLimit =
                             )
                     }
 
+                let bodyLimit = limitForRequest context.Request
+
+                if bodyLimit <> maxRequestBodyBytes then
+                    let sizeFeature = context.Features.Get<IHttpMaxRequestBodySizeFeature>()
+
+                    if not (isNull (box sizeFeature)) && not sizeFeature.IsReadOnly then
+                        sizeFeature.MaxRequestBodySize <- Nullable bodyLimit
+
                 let contentLength = context.Request.ContentLength
 
-                if contentLength.HasValue && contentLength.Value > maxRequestBodyBytes then
+                if contentLength.HasValue && contentLength.Value > bodyLimit then
                     do! writePayloadTooLarge ()
                 else
                     try

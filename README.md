@@ -31,6 +31,7 @@ createdb deltaresume
 | `TRUST_FORWARDED_HEADERS` | No | Production only (ignored when `BACKEND_RUNNING_LOCALLY` is set). Set to `true` when running behind a reverse proxy so `X-Forwarded-For` is used for guest IP resolution. |
 | `CORS_ORIGINS` | No | Comma-separated allowed browser origins. Defaults to `http://localhost:5200`. In production, include your frontend URL (e.g. `https://app.example.com`). |
 | `SENTRY_DSN` | No | Sentry DSN for API error monitoring and tracing. Leave unset to disable. |
+| `SOFFICE_PATH` | No | Path to the LibreOffice `soffice` binary used for server-side DOCX→PDF conversion (`POST /api/convert-pdf`). Defaults to `soffice` on `PATH`. On macOS: `brew install --cask libreoffice`, then set `/Applications/LibreOffice.app/Contents/MacOS/soffice`. If unavailable, the endpoint returns 503 and the frontend falls back to a lower-quality client-side (image-based) PDF. The production Docker image includes LibreOffice. |
 
 ```bash
 cd backend/DeltaResume.Api
