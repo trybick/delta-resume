@@ -8,6 +8,7 @@
     <Compile Include="Domain/Types.fs" />
     <Compile Include="Domain/Bullets.fs" />
     <Compile Include="Application/Ports.fs" />
+    <Compile Include="Application/InputValidation.fs" />
     <Compile Include="Application/TailoringService.fs" />
     <Compile Include="Application/LocalDev.fs" />
     <Compile Include="Application/Identity.fs" />

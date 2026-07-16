@@ -7,21 +7,23 @@ open DeltaResume.Domain
 
 type TailoringService(engine: TailoringEngine) =
 
-    member _.ValidateInputs(resumeText: string, jobDescription: string) : Result<unit, TailorError> =
-        if String.IsNullOrWhiteSpace resumeText then
-            Error(InvalidInput "Resume text is required.")
-        elif String.IsNullOrWhiteSpace jobDescription then
-            Error(InvalidInput "Job description is required.")
-        elif resumeText |> Bullets.extract |> List.isEmpty then
-            Error(InvalidInput "Could not find any tailorable content in the resume. Add a few sentences or bullet points describing your experience.")
-        else
-            Ok()
+    member _.ValidateInputs
+        (resumeText: string, jobDescription: string, resumeName: string option)
+        : Result<unit, TailorError> =
+        match InputValidation.validate resumeText jobDescription resumeName with
+        | Error message -> Error(InvalidInput message)
+        | Ok() when resumeText |> Bullets.extract |> List.isEmpty ->
+            Error(
+                InvalidInput
+                    "Could not find any tailorable content in the resume. Add a few sentences or bullet points describing your experience."
+            )
+        | Ok() -> Ok()
 
     member this.TailorResume
         (resumeText: string, jobDescription: string, cancellationToken: CancellationToken)
         : Task<Result<TailorRun, TailorError>> =
         task {
-            match this.ValidateInputs(resumeText, jobDescription) with
+            match this.ValidateInputs(resumeText, jobDescription, None) with
             | Error error -> return Error error
             | Ok() ->
                 let bullets = Bullets.extract resumeText
