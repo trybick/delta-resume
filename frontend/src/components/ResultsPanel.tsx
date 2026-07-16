@@ -19,7 +19,6 @@ import { notifications } from '@mantine/notifications';
 import {
   IconArrowsVertical,
   IconChevronDown,
-  IconCircleCheck,
   IconCopy,
   IconCopyCheck,
   IconDownload,
@@ -594,19 +593,12 @@ const ResultsPanel = ({
               </Menu>
             </Group>
           </Group>
-          {(isExample || skillChangeCount === 0 || requirements.length > 0) && (
+          {(isExample || requirements.length > 0) && (
             <Group gap="sm">
               {isExample && (
                 <Badge color="cyan" variant="light">
                   Example
                 </Badge>
-              )}
-              {skillChangeCount === 0 && (
-                <Tooltip label="Your skills section already matches this job description well, so no skill changes were suggested.">
-                  <Badge color="teal" variant="light" leftSection={<IconCircleCheck size={12} />}>
-                    Skills all set
-                  </Badge>
-                </Tooltip>
               )}
               {requirements.length > 0 && (
                 <Tooltip label="How many of the job's key requirements your resume demonstrates, counting the changes you keep applied.">
