@@ -5,6 +5,7 @@ open System.Net.Http
 open System.Net.Http.Headers
 open System.Text
 open System.Text.Json
+open System.Threading
 open System.Threading.Tasks
 open DeltaResume.Application
 
@@ -106,7 +107,12 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
     interface CoverLetterEngine with
 
         member _.GenerateCoverLetter
-            (resumeText: string, jobDescription: string, candidateName: string option)
+            (
+                resumeText: string,
+                jobDescription: string,
+                candidateName: string option,
+                cancellationToken: CancellationToken
+            )
             : Task<Result<CoverLetterDraft, string>> =
             task {
                 match apiKey with
@@ -135,8 +141,8 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                         )
 
                     try
-                        use! response = httpClient.SendAsync request
-                        let! body = response.Content.ReadAsStringAsync()
+                        use! response = httpClient.SendAsync(request, cancellationToken)
+                        let! body = response.Content.ReadAsStringAsync(cancellationToken)
 
                         if not response.IsSuccessStatusCode then
                             let statusCode = int response.StatusCode
@@ -157,7 +163,10 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                             match textContent with
                             | None -> return Error "Claude response contained no text content."
                             | Some text -> return parseDraft text
-                    with ex ->
+                    with
+                    | :? OperationCanceledException as ex when cancellationToken.IsCancellationRequested ->
+                        return raise ex
+                    | ex ->
                         ClaudeSentry.captureApiException "cover_letter" ex
                         return Error(sprintf "Failed to reach the Claude API: %s" ex.Message)
             }

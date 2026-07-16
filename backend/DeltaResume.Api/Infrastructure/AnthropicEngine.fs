@@ -5,6 +5,7 @@ open System.Net.Http
 open System.Net.Http.Headers
 open System.Text
 open System.Text.Json
+open System.Threading
 open System.Threading.Tasks
 open DeltaResume.Application
 open DeltaResume.Domain
@@ -307,7 +308,7 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
     interface TailoringEngine with
 
         member _.ProposeChanges
-            (bullets: BulletLine list, jobDescription: string)
+            (bullets: BulletLine list, jobDescription: string, cancellationToken: CancellationToken)
             : Task<Result<EngineProposal, string>> =
             task {
                 match apiKey with
@@ -336,8 +337,8 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                         )
 
                     try
-                        use! response = httpClient.SendAsync request
-                        let! body = response.Content.ReadAsStringAsync()
+                        use! response = httpClient.SendAsync(request, cancellationToken)
+                        let! body = response.Content.ReadAsStringAsync(cancellationToken)
 
                         if not response.IsSuccessStatusCode then
                             let statusCode = int response.StatusCode
@@ -358,7 +359,10 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                             match textContent with
                             | None -> return Error "Claude response contained no text content."
                             | Some text -> return parseProposals bullets text
-                    with ex ->
+                    with
+                    | :? OperationCanceledException as ex when cancellationToken.IsCancellationRequested ->
+                        return raise ex
+                    | ex ->
                         ClaudeSentry.captureApiException "tailor" ex
                         return Error(sprintf "Failed to reach the Claude API: %s" ex.Message)
             }

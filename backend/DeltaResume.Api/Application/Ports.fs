@@ -1,6 +1,7 @@
 namespace DeltaResume.Application
 
 open System
+open System.Threading
 open System.Threading.Tasks
 open DeltaResume.Domain
 
@@ -12,7 +13,8 @@ type EngineProposal =
 
 type TailoringEngine =
     abstract member ProposeChanges:
-        bullets: BulletLine list * jobDescription: string -> Task<Result<EngineProposal, string>>
+        bullets: BulletLine list * jobDescription: string * cancellationToken: CancellationToken ->
+            Task<Result<EngineProposal, string>>
 
 type CoverLetterDraft =
     { JobTitle: string
@@ -21,7 +23,10 @@ type CoverLetterDraft =
 
 type CoverLetterEngine =
     abstract member GenerateCoverLetter:
-        resumeText: string * jobDescription: string * candidateName: string option ->
+        resumeText: string *
+        jobDescription: string *
+        candidateName: string option *
+        cancellationToken: CancellationToken ->
             Task<Result<CoverLetterDraft, string>>
 
 type CreditUsageEntry =
@@ -29,9 +34,24 @@ type CreditUsageEntry =
       Kind: string
       Period: string }
 
+type CreditSpendResult =
+    | SpendRecorded
+    | SpendDuplicate
+    | SpendConflict
+    | SpendExhausted
+
 type CreditStore =
-    abstract member CountUsage: identityKey: string * period: string -> Task<int>
-    abstract member RecordUsage: entries: CreditUsageEntry list -> Task<unit>
+    abstract member CountUsage:
+        identityKey: string * period: string * cancellationToken: CancellationToken -> Task<int>
+
+    abstract member TryRecordUsage:
+        entries: CreditUsageEntry list *
+        ownerKey: string *
+        creditLimit: int *
+        idempotencyKey: string *
+        requestHash: string *
+        cancellationToken: CancellationToken ->
+            Task<CreditSpendResult>
 
 type SavedResumeRepository =
     abstract member ListByOwner: ownerKey: string -> Task<SavedResume list>

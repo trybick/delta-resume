@@ -9,6 +9,7 @@ import type { CreditStatus, SavedResume, TailorStatus } from '../lib/types';
 
 type TailorFormProps = {
   resumeText: string;
+  pasteFieldText: string;
   attachedFile: AttachedFile | null;
   savedResumes: SavedResume[];
   isLoadingSavedResumes: boolean;
@@ -34,6 +35,7 @@ type TailorFormProps = {
 
 const TailorForm = ({
   resumeText,
+  pasteFieldText,
   attachedFile,
   savedResumes,
   isLoadingSavedResumes,
@@ -87,6 +89,7 @@ const TailorForm = ({
     <Stack gap="lg">
       <ResumeInput
         resumeText={resumeText}
+        pasteFieldText={pasteFieldText}
         attachedFile={attachedFile}
         savedResumes={savedResumes}
         isLoadingSavedResumes={isLoadingSavedResumes}
@@ -114,7 +117,7 @@ const TailorForm = ({
             leftSection={
               isTailoring ? <Loader size={18} color="currentColor" /> : <IconSparkles size={18} />
             }
-            data-disabled={isButtonInert || undefined}
+            disabled={isButtonInert}
             onClick={(event) => {
               if (isButtonInert) {
                 event.preventDefault();

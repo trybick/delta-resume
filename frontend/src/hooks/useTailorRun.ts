@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ApiError, CreditsExhaustedError, postTailor } from '../lib/api';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import type { TailorResult, TailorStatus } from '../lib/types';
@@ -6,6 +6,7 @@ import type { TailorResult, TailorStatus } from '../lib/types';
 type UseTailorRunOptions = {
   onSuccess: () => void;
   onCreditsExhausted: () => void;
+  onRequestFinished: () => void;
 };
 
 type UseTailorRunResult = {
@@ -20,12 +21,22 @@ type UseTailorRunResult = {
 export const useTailorRun = ({
   onSuccess,
   onCreditsExhausted,
+  onRequestFinished,
 }: UseTailorRunOptions): UseTailorRunResult => {
   const [status, setStatus] = useState<TailorStatus>('idle');
   const [result, setResult] = useState<TailorResult | null>(null);
   const [runCount, setRunCount] = useState(0);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const resultRef = useRef<TailorResult | null>(null);
+  const inFlightRef = useRef(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(
+    () => () => {
+      abortControllerRef.current?.abort();
+    },
+    [],
+  );
 
   const clearError = () => setErrorMessage(null);
 
@@ -34,10 +45,20 @@ export const useTailorRun = ({
     jobDescription: string,
     resumeName: string,
   ): Promise<boolean> => {
+    if (inFlightRef.current) return false;
+    inFlightRef.current = true;
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
     setStatus('loading');
     setErrorMessage(null);
     try {
-      const tailorResult = await postTailor(resumeText, jobDescription, resumeName);
+      const tailorResult = await postTailor(
+        resumeText,
+        jobDescription,
+        resumeName,
+        crypto.randomUUID(),
+        abortController.signal,
+      );
       resultRef.current = tailorResult;
       setResult(tailorResult);
       setRunCount((count) => count + 1);
@@ -45,6 +66,10 @@ export const useTailorRun = ({
       onSuccess();
       return true;
     } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setStatus(resultRef.current ? 'done' : 'idle');
+        return false;
+      }
       if (error instanceof CreditsExhaustedError) {
         onCreditsExhausted();
       } else {
@@ -57,6 +82,12 @@ export const useTailorRun = ({
       }
       setStatus(resultRef.current ? 'done' : 'idle');
       return false;
+    } finally {
+      inFlightRef.current = false;
+      if (abortControllerRef.current === abortController) {
+        abortControllerRef.current = null;
+      }
+      onRequestFinished();
     }
   };
 

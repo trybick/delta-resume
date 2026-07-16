@@ -1,6 +1,7 @@
 namespace DeltaResume.Application
 
 open System
+open System.Threading
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
 
@@ -35,7 +36,7 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
         | AuthenticatedUser _ -> true
         | GuestVisitor _ -> false
 
-    member _.GetStatus(ctx: HttpContext) : Task<CreditStatus> =
+    member _.GetStatus(ctx: HttpContext, cancellationToken: CancellationToken) : Task<CreditStatus> =
         task {
             let identity = Identity.resolve options ctx
             let plan = Identity.plan identity
@@ -53,7 +54,7 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
             let mutable used = 0
 
             for identityKey, _, period in usageKeys identity do
-                let! count = store.CountUsage(identityKey, period)
+                let! count = store.CountUsage(identityKey, period, cancellationToken)
                 used <- max used count
 
             let total = CreditPlan.creditLimit plan
@@ -65,11 +66,17 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
                   IsAuthenticated = isAuthenticated identity }
         }
 
-    member _.RecordSpend(ctx: HttpContext) : Task<unit> =
+    member _.TrySpend
+        (
+            ctx: HttpContext,
+            idempotencyKey: string,
+            requestHash: string,
+            cancellationToken: CancellationToken
+        ) : Task<CreditSpendResult> =
         let identity = Identity.resolve options ctx
 
         if isUnlimited identity then
-            Task.FromResult(())
+            Task.FromResult SpendRecorded
         else
             let entries =
                 identity
@@ -79,4 +86,11 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
                       Kind = kind
                       Period = period })
 
-            store.RecordUsage entries
+            store.TryRecordUsage(
+                entries,
+                Identity.ownerKey identity,
+                CreditPlan.creditLimit (Identity.plan identity),
+                idempotencyKey,
+                requestHash,
+                cancellationToken
+            )
