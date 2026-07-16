@@ -18,13 +18,16 @@ import {
 import { notifications } from '@mantine/notifications';
 import {
   IconArrowsVertical,
+  IconBolt,
   IconChevronDown,
   IconCopy,
   IconCopyCheck,
   IconDownload,
   IconEye,
   IconFileDescription,
+  IconFileText,
   IconFileTypePdf,
+  IconList,
   IconLock,
   IconSparkles,
   IconTargetArrow,
@@ -248,6 +251,35 @@ const CollapsibleInsight = ({
       <Box pt={6}>{children}</Box>
     </Collapse>
   </Paper>
+);
+
+type ChangeStatChipProps = {
+  icon: ReactNode;
+  count: number;
+  label: string;
+  color: string;
+};
+
+const ChangeStatChip = ({ icon, count, label, color }: ChangeStatChipProps) => (
+  <Group
+    gap={6}
+    wrap="nowrap"
+    px={10}
+    py={5}
+    style={{
+      borderRadius: 999,
+      backgroundColor: `color-mix(in srgb, var(--mantine-color-${color}-6) 12%, var(--mantine-color-body))`,
+      border: `1px solid color-mix(in srgb, var(--mantine-color-${color}-6) 25%, transparent)`,
+    }}
+  >
+    {icon}
+    <Text size="sm" fw={700} c={`${color}.5`} lh={1}>
+      {count}
+    </Text>
+    <Text size="sm" fw={500} c="dimmed" lh={1}>
+      {label}
+    </Text>
+  </Group>
 );
 
 const hasMustHaveGaps = (result: TailorResult): boolean => {
@@ -510,13 +542,49 @@ const ResultsPanel = ({
       <Stack gap="md">
         <Stack gap="xs">
           <Group justify="space-between" align="center" wrap="nowrap">
-            <Title order={4}>
-              {bulletChangeCount} bullet{bulletChangeCount === 1 ? '' : 's'}
-              {skillChangeCount > 0
-                ? `, ${skillChangeCount} skill${skillChangeCount === 1 ? '' : 's'}`
-                : ''}
-              {paragraphChangeCount > 0 ? ', summary' : ''} updated
-            </Title>
+            <Group
+              gap={6}
+              align="center"
+              p={4}
+              style={{
+                borderRadius: 999,
+                backgroundColor: 'var(--mantine-color-default-hover)',
+              }}
+            >
+              <Text size="xs" fw={600} c="dimmed" tt="uppercase" lts={0.6} px={8}>
+                Updated
+              </Text>
+              {bulletChangeCount > 0 && (
+                <ChangeStatChip
+                  icon={
+                    <IconList size={14} color="var(--mantine-color-indigo-5)" stroke={1.8} />
+                  }
+                  count={bulletChangeCount}
+                  label={bulletChangeCount === 1 ? 'bullet' : 'bullets'}
+                  color="indigo"
+                />
+              )}
+              {skillChangeCount > 0 && (
+                <ChangeStatChip
+                  icon={
+                    <IconBolt size={14} color="var(--mantine-color-teal-5)" stroke={1.8} />
+                  }
+                  count={skillChangeCount}
+                  label={skillChangeCount === 1 ? 'skill' : 'skills'}
+                  color="teal"
+                />
+              )}
+              {paragraphChangeCount > 0 && (
+                <ChangeStatChip
+                  icon={
+                    <IconFileText size={14} color="var(--mantine-color-grape-5)" stroke={1.8} />
+                  }
+                  count={paragraphChangeCount}
+                  label="summary"
+                  color="grape"
+                />
+              )}
+            </Group>
             <Group gap="sm" wrap="nowrap">
               <Menu
                 position="bottom-end"
