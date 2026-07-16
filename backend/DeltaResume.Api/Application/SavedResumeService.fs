@@ -23,6 +23,13 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
         |> Option.map (fun name -> if name.Length > 120 then name.Substring(0, 120) else name)
         |> Option.defaultValue (fallbackName now)
 
+    // Called after a successful tailor only - upload/paste never hits the server.
+    // Formatting lives primarily in the browser: .docx originals are kept in IndexedDB
+    // so export can restore layout. The backend only stores plain text, so it cannot
+    // be the source of truth for formatting.
+    // We still persist text here so the Saved list works across sessions/devices, and
+    // so we can content-hash each resume to skip duplicates and trim oldest entries
+    // when the plan's saved-resume limit is exceeded.
     member _.AutoSave(ctx: HttpContext, resumeText: string, requestedName: string option) : Task<unit> =
         task {
             if not (String.IsNullOrWhiteSpace resumeText) then

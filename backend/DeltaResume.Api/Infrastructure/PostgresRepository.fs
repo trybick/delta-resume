@@ -171,7 +171,7 @@ type PostgresSavedResumeRepository(connectionString: string) =
                         WHERE id IN (
                             SELECT id FROM saved_resumes
                             WHERE owner_key = @OwnerKey
-                            ORDER BY created_at ASC
+                            ORDER BY created_at DESC
                             OFFSET @KeepCount
                         )
                         """,
