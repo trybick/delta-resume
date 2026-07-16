@@ -24,6 +24,21 @@ const embeddedSignUpAppearance = {
     header: { display: 'none' },
     footer: { background: 'none' },
     footerItem: { background: 'none' },
+    socialButtonsBlockButton: {
+      minHeight: '3.25rem',
+      fontSize: '1rem',
+      fontWeight: 600,
+      paddingTop: '0.85rem',
+      paddingBottom: '0.85rem',
+    },
+    socialButtonsBlockButtonText: {
+      fontSize: '1rem',
+      fontWeight: 600,
+    },
+    socialButtonsProviderIcon: {
+      width: '1.35rem',
+      height: '1.35rem',
+    },
   },
 } as const;
 
@@ -134,6 +149,8 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
       size="md"
       centered
       withCloseButton
+      radius="lg"
+      overlayProps={{ backgroundOpacity: 0.6, blur: 3 }}
       title={<Text fw={600}>{isSignedIn ? signedInTitle : 'Create your account'}</Text>}
     >
       <FocusTrap.InitialFocus />

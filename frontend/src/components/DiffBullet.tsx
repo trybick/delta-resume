@@ -104,7 +104,7 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
           <Tooltip label={decision === 'reverted' ? 'Re-apply change' : 'Revert to original'}>
             <ActionIcon
               variant={decision === 'reverted' ? 'filled' : 'light'}
-              color={decision === 'reverted' ? 'green' : 'red'}
+              color={decision === 'reverted' ? 'green' : 'gray'}
               onClick={handleToggleRevert}
               aria-label={decision === 'reverted' ? 'Re-apply change' : 'Revert to original'}
             >

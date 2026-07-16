@@ -88,9 +88,9 @@ const AppFooter = () => {
             >
               Privacy Policy
             </Anchor>
-            <Text size="sm" c="dimmed">
+            <Anchor size="sm" c="dimmed" href={`mailto:${SUPPORT_EMAIL}`}>
               {SUPPORT_EMAIL}
-            </Text>
+            </Anchor>
           </Group>
         </Group>
       </Container>

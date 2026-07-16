@@ -1,6 +1,7 @@
-import { Anchor, Button, Loader, Stack, Text } from '@mantine/core';
+import { Anchor, Button, Loader, Stack, Text, Tooltip } from '@mantine/core';
 import { IconSparkles } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { appTheme } from '../lib/theme';
 import ResumeInput from './ResumeInput';
 import JobDescriptionInput from './JobDescriptionInput';
 import type { AttachedFile } from '../hooks/useResumeDocument';
@@ -56,6 +57,31 @@ const TailorForm = ({
   onRetryCredits,
 }: TailorFormProps) => {
   const isTailoring = status === 'loading';
+  const hasResume = resumeText.trim().length > 0;
+  const hasJobDescription = jobDescription.trim().length > 0;
+
+  const disabledReason =
+    isTailoring || outOfCredits
+      ? null
+      : !hasResume && !hasJobDescription
+        ? 'Add your resume and paste a job description to get started'
+        : !hasResume
+          ? 'Add your base resume first'
+          : !hasJobDescription
+            ? 'Paste the job description first'
+            : null;
+
+  const isButtonInert = !outOfCredits && (!canTailor || isTailoring);
+
+  const handleTailorAction = () => {
+    trackEvent(outOfCredits ? AnalyticsEvents.GetMoreCredits : AnalyticsEvents.TailorResumeClick);
+    onTailor();
+  };
+
+  const handleSubmitShortcut = () => {
+    if (isButtonInert || outOfCredits) return;
+    handleTailorAction();
+  };
 
   return (
     <Stack gap="lg">
@@ -74,23 +100,32 @@ const TailorForm = ({
         onDeleteSaved={onDeleteSaved}
         onUpgradeClick={onUpgradeClick}
       />
-      <JobDescriptionInput value={jobDescription} onChange={onJobDescriptionChange} />
+      <JobDescriptionInput
+        value={jobDescription}
+        onChange={onJobDescriptionChange}
+        onSubmitShortcut={handleSubmitShortcut}
+      />
       <Stack gap="xs">
-        <Button
-          size="md"
-          leftSection={
-            isTailoring ? <Loader size={18} color="currentColor" /> : <IconSparkles size={18} />
-          }
-          disabled={!canTailor || isTailoring}
-          onClick={() => {
-            trackEvent(
-              outOfCredits ? AnalyticsEvents.GetMoreCredits : AnalyticsEvents.TailorResumeClick,
-            );
-            onTailor();
-          }}
-        >
-          {isTailoring ? 'Tailoring…' : outOfCredits ? 'Get more credits' : 'Tailor Resume'}
-        </Button>
+        <Tooltip label={disabledReason} disabled={disabledReason === null} withArrow>
+          <Button
+            size="md"
+            variant="gradient"
+            gradient={{ ...appTheme.gradient, deg: 45 }}
+            leftSection={
+              isTailoring ? <Loader size={18} color="currentColor" /> : <IconSparkles size={18} />
+            }
+            data-disabled={isButtonInert || undefined}
+            onClick={(event) => {
+              if (isButtonInert) {
+                event.preventDefault();
+                return;
+              }
+              handleTailorAction();
+            }}
+          >
+            {isTailoring ? 'Tailoring…' : outOfCredits ? 'Get more credits' : 'Tailor Resume'}
+          </Button>
+        </Tooltip>
         {creditsError && credits === null && (
           <Text size="xs" c="dimmed" ta="center">
             Couldn&apos;t load your credits.{' '}
@@ -109,6 +144,15 @@ const TailorForm = ({
             {credits?.isAuthenticated
               ? 'You are out of credits. Subscribe to Pro to keep tailoring.'
               : 'You have used your 3 free credits. Sign up to continue.'}
+          </Text>
+        )}
+        {credits !== null && !outOfCredits && !inputsUnchangedSinceLastRun && (
+          <Text size="xs" c="dimmed" ta="center">
+            {credits.isAuthenticated
+              ? `Uses 1 credit · ${credits.remaining} left`
+              : `Free to try — ${credits.remaining} ${
+                  credits.remaining === 1 ? 'credit' : 'credits'
+                } left, no sign-up needed`}
           </Text>
         )}
       </Stack>

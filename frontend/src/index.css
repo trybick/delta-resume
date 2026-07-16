@@ -4,6 +4,16 @@ body {
   min-height: 100vh;
 }
 
+.saved-resume-card {
+  transition:
+    border-color 120ms ease,
+    background-color 120ms ease;
+}
+
+.saved-resume-card:hover {
+  background-color: var(--mantine-color-default-hover);
+}
+
 .tailoring-loader-topbar {
   position: absolute;
   top: 0;

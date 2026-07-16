@@ -11,6 +11,7 @@ import {
   Paper,
   Stack,
   Text,
+  ThemeIcon,
   Title,
   Tooltip,
   UnstyledButton,
@@ -35,6 +36,7 @@ import {
   IconTargetArrow,
 } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { appTheme } from '../lib/theme';
 import type {
   AddedBullet,
   BulletChange,
@@ -340,6 +342,31 @@ const hasMustHaveGaps = (result: TailorResult): boolean => {
   });
 };
 
+type IdleStepProps = {
+  index: number;
+  label: string;
+};
+
+const IdleStep = ({ index, label }: IdleStepProps) => (
+  <Group
+    gap={6}
+    wrap="nowrap"
+    px={10}
+    py={5}
+    style={{
+      borderRadius: 999,
+      border: '1px dashed var(--mantine-color-default-border)',
+    }}
+  >
+    <Text size="xs" fw={700} c="cyan.4" lh={1}>
+      {index}
+    </Text>
+    <Text size="xs" c="dimmed" lh={1}>
+      {label}
+    </Text>
+  </Group>
+);
+
 const CollapsedContext = ({ hiddenCount, onExpand }: CollapsedContextProps) => (
   <UnstyledButton
     onClick={onExpand}
@@ -614,13 +641,24 @@ const ResultsPanel = ({
     return (
       <Card withBorder shadow="xs" padding="xl" h="100%">
         <Center h="100%" mih={360}>
-          <Stack align="center" gap="xs">
-            <IconSparkles size={40} color="var(--mantine-primary-color-filled)" />
+          <Stack align="center" gap="sm">
+            <ThemeIcon
+              size={56}
+              radius="xl"
+              variant="gradient"
+              gradient={{ ...appTheme.gradient, deg: 45 }}
+            >
+              <IconSparkles size={30} />
+            </ThemeIcon>
             <Title order={4}>Your tailored resume will appear here</Title>
             <Text size="sm" c="dimmed" ta="center" maw={360}>
-              Attach your base resume, paste a job description, and click &ldquo;Tailor
-              Resume&rdquo; to see suggested bullet changes.
+              Suggested rewrites show up as inline diffs you can accept, tweak, or revert.
             </Text>
+            <Group gap="xs" justify="center">
+              <IdleStep index={1} label="Add your resume" />
+              <IdleStep index={2} label="Paste the job post" />
+              <IdleStep index={3} label="Review changes" />
+            </Group>
             {onShowExample && (
               <Button
                 mt="xs"
@@ -705,7 +743,19 @@ const ResultsPanel = ({
                 </Badge>
               )}
             </Group>
-            <Group gap="sm" wrap="nowrap">
+            <Group gap="xs" wrap="nowrap">
+              <Tooltip label="Copy the tailored resume with your kept changes" withArrow>
+                <Button
+                  size="xs"
+                  variant="light"
+                  color={copied ? 'green' : undefined}
+                  leftSection={copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />}
+                  disabled={isExample}
+                  onClick={handleCopy}
+                >
+                  {copied ? 'Copied' : 'Copy'}
+                </Button>
+              </Tooltip>
               <Menu
                 position="bottom-end"
                 withinPortal
@@ -729,14 +779,6 @@ const ResultsPanel = ({
                       <Menu.Divider />
                     </>
                   )}
-                  <Menu.Item
-                    leftSection={copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />}
-                    disabled={isExample}
-                    onClick={handleCopy}
-                  >
-                    {copied ? 'Copied' : 'Copy to clipboard'}
-                  </Menu.Item>
-                  <Menu.Divider />
                   {canPatchOriginal && (
                     <>
                       <Menu.Label>Keep my formatting</Menu.Label>

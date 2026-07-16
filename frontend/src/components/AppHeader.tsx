@@ -118,6 +118,7 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
 type AppHeaderProps = {
   creditsLabel: string | null;
   outOfCredits: boolean;
+  lowCredits: boolean;
   isProPlan: boolean;
   planLoaded: boolean;
   isLoadingCredits: boolean;
@@ -129,6 +130,7 @@ type AppHeaderProps = {
 const AppHeader = ({
   creditsLabel,
   outOfCredits,
+  lowCredits,
   isProPlan,
   planLoaded,
   isLoadingCredits,
@@ -141,8 +143,12 @@ const AppHeader = ({
       component="header"
       py="sm"
       px="xl"
-      bg="dark.7"
-      style={{ borderBottom: '1px solid var(--mantine-color-dark-4)' }}
+      style={{
+        borderBottom: '1px solid var(--mantine-color-dark-4)',
+        backgroundColor: 'color-mix(in srgb, var(--mantine-color-dark-7) 82%, transparent)',
+        backdropFilter: 'blur(12px)',
+        WebkitBackdropFilter: 'blur(12px)',
+      }}
     >
       <Group justify="space-between">
         <Group gap="md" align="center">
@@ -160,18 +166,23 @@ const AppHeader = ({
                 Resume
               </Text>
             </Title>
-            <Text size="xs" c="dimmed" lh={1.4}>
+            <Text size="xs" c="dimmed" lh={1.4} visibleFrom="sm">
               Optimize your resume for any job description
             </Text>
           </Stack>
         </Group>
         <Group gap="sm">
+          {planLoaded && isProPlan && (
+            <Badge size="lg" variant="gradient" gradient={{ ...appTheme.gradient, deg: 45 }}>
+              Pro
+            </Badge>
+          )}
           {creditsLabel && (
             <Tooltip label="One credit is used per tailor run">
               <Badge
                 size="lg"
                 variant="light"
-                color={outOfCredits ? 'red' : undefined}
+                color={outOfCredits ? 'red' : lowCredits ? 'orange' : undefined}
                 leftSection={<IconCoins size={14} />}
               >
                 {creditsLabel}

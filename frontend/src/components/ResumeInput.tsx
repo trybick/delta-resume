@@ -183,7 +183,10 @@ const ResumeInput = ({
             data={[
               { label: 'Upload file', value: 'upload' },
               { label: 'Paste text', value: 'paste' },
-              { label: 'Saved', value: 'saved' },
+              {
+                label: savedResumes.length > 0 ? `Saved (${savedResumes.length})` : 'Saved',
+                value: 'saved',
+              },
             ]}
           />
         </Group>
@@ -270,13 +273,15 @@ const ResumeInput = ({
                 },
               }}
             />
-            <Text
-              size="xs"
-              c={RESUME_TEXT_MAX_LENGTH - resumeText.length <= 0 ? 'red' : 'dimmed'}
-              ta="right"
-            >
-              {(RESUME_TEXT_MAX_LENGTH - resumeText.length).toLocaleString()} characters left
-            </Text>
+            {resumeText.length > 0 && (
+              <Text
+                size="xs"
+                c={RESUME_TEXT_MAX_LENGTH - resumeText.length <= 0 ? 'red' : 'dimmed'}
+                ta="right"
+              >
+                {(RESUME_TEXT_MAX_LENGTH - resumeText.length).toLocaleString()} characters left
+              </Text>
+            )}
           </Stack>
         )}
 
@@ -313,6 +318,7 @@ const ResumeInput = ({
                   withBorder
                   p="sm"
                   radius="md"
+                  className="saved-resume-card"
                   style={{
                     cursor: 'pointer',
                     borderColor: isSelected ? 'var(--mantine-primary-color-filled)' : undefined,

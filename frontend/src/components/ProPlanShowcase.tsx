@@ -101,7 +101,7 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
                 color="cyan"
                 style={{ visibility: billingPeriod === 'annual' ? 'visible' : 'hidden' }}
               >
-                Most popular
+                Best value
               </Badge>
             </Group>
             <Group gap={6} align="baseline">

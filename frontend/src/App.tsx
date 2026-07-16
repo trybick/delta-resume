@@ -78,6 +78,10 @@ const App = () => {
 
   const isProPlan = credits?.plan === 'pro';
   const planLoaded = credits !== null;
+  const lowCredits =
+    credits !== null &&
+    credits.remaining > 0 &&
+    (isProPlan ? credits.remaining <= 10 : credits.remaining <= 1);
 
   const inputsUnchangedSinceLastRun =
     lastSuccessfulInputs !== null &&
@@ -112,11 +116,11 @@ const App = () => {
   };
 
   const handleTailor = async () => {
-    if (!canTailor) return;
     if (outOfCredits) {
       openPaywall('credits');
       return;
     }
+    if (!canTailor) return;
     setShowingExample(false);
     setActiveTab('resume');
     if (isProPlan) {
@@ -141,6 +145,7 @@ const App = () => {
       <AppHeader
         creditsLabel={creditsLabel}
         outOfCredits={outOfCredits}
+        lowCredits={lowCredits}
         isProPlan={isProPlan}
         planLoaded={planLoaded}
         isLoadingCredits={isLoadingCredits}
