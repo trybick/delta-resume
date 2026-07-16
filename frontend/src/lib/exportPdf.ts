@@ -86,7 +86,7 @@ export const convertDocxToPdfWithFallback = async (docxBlob: Blob): Promise<Blob
       color: 'yellow',
       title: 'PDF generated in your browser',
       message:
-        'The server converter was unavailable, so this PDF has no selectable text. For applications, prefer the .docx export.',
+        'The server converter was unavailable, so this PDF has no selectable text. Prefer the .docx export when applying to jobs.',
       autoClose: 8000,
     });
     return convertDocxToPdf(docxBlob);

@@ -154,6 +154,9 @@ module Handlers =
                         | Error message -> return! errorResponse StatusCodes.Status502BadGateway message next ctx
             }
 
+    // PDF-only: converts a client-built .docx to a real text-based PDF via LibreOffice.
+    // Client-side screenshot PDFs have no text layer (ATS-unreadable), so export posts
+    // the .docx here instead. Docx download stays fully client-side and never hits this.
     let convertPdf: HttpHandler =
         fun next ctx ->
             task {
@@ -161,6 +164,8 @@ module Handlers =
                 do! ctx.Request.Body.CopyToAsync(bodyStream, ctx.RequestAborted)
                 let docxBytes = bodyStream.ToArray()
 
+                // .docx is a ZIP package (magic bytes "PK" / 0x50 0x4B). Cheap reject of
+                // non-ZIP bodies before spawning LibreOffice — not a full DOCX validation.
                 let isZipHeader =
                     docxBytes.Length > 4 && docxBytes[0] = 0x50uy && docxBytes[1] = 0x4Buy
 
