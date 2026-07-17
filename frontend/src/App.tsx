@@ -133,7 +133,11 @@ const App = () => {
       const succeeded = await runTailor(
         resumeText,
         jobDescription,
-        formatDefaultResumeName(new Date()),
+        formatDefaultResumeName(
+          new Date(),
+          attachedFile?.name,
+          savedResumes.map((resume) => resume.name),
+        ),
       );
       if (succeeded) {
         setLastSuccessfulInputs({
