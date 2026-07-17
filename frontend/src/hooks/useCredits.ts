@@ -36,7 +36,7 @@ export const useCredits = (): UseCreditsResult => {
       ? null
       : credits.plan === 'pro'
         ? `${credits.remaining} credits`
-        : `${credits.remaining} free ${credits.remaining === 1 ? 'credit' : 'credits'} left`;
+        : `${credits.remaining} free ${credits.remaining === 1 ? 'credit' : 'credits'} remaining`;
 
   return {
     credits,

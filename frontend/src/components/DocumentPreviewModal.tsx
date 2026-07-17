@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Box,
@@ -12,12 +12,17 @@ import {
   Text,
 } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconAlertCircle, IconFileDescription, IconFileTypePdf } from '@tabler/icons-react';
+import {
+  IconAlertCircle,
+  IconCheck,
+  IconFileDescription,
+  IconFileTypePdf,
+} from '@tabler/icons-react';
 import { renderAsync } from 'docx-preview';
 
 export type PreviewVariant = 'keep' | 'clean';
 
-type PreviewView = 'after' | 'before' | 'sideBySide';
+type PreviewView = 'after' | 'before';
 
 type ExportFormat = 'docx' | 'pdf';
 
@@ -106,22 +111,6 @@ const DocxPane = ({ source, isLoading, hasError }: DocxPaneProps) => {
   );
 };
 
-type LabeledPaneProps = {
-  label: string | null;
-  children: ReactNode;
-};
-
-const LabeledPane = ({ label, children }: LabeledPaneProps) => (
-  <Stack gap={4} style={{ flex: 1, minWidth: 0, height: '100%' }}>
-    {label && (
-      <Text size="xs" fw={600} c="dimmed" tt="uppercase" lts={0.6}>
-        {label}
-      </Text>
-    )}
-    {children}
-  </Stack>
-);
-
 const DocumentPreviewModal = ({
   opened,
   onClose,
@@ -137,16 +126,24 @@ const DocumentPreviewModal = ({
   const [isBuilding, setIsBuilding] = useState(false);
   const [buildFailed, setBuildFailed] = useState(false);
   const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(null);
+  const [downloadedFormat, setDownloadedFormat] = useState<ExportFormat | null>(null);
+  const downloadedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const buildDocxRef = useRef(buildDocx);
   buildDocxRef.current = buildDocx;
 
   const effectiveVariant: PreviewVariant = canPatchOriginal ? variant : 'clean';
-  const effectiveView: PreviewView =
-    originalFile === null ? 'after' : isMobile && view === 'sideBySide' ? 'after' : view;
+  const effectiveView: PreviewView = originalFile === null ? 'after' : view;
+
+  useEffect(() => {
+    return () => {
+      if (downloadedTimeoutRef.current) clearTimeout(downloadedTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!opened) {
       setAfterBlob(null);
+      setDownloadedFormat(null);
       return;
     }
     let cancelled = false;
@@ -170,8 +167,12 @@ const DocumentPreviewModal = ({
 
   const handleDownload = async (format: ExportFormat) => {
     setExportingFormat(format);
+    setDownloadedFormat(null);
+    if (downloadedTimeoutRef.current) clearTimeout(downloadedTimeoutRef.current);
     try {
       await onExport(effectiveVariant, format);
+      setDownloadedFormat(format);
+      downloadedTimeoutRef.current = setTimeout(() => setDownloadedFormat(null), 2500);
     } finally {
       setExportingFormat(null);
     }
@@ -180,12 +181,7 @@ const DocumentPreviewModal = ({
   const viewOptions = [
     { value: 'after', label: 'Tailored' },
     { value: 'before', label: 'Original' },
-    ...(isMobile ? [] : [{ value: 'sideBySide', label: 'Side by side' }]),
   ];
-
-  const showBefore = effectiveView === 'before' || effectiveView === 'sideBySide';
-  const showAfter = effectiveView === 'after' || effectiveView === 'sideBySide';
-  const paneLabelsVisible = effectiveView === 'sideBySide';
 
   return (
     <Modal
@@ -224,44 +220,48 @@ const DocumentPreviewModal = ({
           </Group>
         </Group>
 
-        <Group gap="md" align="stretch" wrap="nowrap" h="65vh">
-          {showBefore && originalFile !== null && (
-            <LabeledPane label={paneLabelsVisible ? 'Original' : null}>
-              <DocxPane source={originalFile} isLoading={false} hasError={false} />
-            </LabeledPane>
+        <Stack gap={4} h="65vh">
+          {effectiveView === 'before' && originalFile !== null ? (
+            <DocxPane source={originalFile} isLoading={false} hasError={false} />
+          ) : (
+            <DocxPane source={afterBlob} isLoading={isBuilding} hasError={buildFailed} />
           )}
-          {showAfter && (
-            <LabeledPane label={paneLabelsVisible ? 'Tailored' : null}>
-              <DocxPane source={afterBlob} isLoading={isBuilding} hasError={buildFailed} />
-            </LabeledPane>
-          )}
-        </Group>
+        </Stack>
 
-        <Group justify="space-between" align="center" wrap="wrap" gap="sm">
-          <Text size="xs" c="dimmed">
-            {canPatchOriginal
-              ? 'Downloads use the layout option selected above.'
-              : 'Downloads use the clean template layout.'}
-          </Text>
+        <Group justify="flex-end" align="center" wrap="wrap" gap="sm">
           <Group gap="xs" wrap="nowrap">
             <Button
               size="xs"
               variant="light"
-              leftSection={<IconFileTypePdf size={16} />}
+              color={downloadedFormat === 'pdf' ? 'teal' : undefined}
+              leftSection={
+                downloadedFormat === 'pdf' ? (
+                  <IconCheck size={16} />
+                ) : (
+                  <IconFileTypePdf size={16} />
+                )
+              }
               loading={exportingFormat === 'pdf'}
               disabled={exportingFormat === 'docx' || buildFailed}
               onClick={() => void handleDownload('pdf')}
             >
-              PDF (.pdf)
+              {downloadedFormat === 'pdf' ? 'Downloaded' : 'PDF (.pdf)'}
             </Button>
             <Button
               size="xs"
-              leftSection={<IconFileDescription size={16} />}
+              color={downloadedFormat === 'docx' ? 'teal' : undefined}
+              leftSection={
+                downloadedFormat === 'docx' ? (
+                  <IconCheck size={16} />
+                ) : (
+                  <IconFileDescription size={16} />
+                )
+              }
               loading={exportingFormat === 'docx'}
               disabled={exportingFormat === 'pdf' || buildFailed}
               onClick={() => void handleDownload('docx')}
             >
-              Word (.docx)
+              {downloadedFormat === 'docx' ? 'Downloaded' : 'Word (.docx)'}
             </Button>
           </Group>
         </Group>

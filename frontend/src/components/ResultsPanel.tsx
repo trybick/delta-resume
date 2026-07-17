@@ -777,18 +777,6 @@ const ResultsPanel = ({
                   Preview
                 </Button>
               </Tooltip>
-              <Tooltip label="Copy the tailored resume with your kept changes" withArrow>
-                <Button
-                  size="xs"
-                  variant="light"
-                  color={copied ? 'green' : undefined}
-                  leftSection={copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />}
-                  disabled={isExample}
-                  onClick={handleCopy}
-                >
-                  {copied ? 'Copied' : 'Copy'}
-                </Button>
-              </Tooltip>
               <Menu
                 position="bottom-end"
                 withinPortal
@@ -806,6 +794,14 @@ const ResultsPanel = ({
                   </Button>
                 </Menu.Target>
                 <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />}
+                    disabled={isExample}
+                    onClick={handleCopy}
+                  >
+                    {copied ? 'Copied' : 'Copy to clipboard'}
+                  </Menu.Item>
+                  <Menu.Divider />
                   {isExample && (
                     <>
                       <Menu.Label>Example preview — export unavailable</Menu.Label>
