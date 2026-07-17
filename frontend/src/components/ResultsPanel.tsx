@@ -307,33 +307,87 @@ const CollapsibleInsight = ({
   </Paper>
 );
 
-type ChangeStatChipProps = {
+type ChangeStatSegmentProps = {
   icon: ReactNode;
   count: number;
   label: string;
-  color: string;
 };
 
-const ChangeStatChip = ({ icon, count, label, color }: ChangeStatChipProps) => (
+const ChangeStatSegment = ({ icon, count, label }: ChangeStatSegmentProps) => (
   <Group
     gap={6}
     wrap="nowrap"
-    px={10}
-    py={5}
+    px={12}
+    py={6}
     style={{
       flexShrink: 0,
-      borderRadius: 999,
-      backgroundColor: `color-mix(in srgb, var(--mantine-color-${color}-6) 12%, var(--mantine-color-body))`,
-      border: `1px solid color-mix(in srgb, var(--mantine-color-${color}-6) 25%, transparent)`,
+      borderLeft: '1px solid color-mix(in srgb, var(--mantine-color-green-6) 20%, transparent)',
     }}
   >
     {icon}
-    <Text size="sm" fw={700} c={`${color}.5`} lh={1}>
+    <Text size="sm" fw={700} c="green.5" lh={1}>
       {count}
     </Text>
     <Text size="sm" fw={500} c="dimmed" lh={1}>
       {label}
     </Text>
+  </Group>
+);
+
+type ChangeStatsPillProps = {
+  bulletCount: number;
+  skillCount: number;
+  paragraphCount: number;
+};
+
+const ChangeStatsPill = ({ bulletCount, skillCount, paragraphCount }: ChangeStatsPillProps) => (
+  <Group
+    gap={0}
+    align="stretch"
+    wrap="nowrap"
+    style={{
+      flexShrink: 0,
+      borderRadius: 999,
+      overflow: 'hidden',
+      border: '1px solid color-mix(in srgb, var(--mantine-color-green-6) 25%, transparent)',
+    }}
+  >
+    <Group
+      gap={6}
+      wrap="nowrap"
+      px={12}
+      py={6}
+      style={{
+        flexShrink: 0,
+        backgroundColor: 'color-mix(in srgb, var(--mantine-color-green-6) 14%, var(--mantine-color-body))',
+      }}
+    >
+      <IconCircleCheck size={14} color="var(--mantine-color-green-5)" stroke={1.8} />
+      <Text size="xs" fw={700} c="green.5" tt="uppercase" lts={0.6} lh={1}>
+        Updated
+      </Text>
+    </Group>
+    {bulletCount > 0 && (
+      <ChangeStatSegment
+        icon={<IconList size={14} color="var(--mantine-color-green-5)" stroke={1.8} />}
+        count={bulletCount}
+        label={bulletCount === 1 ? 'bullet' : 'bullets'}
+      />
+    )}
+    {skillCount > 0 && (
+      <ChangeStatSegment
+        icon={<IconBolt size={14} color="var(--mantine-color-green-5)" stroke={1.8} />}
+        count={skillCount}
+        label={skillCount === 1 ? 'skill' : 'skills'}
+      />
+    )}
+    {paragraphCount > 0 && (
+      <ChangeStatSegment
+        icon={<IconFileText size={14} color="var(--mantine-color-green-5)" stroke={1.8} />}
+        count={paragraphCount}
+        label="summary"
+      />
+    )}
   </Group>
 );
 
@@ -721,47 +775,11 @@ const ResultsPanel = ({
         <Stack gap="xs">
           <Group justify="space-between" align="center" wrap="wrap" gap="sm">
             <Group gap="sm" align="center" wrap="nowrap" style={{ flexShrink: 0 }}>
-              <Group
-                gap={6}
-                align="center"
-                wrap="nowrap"
-                p={4}
-                style={{
-                  borderRadius: 999,
-                  backgroundColor: 'var(--mantine-color-default-hover)',
-                  flexShrink: 0,
-                }}
-              >
-                <Text size="xs" fw={600} c="dimmed" tt="uppercase" lts={0.6} px={8} style={{ flexShrink: 0 }}>
-                  Updated
-                </Text>
-                {bulletChangeCount > 0 && (
-                  <ChangeStatChip
-                    icon={<IconList size={14} color="var(--mantine-color-green-5)" stroke={1.8} />}
-                    count={bulletChangeCount}
-                    label={bulletChangeCount === 1 ? 'bullet' : 'bullets'}
-                    color="green"
-                  />
-                )}
-                {skillChangeCount > 0 && (
-                  <ChangeStatChip
-                    icon={<IconBolt size={14} color="var(--mantine-color-green-5)" stroke={1.8} />}
-                    count={skillChangeCount}
-                    label={skillChangeCount === 1 ? 'skill' : 'skills'}
-                    color="green"
-                  />
-                )}
-                {paragraphChangeCount > 0 && (
-                  <ChangeStatChip
-                    icon={
-                      <IconFileText size={14} color="var(--mantine-color-green-5)" stroke={1.8} />
-                    }
-                    count={paragraphChangeCount}
-                    label="summary"
-                    color="green"
-                  />
-                )}
-              </Group>
+              <ChangeStatsPill
+                bulletCount={bulletChangeCount}
+                skillCount={skillChangeCount}
+                paragraphCount={paragraphChangeCount}
+              />
               {isExample && (
                 <Badge color="cyan" variant="light" style={{ flexShrink: 0 }}>
                   Example
