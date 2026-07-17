@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { FocusTrap, Modal, Paper, Stack, Text, Title } from '@mantine/core';
 import { SignUp, useAuth, useUser } from '@clerk/clerk-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import type { PaywallReason } from '../lib/types';
 import ProFeatureList from './ProFeatureList';
 import ProPlanShowcase from './ProPlanShowcase';
 
@@ -42,8 +43,6 @@ const embeddedSignUpAppearance = {
     },
   },
 } as const;
-
-export type PaywallReason = 'credits' | 'savedLimit' | 'upgrade' | 'coverLetter' | 'gaps' | 'signUp';
 
 type PaywallModalProps = {
   opened: boolean;

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, postCoverLetter } from '../lib/api';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { NETWORK_ERROR_MESSAGE } from '../lib/constants';
 import type { CoverLetterResult, CoverLetterStatus } from '../lib/types';
 
 type CoverLetterInputs = {
@@ -57,11 +58,7 @@ export const useCoverLetter = (): UseCoverLetterResult => {
       if (requestIdRef.current !== requestId) return;
       if (error instanceof DOMException && error.name === 'AbortError') return;
       trackEvent(AnalyticsEvents.CoverLetterFailure);
-      setErrorMessage(
-        error instanceof ApiError
-          ? error.message
-          : 'Could not reach the server. Is the backend running?',
-      );
+      setErrorMessage(error instanceof ApiError ? error.message : NETWORK_ERROR_MESSAGE);
       setStatus('error');
     } finally {
       if (abortControllerRef.current === abortController) {

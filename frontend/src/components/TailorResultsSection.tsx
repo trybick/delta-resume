@@ -12,7 +12,7 @@ import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { proAccent } from '../lib/proAccent';
 import ResultsPanel from './ResultsPanel';
 import CoverLetterPanel from './CoverLetterPanel';
-import type { OriginalDocx } from '../hooks/useResumeDocument';
+import type { OriginalDocx } from '../lib/types';
 import { SAMPLE_COVER_LETTER_RESULT, SAMPLE_TAILOR_RESULT } from '../lib/mockTailor';
 import type {
   CoverLetterResult,

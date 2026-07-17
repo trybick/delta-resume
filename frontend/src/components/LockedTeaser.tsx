@@ -4,7 +4,7 @@ import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { prependCoverLetterDate } from '../lib/formatCoverLetter';
 import { SAMPLE_COVER_LETTER_RESULT } from '../lib/mockTailor';
 import { proAccent } from '../lib/proAccent';
-import { useProUpgradeCtaLabel } from '../lib/proPlan';
+import { useProUpgradeCtaLabel } from '../hooks/useProPlan';
 
 type LockedTeaserProps = {
   isProPlan: boolean;

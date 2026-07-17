@@ -23,15 +23,14 @@ import {
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { AnalyticsEvents, createDebouncedTracker, trackEvent } from '../lib/analytics';
-import type { CoverLetterResult, CoverLetterSettings, CoverLetterStatus } from '../lib/types';
-import { defaultUserSettings } from '../lib/types';
-import { getSettings, putSettings } from '../lib/api';
+import type { CoverLetterResult, CoverLetterStatus } from '../lib/types';
 import { buildCoverLetterDocx, downloadDocx } from '../lib/exportDocx';
 import { convertDocxToPdfWithFallback, downloadPdf } from '../lib/exportPdf';
 import {
   formatCoverLetterText,
   formatCoverLetterSignature,
 } from '../lib/formatCoverLetter';
+import { useCoverLetterSettings } from '../hooks/useCoverLetterSettings';
 import ExampleCoverLetter from './ExampleCoverLetter';
 import LockedTeaser from './LockedTeaser';
 import NameAndSettingsRow from './NameAndSettingsRow';
@@ -63,16 +62,18 @@ const CoverLetterPanel = ({
   const onProPlan = isProPlan || (has?.({ plan: 'pro' }) ?? false);
   const [candidateName, setCandidateName] = useState('');
   const [isExporting, setIsExporting] = useState(false);
-  const [settingsOpened, setSettingsOpened] = useState(false);
-  const [coverLetterSettings, setCoverLetterSettings] = useState<CoverLetterSettings>(
-    defaultUserSettings.coverLetter,
-  );
-  const [isSettingsLoading, setIsSettingsLoading] = useState(false);
   const hasPrefilledName = useRef(false);
   const trackEditCandidateName = useMemo(
     () => createDebouncedTracker(AnalyticsEvents.EditCandidateName),
     [],
   );
+  const {
+    settings: coverLetterSettings,
+    isSettingsLoading,
+    settingsOpened,
+    handleToggleSettings,
+    handleSettingsChange,
+  } = useCoverLetterSettings({ enabled: onProPlan && !isExample });
 
   const clerkFullName = user?.fullName ?? '';
 
@@ -81,51 +82,6 @@ const CoverLetterPanel = ({
     hasPrefilledName.current = true;
     setCandidateName((current) => (current.length === 0 ? clerkFullName : current));
   }, [clerkFullName]);
-
-  useEffect(() => {
-    if (!onProPlan || isExample) return;
-    let cancelled = false;
-    setIsSettingsLoading(true);
-    getSettings()
-      .then((settings) => {
-        if (cancelled) return;
-        setCoverLetterSettings(settings.coverLetter);
-      })
-      .catch(() => undefined)
-      .finally(() => {
-        if (!cancelled) setIsSettingsLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [onProPlan, isExample]);
-
-  const handleToggleSettings = () => {
-    setSettingsOpened((current) => {
-      const next = !current;
-      trackEvent(AnalyticsEvents.CoverLetterSettingsToggle, { open: next });
-      return next;
-    });
-  };
-
-  const handleSettingsChange = async (next: CoverLetterSettings) => {
-    const previous = coverLetterSettings;
-    setCoverLetterSettings(next);
-    try {
-      await putSettings({ coverLetter: next });
-      trackEvent(AnalyticsEvents.CoverLetterSettingsSave, {
-        length: next.length,
-        tone: next.tone,
-      });
-    } catch {
-      setCoverLetterSettings(previous);
-      notifications.show({
-        color: 'red',
-        title: 'Could not save settings',
-        message: 'Something went wrong. Please try again.',
-      });
-    }
-  };
 
   const handleCandidateNameChange = (value: string) => {
     trackEditCandidateName();

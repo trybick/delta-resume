@@ -5,7 +5,7 @@ import {
   IconMail,
   IconTargetArrow,
 } from '@tabler/icons-react';
-import { usePlans } from '@clerk/clerk-react/experimental';
+import { SAVED_RESUME_LIMIT_PRO } from './constants';
 
 export type ProFeature = {
   icon: typeof IconCoins;
@@ -32,7 +32,7 @@ export const PRO_FEATURES: ProFeature[] = [
   },
   {
     icon: IconFolders,
-    title: '10 saved resumes',
+    title: `${SAVED_RESUME_LIMIT_PRO} saved resumes`,
     description: 'Keep multiple versions ready for different roles',
   },
   {
@@ -47,49 +47,4 @@ export type ProPriceInfo = {
   annualMonthlyPrice: string | null;
   annualSavingsPercent: number | null;
   planId: string | null;
-};
-
-const getAnnualSavingsPercent = (
-  monthlyAmount: number | undefined,
-  annualMonthlyAmount: number | undefined,
-): number | null => {
-  if (!monthlyAmount || !annualMonthlyAmount || annualMonthlyAmount >= monthlyAmount) {
-    return null;
-  }
-
-  return Math.round(((monthlyAmount - annualMonthlyAmount) / monthlyAmount) * 100);
-};
-
-export const useProPlan = (): ProPriceInfo => {
-  const { data: plans } = usePlans({ for: 'user', pageSize: 20 });
-  const proPlan = plans?.find((plan) => plan.slug === 'pro');
-
-  if (!proPlan) {
-    return {
-      monthlyPrice: null,
-      annualMonthlyPrice: null,
-      annualSavingsPercent: null,
-      planId: null,
-    };
-  }
-
-  return {
-    monthlyPrice: `${proPlan.fee.currencySymbol}${proPlan.fee.amountFormatted}`,
-    annualMonthlyPrice: proPlan.annualMonthlyFee
-      ? `${proPlan.annualMonthlyFee.currencySymbol}${proPlan.annualMonthlyFee.amountFormatted}`
-      : null,
-    annualSavingsPercent: getAnnualSavingsPercent(
-      proPlan.fee?.amount,
-      proPlan.annualMonthlyFee?.amount,
-    ),
-    planId: proPlan.id,
-  };
-};
-
-export const getProUpgradeCtaLabel = (price: string | null): string =>
-  price ? `Upgrade to Pro — from ${price}/mo` : 'Upgrade to Pro';
-
-export const useProUpgradeCtaLabel = (): string => {
-  const { annualMonthlyPrice, monthlyPrice } = useProPlan();
-  return getProUpgradeCtaLabel(annualMonthlyPrice ?? monthlyPrice);
 };

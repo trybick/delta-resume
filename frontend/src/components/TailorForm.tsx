@@ -4,8 +4,8 @@ import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { appTheme } from '../lib/theme';
 import ResumeInput from './ResumeInput';
 import JobDescriptionInput from './JobDescriptionInput';
-import type { AttachedFile } from '../hooks/useResumeDocument';
-import type { CreditStatus, SavedResume, TailorStatus } from '../lib/types';
+import { getSavedResumeLimit } from '../lib/constants';
+import type { AttachedFile, CreditStatus, SavedResume, TailorStatus } from '../lib/types';
 
 type TailorFormProps = {
   resumeText: string;
@@ -93,7 +93,7 @@ const TailorForm = ({
         savedResumes={savedResumes}
         isLoadingSavedResumes={isLoadingSavedResumes}
         isSignedIn={isSignedIn}
-        savedResumeLimit={isProPlan ? 10 : 1}
+        savedResumeLimit={getSavedResumeLimit(isProPlan)}
         isProPlan={isProPlan}
         onResumeTextChange={onResumeTextChange}
         onFileAttach={onFileAttach}

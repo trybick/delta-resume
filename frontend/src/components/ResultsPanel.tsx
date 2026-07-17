@@ -15,7 +15,6 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core';
-import { notifications } from '@mantine/notifications';
 import {
   IconChevronDown,
   IconCopy,
@@ -29,8 +28,8 @@ import {
   IconTargetArrow,
 } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { hasDraftBullet } from '../lib/hasDraftBullet';
 import { proAccent } from '../lib/proAccent';
-import { useProUpgradeCtaLabel } from '../lib/proPlan';
 import { appTheme } from '../lib/theme';
 import type {
   AddedBullet,
@@ -38,35 +37,22 @@ import type {
   ChangeDecision,
   CreditStatus,
   JobRequirement,
+  OriginalDocx,
   TailorResult,
   TailorStatus,
 } from '../lib/types';
-import { copyResumeRichText } from '../lib/copyResume';
-import { applyAddedBullets } from '../lib/insertions';
-import {
-  buildStructuredDocx,
-  buildTemplateDocx,
-  downloadDocx,
-  normalizeResumeTextForComparison,
-  patchOriginalDocx,
-} from '../lib/exportDocx';
-import { convertDocxToPdfWithFallback, downloadPdf } from '../lib/exportPdf';
+import { useProUpgradeCtaLabel } from '../hooks/useProPlan';
+import { useResumeExport } from '../hooks/useResumeExport';
 import AddedBulletRow from './AddedBulletRow';
 import ChangeStatsPill from './ChangeStatsPill';
 import CollapsedContext from './CollapsedContext';
 import CollapsibleInsight from './CollapsibleInsight';
 import ContextLine from './ContextLine';
 import DiffBullet from './DiffBullet';
-import DocumentPreviewModal, { type PreviewVariant } from './DocumentPreviewModal';
+import DocumentPreviewModal from './DocumentPreviewModal';
 import GapRow from './GapRow';
 import IdleStep from './IdleStep';
 import TailoringLoader from './TailoringLoader';
-import { hasDraftBullet } from '../lib/hasDraftBullet';
-
-type OriginalDocx = {
-  file: File;
-  parsedText: string;
-};
 
 type ResultsPanelProps = {
   status: TailorStatus;
@@ -198,8 +184,6 @@ const ResultsPanel = ({
   const [expandedSegments, setExpandedSegments] = useState<Set<number>>(new Set());
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [gapsOpen, setGapsOpen] = useState(() => (result ? hasMustHaveGaps(result) : false));
-  const [isExporting, setIsExporting] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
   const upgradeCtaLabel = useProUpgradeCtaLabel();
 
   useEffect(() => {
@@ -267,134 +251,23 @@ const ResultsPanel = ({
     (bullet) => typeof bullet.text === 'string' && bullet.text.trim().length > 0,
   );
 
-  const buildMergedLines = (): string[] => {
-    if (!result) return [];
-    return result.resumeText.split('\n').map((line, lineIndex) => {
-      const change = changesByLine.get(lineIndex);
-      if (!change) return line;
-      return decisions[change.id] === 'reverted' ? change.original : change.tailored;
-    });
-  };
-
-  const buildMergedResume = () =>
-    applyAddedBullets(buildMergedLines(), result?.structure, activeAddedBullets);
-
-  const handleCopy = async () => {
-    if (!result || isExample) return;
-    trackEvent(AnalyticsEvents.ResumeCopy);
-    try {
-      const merged = buildMergedResume();
-      await copyResumeRichText(merged.lines, merged.structure);
-      trackEvent(AnalyticsEvents.CopySuccess, { source: 'resume' });
-      notifications.show({
-        color: 'green',
-        title: 'Copied',
-        message: 'Resume copied to clipboard.',
-      });
-    } catch {
-      trackEvent(AnalyticsEvents.CopyFailure, { source: 'resume' });
-      notifications.show({
-        color: 'red',
-        title: 'Copy failed',
-        message: 'Could not copy the resume to your clipboard.',
-      });
-    }
-  };
-
-  const canPatchOriginal =
-    result !== null &&
-    originalDocx !== null &&
-    normalizeResumeTextForComparison(originalDocx.parsedText) ===
-      normalizeResumeTextForComparison(result.resumeText);
-
-  const buildCleanDocx = (): Promise<Blob> => {
-    const merged = buildMergedResume();
-    return merged.structure
-      ? buildStructuredDocx(merged.lines, merged.structure)
-      : buildTemplateDocx(merged.lines.join('\n'));
-  };
-
-  const buildPatchedDocx = async (): Promise<Blob> => {
-    if (!result || !originalDocx) return buildCleanDocx();
-    const replacements = result.changes
-      .filter((change) => decisions[change.id] !== 'reverted')
-      .map((change) => ({ original: change.original, tailored: change.tailored }));
-    try {
-      return await patchOriginalDocx(originalDocx.file, replacements);
-    } catch {
-      notifications.show({
-        color: 'orange',
-        title: 'Original layout unavailable',
-        message:
-          'We could not preserve your original formatting, so a clean template was used instead.',
-      });
-      return buildCleanDocx();
-    }
-  };
-
-  const handleExport = async (variant: 'keep' | 'clean', format: 'docx' | 'pdf') => {
-    if (!result || isExample || isExporting) return false;
-    trackEvent(AnalyticsEvents.ResumeExport, { variant, format });
-    if (variant === 'keep' && activeAddedBullets.length > 0) {
-      notifications.show({
-        color: 'orange',
-        title: 'Added bullets not included',
-        message:
-          'New bullets can\u2019t be inserted into your original file. Use the clean template or copy to clipboard to include them.',
-      });
-    }
-    setIsExporting(true);
-    try {
-      const docxBlob = variant === 'keep' ? await buildPatchedDocx() : await buildCleanDocx();
-      if (format === 'docx') {
-        downloadDocx(docxBlob, 'tailored-resume.docx');
-        trackEvent(AnalyticsEvents.ExportSuccess, {
-          source: 'resume',
-          variant,
-          format,
-        });
-        return true;
-      }
-      const pdfBlob = await convertDocxToPdfWithFallback(docxBlob);
-      downloadPdf(pdfBlob, 'tailored-resume.pdf');
-      trackEvent(AnalyticsEvents.ExportSuccess, {
-        source: 'resume',
-        variant,
-        format,
-      });
-      return true;
-    } catch {
-      trackEvent(AnalyticsEvents.ExportFailure, {
-        source: 'resume',
-        variant,
-        format,
-      });
-      if (format === 'pdf') {
-        notifications.show({
-          color: 'red',
-          title: 'PDF export failed',
-          message: 'Could not generate a PDF. Try downloading the .docx instead.',
-        });
-      }
-      return false;
-    } finally {
-      setIsExporting(false);
-    }
-  };
-
-  const buildPreviewDocx = (variant: PreviewVariant): Promise<Blob> =>
-    variant === 'keep' ? buildPatchedDocx() : buildCleanDocx();
-
-  const handlePreviewOpen = () => {
-    if (!result || isExample) return;
-    trackEvent(AnalyticsEvents.ResumePreviewOpen);
-    setPreviewOpen(true);
-  };
-
-  const handlePreviewClose = () => {
-    trackEvent(AnalyticsEvents.ResumePreviewClose);
-    setPreviewOpen(false);
-  };
+  const {
+    isExporting,
+    previewOpen,
+    canPatchOriginal,
+    handleCopy,
+    handleExport,
+    buildPreviewDocx,
+    handlePreviewOpen,
+    handlePreviewClose,
+  } = useResumeExport({
+    result,
+    isExample,
+    originalDocx,
+    decisions,
+    changesByLine,
+    activeAddedBullets,
+  });
 
   const requirements = result?.requirements ?? [];
 
