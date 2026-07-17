@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { PaywallReason } from '../components/PaywallModal';
+import type { PaywallReason } from '../lib/types';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 
 const PENDING_PAYWALL_KEY = 'deltaResume.pendingPaywallReason';

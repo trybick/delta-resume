@@ -1,17 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { cleanupOriginalDocxStore, loadOriginalDocx, saveOriginalDocx } from '../lib/docxStore';
 import { normalizeResumeTextForComparison } from '../lib/exportDocx';
-import type { SavedResume } from '../lib/types';
-
-export type AttachedFile = {
-  name: string;
-  size: number;
-};
-
-export type OriginalDocx = {
-  file: File;
-  parsedText: string;
-};
+import type { AttachedFile, OriginalDocx, SavedResume } from '../lib/types';
 
 type UseResumeDocumentOptions = {
   savedResumes: SavedResume[];

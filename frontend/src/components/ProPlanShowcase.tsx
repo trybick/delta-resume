@@ -14,7 +14,8 @@ import { CheckoutButton } from '@clerk/clerk-react/experimental';
 import { IconSparkles } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { proAccent } from '../lib/proAccent';
-import { PRO_FEATURES, useProPlan } from '../lib/proPlan';
+import { useProPlan } from '../hooks/useProPlan';
+import { PRO_FEATURES } from '../lib/proPlan';
 import FeatureRow from './FeatureRow';
 
 type BillingPeriod = 'month' | 'annual';

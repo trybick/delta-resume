@@ -110,3 +110,15 @@ export type SavedResume = {
   resumeText: string;
   createdAt: string;
 };
+
+export type AttachedFile = {
+  name: string;
+  size: number;
+};
+
+export type OriginalDocx = {
+  file: File;
+  parsedText: string;
+};
+
+export type PaywallReason = 'credits' | 'savedLimit' | 'upgrade' | 'coverLetter' | 'gaps' | 'signUp';

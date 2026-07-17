@@ -2,7 +2,7 @@ import { Badge, Box, Button, Card, Group, Stack, Text } from '@mantine/core';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { prependCoverLetterDate } from '../lib/formatCoverLetter';
 import { proAccent } from '../lib/proAccent';
-import { useProUpgradeCtaLabel } from '../lib/proPlan';
+import { useProUpgradeCtaLabel } from '../hooks/useProPlan';
 import type { CoverLetterResult } from '../lib/types';
 
 type ExampleCoverLetterProps = {

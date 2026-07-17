@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ApiError, CreditsExhaustedError, postTailor } from '../lib/api';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { NETWORK_ERROR_MESSAGE } from '../lib/constants';
 import type { TailorResult, TailorStatus } from '../lib/types';
 
 type UseTailorRunOptions = {
@@ -73,11 +74,7 @@ export const useTailorRun = ({
         onCreditsExhausted();
       } else {
         trackEvent(AnalyticsEvents.TailorFailure);
-        setErrorMessage(
-          error instanceof ApiError
-            ? error.message
-            : 'Could not reach the server. Is the backend running?',
-        );
+        setErrorMessage(error instanceof ApiError ? error.message : NETWORK_ERROR_MESSAGE);
       }
       setStatus(resultRef.current ? 'done' : 'idle');
       return false;

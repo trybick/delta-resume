@@ -11,7 +11,7 @@ import { IconSparkles } from '@tabler/icons-react';
 import ProFeatureList from './ProFeatureList';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { proAccent } from '../lib/proAccent';
-import { useProPlan } from '../lib/proPlan';
+import { useProPlan } from '../hooks/useProPlan';
 
 type UpgradeHoverCardProps = {
   onUpgradeClick: () => void;

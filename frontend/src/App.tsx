@@ -17,6 +17,7 @@ import { useResumeDocument } from './hooks/useResumeDocument';
 import { usePaywall } from './hooks/usePaywall';
 import { AnalyticsEvents, trackEvent } from './lib/analytics';
 import { registerTokenGetter } from './lib/authToken';
+import { isProPlan as checkIsProPlan } from './lib/constants';
 import { subscribeToRateLimit } from './lib/rateLimitNotice';
 import { formatDefaultResumeName } from './lib/formatDefaultResumeName';
 
@@ -83,7 +84,7 @@ const App = () => {
   } = useCoverLetter();
 
   const isGuest = isSignedIn === false;
-  const isProPlan = credits?.plan === 'pro';
+  const isProPlan = checkIsProPlan(credits);
   const freeTrialLabel = !isGuest
     ? null
     : credits === null

@@ -31,10 +31,11 @@ import DiffMockExample from './DiffMockExample';
 import LegalModal from './LegalModal';
 import ProFeatureList from './ProFeatureList';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { SAVED_RESUME_LIMIT_FREE } from '../lib/constants';
 import { PRIVACY_POLICY } from '../lib/legalContent';
 import type { LegalDocument } from '../lib/legalContent';
 import { proAccent } from '../lib/proAccent';
-import { useProPlan } from '../lib/proPlan';
+import { useProPlan } from '../hooks/useProPlan';
 
 type LandingStripProps = {
   onUpgradeClick: () => void;
@@ -96,7 +97,7 @@ const FREE_PLAN_FEATURES = [
   '3 free tailor runs \u2014 no account needed',
   'Inline diff review of every change',
   'Copy your tailored resume',
-  '1 saved resume with a free account',
+  `${SAVED_RESUME_LIMIT_FREE} saved resume with a free account`,
 ];
 
 const LandingStrip = ({ onUpgradeClick }: LandingStripProps) => {
