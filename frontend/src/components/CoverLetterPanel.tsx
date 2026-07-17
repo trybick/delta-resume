@@ -7,6 +7,7 @@ import {
   Button,
   Card,
   Center,
+  Collapse,
   Group,
   Menu,
   Skeleton,
@@ -43,7 +44,7 @@ import {
   prependCoverLetterDate,
 } from '../lib/formatCoverLetter';
 import { SAMPLE_COVER_LETTER_RESULT } from '../lib/mockTailor';
-import CoverLetterSettingsModal from './CoverLetterSettingsModal';
+import CoverLetterSettingsPanel from './CoverLetterSettingsPanel';
 
 type CoverLetterPanelProps = {
   isProPlan: boolean;
@@ -219,6 +220,84 @@ const WritingLoader = () => {
   );
 };
 
+type NameAndSettingsRowProps = {
+  candidateName: string;
+  onCandidateNameChange: (value: string) => void;
+  settingsOpened: boolean;
+  onToggleSettings: () => void;
+  onCloseSettings: () => void;
+};
+
+const NameAndSettingsRow = ({
+  candidateName,
+  onCandidateNameChange,
+  settingsOpened,
+  onToggleSettings,
+  onCloseSettings,
+}: NameAndSettingsRowProps) => (
+  <Stack gap="sm">
+    <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
+      <Group gap="sm" align="center" wrap="wrap" style={{ flex: 1, minWidth: 0 }}>
+        <Group gap={4} align="center" wrap="nowrap">
+          <Text
+            component="label"
+            htmlFor="cover-letter-candidate-name"
+            size="sm"
+            fw={500}
+            style={{ whiteSpace: 'nowrap' }}
+          >
+            Your name
+          </Text>
+          <Tooltip label="Used for the signature.">
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              size="xs"
+              aria-label="Used for the signature"
+              onClick={() => trackEvent(AnalyticsEvents.SignatureInfoClick)}
+            >
+              <IconInfoCircle size={14} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
+        <TextInput
+          id="cover-letter-candidate-name"
+          name="name"
+          autoComplete="name"
+          placeholder="e.g. Jordan Applicant"
+          value={candidateName}
+          onChange={(event) => onCandidateNameChange(event.currentTarget.value)}
+          maw={280}
+          style={{ flex: 1 }}
+        />
+      </Group>
+      <Tooltip label="Cover letter settings">
+        <ActionIcon
+          variant={settingsOpened ? 'light' : 'subtle'}
+          color="gray"
+          aria-label="Cover letter settings"
+          aria-expanded={settingsOpened}
+          onClick={onToggleSettings}
+        >
+          <IconSettings size={18} />
+        </ActionIcon>
+      </Tooltip>
+    </Group>
+    <Collapse expanded={settingsOpened}>
+      <Box
+        p="md"
+        style={{
+          borderRadius: 8,
+          border: '1px solid var(--mantine-color-default-border)',
+          backgroundColor: 'var(--mantine-color-default-hover)',
+        }}
+      >
+        <CoverLetterSettingsPanel opened={settingsOpened} onClose={onCloseSettings} />
+      </Box>
+    </Collapse>
+  </Stack>
+);
+
 const CoverLetterPanel = ({
   isProPlan,
   status,
@@ -250,24 +329,22 @@ const CoverLetterPanel = ({
     setCandidateName((current) => (current.length === 0 ? clerkFullName : current));
   }, [clerkFullName]);
 
-  const handleOpenSettings = () => setSettingsOpened(true);
+  const handleToggleSettings = () => setSettingsOpened((current) => !current);
   const handleCloseSettings = () => setSettingsOpened(false);
 
-  const settingsButton = (
-    <Tooltip label="Cover letter settings">
-      <ActionIcon
-        variant="subtle"
-        color="gray"
-        aria-label="Cover letter settings"
-        onClick={handleOpenSettings}
-      >
-        <IconSettings size={18} />
-      </ActionIcon>
-    </Tooltip>
-  );
+  const handleCandidateNameChange = (value: string) => {
+    trackEditCandidateName();
+    setCandidateName(value);
+  };
 
-  const settingsModal = (
-    <CoverLetterSettingsModal opened={settingsOpened} onClose={handleCloseSettings} />
+  const nameAndSettingsRow = (
+    <NameAndSettingsRow
+      candidateName={candidateName}
+      onCandidateNameChange={handleCandidateNameChange}
+      settingsOpened={settingsOpened}
+      onToggleSettings={handleToggleSettings}
+      onCloseSettings={handleCloseSettings}
+    />
   );
 
   if (isExample && exampleResult) {
@@ -286,16 +363,17 @@ const CoverLetterPanel = ({
 
   if (status === 'idle') {
     return (
-      <Card withBorder shadow="xs" padding="lg" style={{ position: 'relative' }}>
-        <Box style={{ position: 'absolute', top: 12, right: 12 }}>{settingsButton}</Box>
-        <Stack align="center" gap="xs" py="md">
-          <IconMail size={32} color="var(--mantine-primary-color-filled)" />
-          <Title order={5}>No cover letter yet</Title>
-          <Text size="sm" c="dimmed" ta="center" maw={340}>
-            Your next tailor run will also write a matching cover letter, and it will show up here.
-          </Text>
+      <Card withBorder shadow="xs" padding="lg">
+        <Stack gap="md">
+          {nameAndSettingsRow}
+          <Stack align="center" gap="xs" py="md">
+            <IconMail size={32} color="var(--mantine-primary-color-filled)" />
+            <Title order={5}>No cover letter yet</Title>
+            <Text size="sm" c="dimmed" ta="center" maw={340}>
+              Your next tailor run will also write a matching cover letter, and it will show up here.
+            </Text>
+          </Stack>
         </Stack>
-        {settingsModal}
       </Card>
     );
   }
@@ -306,13 +384,11 @@ const CoverLetterPanel = ({
     return (
       <Card withBorder shadow="xs" padding="lg">
         <Stack gap="md">
-          <Group justify="space-between" align="center" wrap="wrap">
-            <Group gap="sm">
-              <IconMail size={20} color="var(--mantine-primary-color-filled)" />
-              <Title order={4}>Cover letter</Title>
-            </Group>
-            {settingsButton}
+          <Group gap="sm">
+            <IconMail size={20} color="var(--mantine-primary-color-filled)" />
+            <Title order={4}>Cover letter</Title>
           </Group>
+          {nameAndSettingsRow}
           <Alert color="red" icon={<IconAlertCircle size={18} />} title="Cover letter failed">
             {errorMessage ?? 'Something went wrong while writing your cover letter.'}
           </Alert>
@@ -330,7 +406,6 @@ const CoverLetterPanel = ({
             </Button>
           </Group>
         </Stack>
-        {settingsModal}
       </Card>
     );
   }
@@ -407,86 +482,48 @@ const CoverLetterPanel = ({
             <IconMail size={20} color="var(--mantine-primary-color-filled)" />
             <Title order={4}>Cover letter</Title>
           </Group>
-          <Group gap="xs">
-            <Menu
-              position="bottom-end"
-              withinPortal
-              onOpen={() => trackEvent(AnalyticsEvents.CoverLetterExportMenuOpen)}
-            >
-              <Menu.Target>
-                <Button
-                  size="xs"
-                  variant="light"
-                  leftSection={<IconDownload size={16} />}
-                  rightSection={<IconChevronDown size={14} />}
-                  loading={isExporting}
-                >
-                  Export
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={
-                    clipboard.copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />
-                  }
-                  onClick={handleCopy}
-                >
-                  {clipboard.copied ? 'Copied' : 'Copy to clipboard'}
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  leftSection={<IconFileDescription size={16} />}
-                  onClick={() => handleExport('docx')}
-                >
-                  Word (.docx)
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconFileTypePdf size={16} />}
-                  onClick={() => handleExport('pdf')}
-                >
-                  PDF (.pdf)
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-            {settingsButton}
-          </Group>
-        </Group>
-        <Group gap="sm" align="center" wrap="wrap">
-          <Group gap={4} align="center" wrap="nowrap">
-            <Text
-              component="label"
-              htmlFor="cover-letter-candidate-name"
-              size="sm"
-              fw={500}
-              style={{ whiteSpace: 'nowrap' }}
-            >
-              Your name
-            </Text>
-            <Tooltip label="Used for the signature.">
-              <ActionIcon
-                variant="subtle"
-                color="gray"
+          <Menu
+            position="bottom-end"
+            withinPortal
+            onOpen={() => trackEvent(AnalyticsEvents.CoverLetterExportMenuOpen)}
+          >
+            <Menu.Target>
+              <Button
                 size="xs"
-                aria-label="Used for the signature"
-                onClick={() => trackEvent(AnalyticsEvents.SignatureInfoClick)}
+                variant="light"
+                leftSection={<IconDownload size={16} />}
+                rightSection={<IconChevronDown size={14} />}
+                loading={isExporting}
               >
-                <IconInfoCircle size={14} />
-              </ActionIcon>
-            </Tooltip>
-          </Group>
-          <TextInput
-            id="cover-letter-candidate-name"
-            name="name"
-            autoComplete="name"
-            placeholder="e.g. Jordan Applicant"
-            value={candidateName}
-            onChange={(event) => {
-              trackEditCandidateName();
-              setCandidateName(event.currentTarget.value);
-            }}
-            maw={280}
-          />
+                Export
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                leftSection={
+                  clipboard.copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />
+                }
+                onClick={handleCopy}
+              >
+                {clipboard.copied ? 'Copied' : 'Copy to clipboard'}
+              </Menu.Item>
+              <Menu.Divider />
+              <Menu.Item
+                leftSection={<IconFileDescription size={16} />}
+                onClick={() => handleExport('docx')}
+              >
+                Word (.docx)
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconFileTypePdf size={16} />}
+                onClick={() => handleExport('pdf')}
+              >
+                PDF (.pdf)
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
         </Group>
+        {nameAndSettingsRow}
         <Box
           p="md"
           style={{
@@ -500,7 +537,6 @@ const CoverLetterPanel = ({
           </Text>
         </Box>
       </Stack>
-      {settingsModal}
     </Card>
   );
 };

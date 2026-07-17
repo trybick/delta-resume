@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Button, Group, Modal, Select, Stack, Text } from '@mantine/core';
-import { IconInfoCircle } from '@tabler/icons-react';
+import { Button, Group, Select, Stack, Text } from '@mantine/core';
+import { IconInfoCircle, IconSettings } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { getSettings, putSettings } from '../lib/api';
 import {
@@ -10,16 +10,22 @@ import {
 } from '../lib/types';
 import type { CoverLetterLength, CoverLetterTone } from '../lib/types';
 
-type CoverLetterSettingsModalProps = {
+type CoverLetterSettingsPanelProps = {
   opened: boolean;
   onClose: () => void;
 };
 
-const CoverLetterSettingsModal = ({ opened, onClose }: CoverLetterSettingsModalProps) => {
+const CoverLetterSettingsPanel = ({ opened, onClose }: CoverLetterSettingsPanelProps) => {
   const [length, setLength] = useState<CoverLetterLength>(defaultUserSettings.coverLetter.length);
   const [tone, setTone] = useState<CoverLetterTone>(defaultUserSettings.coverLetter.tone);
+  const [savedLength, setSavedLength] = useState<CoverLetterLength>(
+    defaultUserSettings.coverLetter.length,
+  );
+  const [savedTone, setSavedTone] = useState<CoverLetterTone>(defaultUserSettings.coverLetter.tone);
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  const hasChanges = length !== savedLength || tone !== savedTone;
 
   useEffect(() => {
     if (!opened) return;
@@ -30,6 +36,8 @@ const CoverLetterSettingsModal = ({ opened, onClose }: CoverLetterSettingsModalP
         if (cancelled) return;
         setLength(settings.coverLetter.length);
         setTone(settings.coverLetter.tone);
+        setSavedLength(settings.coverLetter.length);
+        setSavedTone(settings.coverLetter.tone);
       })
       .catch(() => undefined)
       .finally(() => {
@@ -51,9 +59,12 @@ const CoverLetterSettingsModal = ({ opened, onClose }: CoverLetterSettingsModalP
   };
 
   const handleSave = async () => {
+    if (!hasChanges) return;
     setIsSaving(true);
     try {
       await putSettings({ coverLetter: { length, tone } });
+      setSavedLength(length);
+      setSavedTone(tone);
       notifications.show({
         title: 'Settings saved',
         message: 'They will apply to your next cover letter.',
@@ -71,8 +82,14 @@ const CoverLetterSettingsModal = ({ opened, onClose }: CoverLetterSettingsModalP
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title="Cover letter settings" centered>
-      <Stack gap="md">
+    <Stack gap="sm">
+      <Group gap={6} align="center" wrap="nowrap">
+        <IconSettings size={16} color="var(--mantine-primary-color-filled)" />
+        <Text size="sm" fw={600}>
+          Cover letter settings
+        </Text>
+      </Group>
+      <Group grow align="flex-start" preventGrowOverflow={false}>
         <Select
           label="Length"
           data={coverLetterLengthOptions}
@@ -89,23 +106,28 @@ const CoverLetterSettingsModal = ({ opened, onClose }: CoverLetterSettingsModalP
           allowDeselect={false}
           disabled={isLoading}
         />
-        <Group gap={6} align="center" wrap="nowrap">
-          <IconInfoCircle size={16} color="var(--mantine-color-dimmed)" />
-          <Text size="sm" c="dimmed">
-            Settings will apply to your next cover letter.
-          </Text>
-        </Group>
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} loading={isSaving} disabled={isLoading}>
-            Save
-          </Button>
-        </Group>
-      </Stack>
-    </Modal>
+      </Group>
+      <Group gap={6} align="center" wrap="nowrap">
+        <IconInfoCircle size={16} color="var(--mantine-color-dimmed)" />
+        <Text size="sm" c="dimmed">
+          Settings will apply to your next cover letter.
+        </Text>
+      </Group>
+      <Group justify="flex-end">
+        <Button variant="default" size="xs" onClick={onClose}>
+          Cancel
+        </Button>
+        <Button
+          size="xs"
+          onClick={handleSave}
+          loading={isSaving}
+          disabled={isLoading || !hasChanges}
+        >
+          Save
+        </Button>
+      </Group>
+    </Stack>
   );
 };
 
-export default CoverLetterSettingsModal;
+export default CoverLetterSettingsPanel;
