@@ -321,6 +321,7 @@ const ChangeStatChip = ({ icon, count, label, color }: ChangeStatChipProps) => (
     px={10}
     py={5}
     style={{
+      flexShrink: 0,
       borderRadius: 999,
       backgroundColor: `color-mix(in srgb, var(--mantine-color-${color}-6) 12%, var(--mantine-color-body))`,
       border: `1px solid color-mix(in srgb, var(--mantine-color-${color}-6) 25%, transparent)`,
@@ -718,18 +719,20 @@ const ResultsPanel = ({
     <Card withBorder shadow="xs" padding="lg">
       <Stack gap="md">
         <Stack gap="xs">
-          <Group justify="space-between" align="center" wrap="nowrap">
-            <Group gap="sm" align="center" wrap="nowrap">
+          <Group justify="space-between" align="center" wrap="wrap" gap="sm">
+            <Group gap="sm" align="center" wrap="nowrap" style={{ flexShrink: 0 }}>
               <Group
                 gap={6}
                 align="center"
+                wrap="nowrap"
                 p={4}
                 style={{
                   borderRadius: 999,
                   backgroundColor: 'var(--mantine-color-default-hover)',
+                  flexShrink: 0,
                 }}
               >
-                <Text size="xs" fw={600} c="dimmed" tt="uppercase" lts={0.6} px={8}>
+                <Text size="xs" fw={600} c="dimmed" tt="uppercase" lts={0.6} px={8} style={{ flexShrink: 0 }}>
                   Updated
                 </Text>
                 {bulletChangeCount > 0 && (
@@ -760,12 +763,12 @@ const ResultsPanel = ({
                 )}
               </Group>
               {isExample && (
-                <Badge color="cyan" variant="light">
+                <Badge color="cyan" variant="light" style={{ flexShrink: 0 }}>
                   Example
                 </Badge>
               )}
             </Group>
-            <Group gap="xs" wrap="nowrap">
+            <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
               <Tooltip label="Preview the final document before downloading" withArrow>
                 <Button
                   size="xs"
