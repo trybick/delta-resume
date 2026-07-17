@@ -95,15 +95,11 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
             .Replace("\"\"jobTitle", "\"\",\"jobTitle")
             .Replace("\"\"companyName", "\"\",\"companyName")
             .Replace("\"\"letter", "\"\",\"letter")
+            .Replace("\"},\"companyName\"", "\",\"companyName\"")
+            .Replace("\"}, \"companyName\"", "\", \"companyName\"")
 
-    let parseDraft (content: string) : Result<CoverLetterDraft, string> =
+    let tryParseDraft (jsonText: string) : CoverLetterDraft option =
         try
-            let stripped = stripCodeFences content |> normalizeContinuation
-
-            let jsonText =
-                if stripped.StartsWith "{" then stripped
-                else assistantPrefill + stripped
-
             use document = JsonDocument.Parse jsonText
 
             let readString (propertyName: string) : string =
@@ -115,14 +111,29 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
             let letter = readString "letter"
 
             if String.IsNullOrWhiteSpace letter then
-                Error "Claude response was missing the 'letter' field."
+                None
             else
-                Ok
+                Some
                     { JobTitle = (readString "jobTitle").Trim()
                       CompanyName = (readString "companyName").Trim()
                       Letter = letter.Trim() }
-        with ex ->
-            Error(sprintf "Failed to parse Claude response as JSON: %s" ex.Message)
+        with :? JsonException ->
+            None
+
+    let parseDraft (content: string) : Result<CoverLetterDraft, string> =
+        let stripped = stripCodeFences content |> normalizeContinuation
+
+        let candidates =
+            if stripped.StartsWith "{" then
+                [ stripped; assistantPrefill + stripped ]
+            else
+                [ assistantPrefill + stripped; stripped ]
+
+        match candidates |> List.tryPick tryParseDraft with
+        | Some draft -> Ok draft
+        | None ->
+            let preview = stripped.Substring(0, min stripped.Length 120)
+            Error(sprintf "Failed to parse Claude response as JSON. Preview: %s" preview)
 
     interface CoverLetterEngine with
 
