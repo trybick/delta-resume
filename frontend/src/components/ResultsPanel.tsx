@@ -833,6 +833,16 @@ const ResultsPanel = ({
                       <Menu.Divider />
                     </>
                   )}
+                  {!canPatchOriginal && !isExample && (
+                    <>
+                      <Menu.Label>Keep my formatting</Menu.Label>
+                      <Text size="xs" c="dimmed" px={12} pb={8} maw={240}>
+                        Upload your resume as a .docx to export with your original formatting
+                        preserved.
+                      </Text>
+                      <Menu.Divider />
+                    </>
+                  )}
                   <Menu.Label>Clean template</Menu.Label>
                   <Menu.Item
                     leftSection={<IconFileDescription size={16} />}

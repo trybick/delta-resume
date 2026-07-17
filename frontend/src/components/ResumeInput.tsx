@@ -142,7 +142,7 @@ const ResumeInput = ({
     setParseError(
       isTooLarge
         ? 'That file is too large. The maximum size is 5 MB.'
-        : 'That file type is not supported. Use .txt, .md, .pdf, or .docx.',
+        : 'That file type is not supported. Use .docx, .pdf, .md, or .txt.',
     );
   };
 
@@ -245,7 +245,10 @@ const ResumeInput = ({
                   {isParsing ? 'Reading your resume…' : 'Drop your resume here or click to browse'}
                 </Text>
                 <Text size="xs" c="dimmed">
-                  .txt, .md, .pdf, or .docx — up to 5 MB
+                  .docx, .pdf, .md, or .txt — up to 5 MB
+                </Text>
+                <Text size="xs" c="teal.4">
+                  .docx works best — we keep your original formatting on export
                 </Text>
               </Stack>
             </Dropzone>
