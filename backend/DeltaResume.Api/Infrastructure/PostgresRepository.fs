@@ -29,19 +29,10 @@ module Schema =
             CREATE INDEX IF NOT EXISTS idx_credit_usage_key_period
                 ON credit_usage (identity_key, period);
 
-            CREATE TABLE IF NOT EXISTS credit_operations (
-                id TEXT PRIMARY KEY,
-                owner_key TEXT NOT NULL,
-                idempotency_key TEXT NOT NULL,
-                request_hash TEXT NOT NULL,
-                created_at TIMESTAMPTZ NOT NULL
-            );
+            CREATE INDEX IF NOT EXISTS idx_credit_usage_operation
+                ON credit_usage (operation_id);
 
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_credit_operations_owner_idempotency
-                ON credit_operations (owner_key, idempotency_key);
-
-            CREATE INDEX IF NOT EXISTS idx_credit_operations_created_at
-                ON credit_operations (created_at);
+            DROP TABLE IF EXISTS credit_operations;
 
             CREATE TABLE IF NOT EXISTS saved_resumes (
                 id TEXT PRIMARY KEY,

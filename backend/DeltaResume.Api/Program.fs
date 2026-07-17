@@ -4,12 +4,10 @@ open System
 open System.Net.Http
 open System.Text.Json
 open System.Text.Json.Serialization
-open System.Threading.Tasks
 open Giraffe
 open Microsoft.AspNetCore.Authentication.JwtBearer
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
-open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Npgsql
@@ -69,10 +67,8 @@ let main args =
 
     let builder = WebApplication.CreateBuilder(args)
 
-    let maxRequestBodyBytes = 256L * 1024L
-
     builder.WebHost.ConfigureKestrel(fun options ->
-        options.Limits.MaxRequestBodySize <- Nullable maxRequestBodyBytes)
+        options.Limits.MaxRequestBodySize <- Nullable BodySizeLimit.maxRequestBodyBytes)
     |> ignore
 
     let runningLocally = LocalDev.isRunningLocally ()
@@ -168,41 +164,7 @@ let main args =
     if Option.isSome clerkAuthority then
         app.UseAuthentication() |> ignore
 
-    app.Use(fun (context: HttpContext) (next: Func<Task>) ->
-        task {
-            let writePayloadTooLarge () =
-                task {
-                    context.Response.StatusCode <- StatusCodes.Status413PayloadTooLarge
-                    context.Response.ContentType <- "application/json; charset=utf-8"
-
-                    do!
-                        JsonSerializer.SerializeAsync(
-                            context.Response.Body,
-                            {| Code = "payload_too_large"
-                               Message = "Request body is too large." |},
-                            jsonOptions
-                        )
-                }
-
-            let contentLength = context.Request.ContentLength
-
-            if contentLength.HasValue && contentLength.Value > maxRequestBodyBytes then
-                do! writePayloadTooLarge ()
-            else
-                try
-                    do! next.Invoke()
-                with
-                | :? BadHttpRequestException as ex when
-                    ex.StatusCode = StatusCodes.Status413PayloadTooLarge
-                    ->
-                    if not context.Response.HasStarted then
-                        context.Response.Clear()
-                        do! writePayloadTooLarge ()
-                | ex ->
-                    System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex).Throw()
-        }
-        :> Task)
-    |> ignore
+    app |> BodySizeLimit.useBodySizeLimit jsonOptions |> ignore
 
     app.UseGiraffe Routes.webApp
 

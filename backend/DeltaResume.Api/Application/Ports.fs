@@ -35,9 +35,7 @@ type CreditUsageEntry =
       Period: string }
 
 type CreditSpendResult =
-    | SpendRecorded
-    | SpendDuplicate
-    | SpendConflict
+    | SpendRecorded of operationId: string
     | SpendExhausted
 
 type CreditStore =
@@ -45,13 +43,11 @@ type CreditStore =
         identityKey: string * period: string * cancellationToken: CancellationToken -> Task<int>
 
     abstract member TryRecordUsage:
-        entries: CreditUsageEntry list *
-        ownerKey: string *
-        creditLimit: int *
-        idempotencyKey: string *
-        requestHash: string *
-        cancellationToken: CancellationToken ->
+        entries: CreditUsageEntry list * creditLimit: int * cancellationToken: CancellationToken ->
             Task<CreditSpendResult>
+
+    abstract member DeleteUsageByOperation:
+        operationId: string * cancellationToken: CancellationToken -> Task<unit>
 
 type SavedResumeRepository =
     abstract member ListByOwner: ownerKey: string -> Task<SavedResume list>

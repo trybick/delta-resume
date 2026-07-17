@@ -19,30 +19,27 @@ type TailoringService(engine: TailoringEngine) =
             )
         | Ok() -> Ok()
 
-    member this.TailorResume
+    member _.TailorResume
         (resumeText: string, jobDescription: string, cancellationToken: CancellationToken)
         : Task<Result<TailorRun, TailorError>> =
         task {
-            match this.ValidateInputs(resumeText, jobDescription, None) with
-            | Error error -> return Error error
-            | Ok() ->
-                let bullets = Bullets.extract resumeText
-                let! engineResult = engine.ProposeChanges(bullets, jobDescription, cancellationToken)
+            let bullets = Bullets.extract resumeText
+            let! engineResult = engine.ProposeChanges(bullets, jobDescription, cancellationToken)
 
-                match engineResult with
-                | Error message -> return Error(EngineFailure message)
-                | Ok proposal ->
-                    let changes = Bullets.toChanges bullets proposal.Changes
+            match engineResult with
+            | Error message -> return Error(EngineFailure message)
+            | Ok proposal ->
+                let changes = Bullets.toChanges bullets proposal.Changes
 
-                    let run =
-                        { Id = RunId(Guid.NewGuid())
-                          ResumeText = resumeText
-                          JobDescription = jobDescription
-                          CreatedAt = DateTimeOffset.UtcNow
-                          Summary = proposal.Summary
-                          Changes = changes
-                          Requirements = proposal.Requirements
-                          Structure = proposal.Structure }
+                let run =
+                    { Id = RunId(Guid.NewGuid())
+                      ResumeText = resumeText
+                      JobDescription = jobDescription
+                      CreatedAt = DateTimeOffset.UtcNow
+                      Summary = proposal.Summary
+                      Changes = changes
+                      Requirements = proposal.Requirements
+                      Structure = proposal.Structure }
 
-                    return Ok run
+                return Ok run
         }

@@ -1,17 +1,13 @@
 namespace DeltaResume.Api
 
 open System
-open System.Security.Cryptography
-open System.Text
+open System.Threading
 open Giraffe
 open Microsoft.AspNetCore.Http
 open DeltaResume.Application
 open DeltaResume.Domain
 
 module Handlers =
-
-    [<Literal>]
-    let private IdempotencyHeader = "Idempotency-Key"
 
     let private errorResponse (statusCode: int) (message: string) : HttpHandler =
         setStatusCode statusCode >=> json { Message = message }
@@ -32,17 +28,6 @@ module Handlers =
                     "Sign in to manage saved resumes."
                     next
                     ctx
-
-    let private requestHash (request: TailorRequestDto) : string =
-        let resumeName =
-            request.ResumeName
-            |> Option.bind Option.ofObj
-            |> Option.defaultValue ""
-
-        String.concat "\u001F" [ request.ResumeText; request.JobDescription; resumeName ]
-        |> Encoding.UTF8.GetBytes
-        |> SHA256.HashData
-        |> Convert.ToHexString
 
     let private tailorErrorToResponse (error: TailorError) : HttpHandler =
         match error with
@@ -81,60 +66,20 @@ module Handlers =
                 match service.ValidateInputs(request.ResumeText, request.JobDescription, request.ResumeName) with
                 | Error error -> return! tailorErrorToResponse error next ctx
                 | Ok() ->
-                    let idempotencyValue = ctx.Request.Headers[IdempotencyHeader].ToString()
+                    let creditService = ctx.GetService<CreditService>()
+                    let! spendResult = creditService.TrySpend(ctx, ctx.RequestAborted)
 
-                    match Guid.TryParse idempotencyValue with
-                    | false, _ ->
-                        return!
-                            codedErrorResponse
-                                StatusCodes.Status400BadRequest
-                                "invalid_idempotency_key"
-                                "A valid Idempotency-Key header is required."
-                                next
-                                ctx
-                    | true, _ ->
-                        let creditService = ctx.GetService<CreditService>()
-
-                        let! spendResult =
-                            creditService.TrySpend(
-                                ctx,
-                                idempotencyValue,
-                                requestHash request,
-                                ctx.RequestAborted
-                            )
-
-                        match spendResult with
-                        | SpendExhausted ->
-                            let! creditStatus = creditService.GetStatus(ctx, ctx.RequestAborted)
-                            return! creditsExhaustedResponse creditStatus next ctx
-                        | SpendDuplicate ->
-                            return!
-                                codedErrorResponse
-                                    StatusCodes.Status409Conflict
-                                    "duplicate_tailor_request"
-                                    "This tailoring request was already submitted."
-                                    next
-                                    ctx
-                        | SpendConflict ->
-                            return!
-                                codedErrorResponse
-                                    StatusCodes.Status409Conflict
-                                    "idempotency_key_reused"
-                                    "This Idempotency-Key was already used for different inputs."
-                                    next
-                                    ctx
-                        | SpendRecorded ->
+                    match spendResult with
+                    | SpendExhausted ->
+                        let! creditStatus = creditService.GetStatus(ctx, ctx.RequestAborted)
+                        return! creditsExhaustedResponse creditStatus next ctx
+                    | SpendRecorded operationId ->
+                        try
                             let! result =
-                                service.TailorResume(
-                                    request.ResumeText,
-                                    request.JobDescription,
-                                    ctx.RequestAborted
-                                )
+                                service.TailorResume(request.ResumeText, request.JobDescription, ctx.RequestAborted)
 
                             match result with
                             | Ok run ->
-                                ctx.RequestAborted.ThrowIfCancellationRequested()
-
                                 try
                                     let savedResumeService = ctx.GetService<SavedResumeService>()
                                     do! savedResumeService.AutoSave(ctx, request.ResumeText, request.ResumeName)
@@ -142,7 +87,12 @@ module Handlers =
                                     eprintfn "Failed to auto-save resume: %s" ex.Message
 
                                 return! json (Mapping.toResponseDto run) next ctx
-                            | Error error -> return! tailorErrorToResponse error next ctx
+                            | Error error ->
+                                do! creditService.Refund(operationId, CancellationToken.None)
+                                return! tailorErrorToResponse error next ctx
+                        with :? OperationCanceledException when ctx.RequestAborted.IsCancellationRequested ->
+                            do! creditService.Refund(operationId, CancellationToken.None)
+                            return! earlyReturn ctx
             }
 
     let coverLetter: HttpHandler =

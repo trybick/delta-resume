@@ -56,7 +56,6 @@ export const useTailorRun = ({
         resumeText,
         jobDescription,
         resumeName,
-        crypto.randomUUID(),
         abortController.signal,
       );
       resultRef.current = tailorResult;

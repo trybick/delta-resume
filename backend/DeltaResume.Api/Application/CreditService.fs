@@ -66,17 +66,11 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
                   IsAuthenticated = isAuthenticated identity }
         }
 
-    member _.TrySpend
-        (
-            ctx: HttpContext,
-            idempotencyKey: string,
-            requestHash: string,
-            cancellationToken: CancellationToken
-        ) : Task<CreditSpendResult> =
+    member _.TrySpend(ctx: HttpContext, cancellationToken: CancellationToken) : Task<CreditSpendResult> =
         let identity = Identity.resolve options ctx
 
         if isUnlimited identity then
-            Task.FromResult SpendRecorded
+            Task.FromResult(SpendRecorded(string (Guid.NewGuid())))
         else
             let entries =
                 identity
@@ -86,11 +80,7 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
                       Kind = kind
                       Period = period })
 
-            store.TryRecordUsage(
-                entries,
-                Identity.ownerKey identity,
-                CreditPlan.creditLimit (Identity.plan identity),
-                idempotencyKey,
-                requestHash,
-                cancellationToken
-            )
+            store.TryRecordUsage(entries, CreditPlan.creditLimit (Identity.plan identity), cancellationToken)
+
+    member _.Refund(operationId: string, cancellationToken: CancellationToken) : Task<unit> =
+        store.DeleteUsageByOperation(operationId, cancellationToken)

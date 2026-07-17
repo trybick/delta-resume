@@ -98,15 +98,11 @@ export const postTailor = async (
   resumeText: string,
   jobDescription: string,
   resumeName: string,
-  idempotencyKey: string,
   signal?: AbortSignal,
 ): Promise<TailorResponse> => {
-  const headers = await buildHeaders();
-  headers['Idempotency-Key'] = idempotencyKey;
-
   const response = await fetch(`${API_BASE_URL}/api/tailor`, {
     method: 'POST',
-    headers,
+    headers: await buildHeaders(),
     body: JSON.stringify({ resumeText, jobDescription, resumeName }),
     signal,
   });
