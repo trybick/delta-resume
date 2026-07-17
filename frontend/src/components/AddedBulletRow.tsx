@@ -19,10 +19,13 @@ const AddedBulletRow = ({ bullet, onTextChange, onRemove }: AddedBulletRowProps)
       backgroundColor: 'rgba(64, 192, 87, 0.06)',
     }}
   >
-    <Group align="flex-start" wrap="nowrap" gap="sm">
+    <Group align="center" wrap="nowrap" gap="sm">
       <Box style={{ flex: 1, minWidth: 0 }}>
         <Text size="xs" fw={600} c="green.4" mb={4}>
           New bullet — {bullet.requirementText}
+        </Text>
+        <Text size="xs" c="dimmed" mb={4}>
+          Fill in the bracketed placeholders. And only keep this if it&rsquo;s true for you.
         </Text>
         <Textarea
           value={bullet.text}
@@ -39,9 +42,6 @@ const AddedBulletRow = ({ bullet, onTextChange, onRemove }: AddedBulletRowProps)
           }}
           aria-label={`Added bullet for ${bullet.requirementText}`}
         />
-        <Text size="xs" c="dimmed" mt={4}>
-          Only keep this if it&rsquo;s true for you &mdash; fill in the bracketed placeholders.
-        </Text>
       </Box>
       <Tooltip label="Remove added bullet">
         <ActionIcon
