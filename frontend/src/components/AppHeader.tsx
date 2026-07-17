@@ -12,7 +12,7 @@ import {
   Tooltip,
 } from '@mantine/core';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
-import { IconCoins, IconLogin2, IconSparkles } from '@tabler/icons-react';
+import { IconCoins, IconCrown, IconLogin2, IconSparkles } from '@tabler/icons-react';
 import ClerkAuthButton from './ClerkAuthButton';
 import DeltaLogo from './DeltaLogo';
 import { ProFeatureList } from './ProPlanShowcase';
@@ -160,7 +160,12 @@ const AppHeader = ({
         </Group>
         <Group gap="sm">
           {planLoaded && isProPlan && (
-            <Badge size="lg" variant="gradient" gradient={{ ...appTheme.gradient, deg: 45 }}>
+            <Badge
+              size="lg"
+              variant="gradient"
+              gradient={{ ...appTheme.gradient, deg: 45 }}
+              leftSection={<IconCrown size={14} />}
+            >
               Pro
             </Badge>
           )}
