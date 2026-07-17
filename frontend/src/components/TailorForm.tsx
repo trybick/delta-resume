@@ -155,10 +155,10 @@ const TailorForm = ({
         {credits !== null && !outOfCredits && !inputsUnchangedSinceLastRun && (
           <Text size="xs" c="dimmed" ta="center">
             {credits.isAuthenticated
-              ? `Uses 1 credit · ${credits.remaining} left`
+              ? `Uses 1 credit · ${credits.remaining} remaining`
               : `Free to try — ${credits.remaining} ${
                   credits.remaining === 1 ? 'credit' : 'credits'
-                } left, no sign-up needed`}
+                } remaining, no sign-up needed`}
           </Text>
         )}
       </Stack>
