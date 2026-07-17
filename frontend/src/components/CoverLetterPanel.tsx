@@ -30,6 +30,7 @@ import {
   IconLock,
   IconMail,
   IconRefresh,
+  IconSettings,
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { AnalyticsEvents, createDebouncedTracker, trackEvent } from '../lib/analytics';
@@ -42,6 +43,7 @@ import {
   prependCoverLetterDate,
 } from '../lib/formatCoverLetter';
 import { SAMPLE_COVER_LETTER_RESULT } from '../lib/mockTailor';
+import CoverLetterSettingsModal from './CoverLetterSettingsModal';
 
 type CoverLetterPanelProps = {
   isProPlan: boolean;
@@ -232,6 +234,7 @@ const CoverLetterPanel = ({
   const onProPlan = isProPlan || (has?.({ plan: 'pro' }) ?? false);
   const [candidateName, setCandidateName] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [settingsOpened, setSettingsOpened] = useState(false);
   const hasPrefilledName = useRef(false);
   const clipboard = useClipboard({ timeout: 1500 });
   const trackEditCandidateName = useMemo(
@@ -246,6 +249,26 @@ const CoverLetterPanel = ({
     hasPrefilledName.current = true;
     setCandidateName((current) => (current.length === 0 ? clerkFullName : current));
   }, [clerkFullName]);
+
+  const handleOpenSettings = () => setSettingsOpened(true);
+  const handleCloseSettings = () => setSettingsOpened(false);
+
+  const settingsButton = (
+    <Tooltip label="Cover letter settings">
+      <ActionIcon
+        variant="subtle"
+        color="gray"
+        aria-label="Cover letter settings"
+        onClick={handleOpenSettings}
+      >
+        <IconSettings size={18} />
+      </ActionIcon>
+    </Tooltip>
+  );
+
+  const settingsModal = (
+    <CoverLetterSettingsModal opened={settingsOpened} onClose={handleCloseSettings} />
+  );
 
   if (isExample && exampleResult) {
     return (
@@ -263,7 +286,8 @@ const CoverLetterPanel = ({
 
   if (status === 'idle') {
     return (
-      <Card withBorder shadow="xs" padding="lg">
+      <Card withBorder shadow="xs" padding="lg" style={{ position: 'relative' }}>
+        <Box style={{ position: 'absolute', top: 12, right: 12 }}>{settingsButton}</Box>
         <Stack align="center" gap="xs" py="md">
           <IconMail size={32} color="var(--mantine-primary-color-filled)" />
           <Title order={5}>No cover letter yet</Title>
@@ -271,6 +295,7 @@ const CoverLetterPanel = ({
             Your next tailor run will also write a matching cover letter, and it will show up here.
           </Text>
         </Stack>
+        {settingsModal}
       </Card>
     );
   }
@@ -281,9 +306,12 @@ const CoverLetterPanel = ({
     return (
       <Card withBorder shadow="xs" padding="lg">
         <Stack gap="md">
-          <Group gap="sm">
-            <IconMail size={20} color="var(--mantine-primary-color-filled)" />
-            <Title order={4}>Cover letter</Title>
+          <Group justify="space-between" align="center" wrap="wrap">
+            <Group gap="sm">
+              <IconMail size={20} color="var(--mantine-primary-color-filled)" />
+              <Title order={4}>Cover letter</Title>
+            </Group>
+            {settingsButton}
           </Group>
           <Alert color="red" icon={<IconAlertCircle size={18} />} title="Cover letter failed">
             {errorMessage ?? 'Something went wrong while writing your cover letter.'}
@@ -302,6 +330,7 @@ const CoverLetterPanel = ({
             </Button>
           </Group>
         </Stack>
+        {settingsModal}
       </Card>
     );
   }
@@ -419,6 +448,7 @@ const CoverLetterPanel = ({
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
+            {settingsButton}
           </Group>
         </Group>
         <Group gap="sm" align="center" wrap="wrap">
@@ -470,6 +500,7 @@ const CoverLetterPanel = ({
           </Text>
         </Box>
       </Stack>
+      {settingsModal}
     </Card>
   );
 };

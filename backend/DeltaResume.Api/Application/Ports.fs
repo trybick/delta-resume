@@ -21,11 +21,33 @@ type CoverLetterDraft =
       CompanyName: string
       Letter: string }
 
+type CoverLetterSettings =
+    { Length: string
+      Tone: string }
+
+type UserSettings =
+    { CoverLetter: CoverLetterSettings }
+
+module UserSettings =
+    let allowedLengths = [ "short"; "standard"; "long" ]
+
+    let allowedTones = [ "professional"; "friendly"; "enthusiastic"; "formal" ]
+
+    let defaults: UserSettings =
+        { CoverLetter =
+            { Length = "standard"
+              Tone = "professional" } }
+
+type UserSettingsRepository =
+    abstract member Get: ownerKey: string -> Task<UserSettings option>
+    abstract member Upsert: ownerKey: string * settings: UserSettings -> Task<unit>
+
 type CoverLetterEngine =
     abstract member GenerateCoverLetter:
         resumeText: string *
         jobDescription: string *
         candidateName: string option *
+        settings: CoverLetterSettings *
         cancellationToken: CancellationToken ->
             Task<Result<CoverLetterDraft, string>>
 

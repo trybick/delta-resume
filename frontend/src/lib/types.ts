@@ -64,6 +64,39 @@ export type CoverLetterResult = {
   letter: string;
 };
 
+export type CoverLetterLength = 'short' | 'standard' | 'long';
+
+export type CoverLetterTone = 'professional' | 'friendly' | 'enthusiastic' | 'formal';
+
+export type CoverLetterSettings = {
+  length: CoverLetterLength;
+  tone: CoverLetterTone;
+};
+
+export type UserSettings = {
+  coverLetter: CoverLetterSettings;
+};
+
+export const defaultUserSettings: UserSettings = {
+  coverLetter: {
+    length: 'standard',
+    tone: 'professional',
+  },
+};
+
+export const coverLetterLengthOptions: { value: CoverLetterLength; label: string }[] = [
+  { value: 'short', label: 'Short (~150 words)' },
+  { value: 'standard', label: 'Standard (~250 words)' },
+  { value: 'long', label: 'Long (~400 words)' },
+];
+
+export const coverLetterToneOptions: { value: CoverLetterTone; label: string }[] = [
+  { value: 'professional', label: 'Professional' },
+  { value: 'friendly', label: 'Friendly' },
+  { value: 'enthusiastic', label: 'Enthusiastic' },
+  { value: 'formal', label: 'Formal' },
+];
+
 export type CreditStatus = {
   remaining: number;
   total: number;

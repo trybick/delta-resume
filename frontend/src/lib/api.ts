@@ -1,4 +1,10 @@
-import type { CoverLetterResult, CreditStatus, SavedResume, TailorResult } from './types';
+import type {
+  CoverLetterResult,
+  CreditStatus,
+  SavedResume,
+  TailorResult,
+  UserSettings,
+} from './types';
 import { getAuthToken } from './authToken';
 import { getFingerprint } from './fingerprint';
 import { notifyRateLimited } from './rateLimitNotice';
@@ -137,6 +143,28 @@ export const postCoverLetter = async (
     return throwApiError(response);
   }
   return (await response.json()) as CoverLetterResult;
+};
+
+export const getSettings = async (): Promise<UserSettings> => {
+  const response = await fetch(`${API_BASE_URL}/api/settings`, {
+    headers: await buildHeaders(),
+  });
+  if (!response.ok) {
+    return throwApiError(response);
+  }
+  return (await response.json()) as UserSettings;
+};
+
+export const putSettings = async (settings: UserSettings): Promise<UserSettings> => {
+  const response = await fetch(`${API_BASE_URL}/api/settings`, {
+    method: 'PUT',
+    headers: await buildHeaders(),
+    body: JSON.stringify(settings),
+  });
+  if (!response.ok) {
+    return throwApiError(response);
+  }
+  return (await response.json()) as UserSettings;
 };
 
 export const getSavedResumes = async (): Promise<SavedResume[]> => {

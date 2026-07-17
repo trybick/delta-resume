@@ -1,6 +1,7 @@
 namespace DeltaResume.Api
 
 open System
+open DeltaResume.Application
 open DeltaResume.Domain
 
 [<CLIMutable>]
@@ -22,6 +23,15 @@ type CoverLetterResponseDto =
     { JobTitle: string
       CompanyName: string
       Letter: string }
+
+[<CLIMutable>]
+type CoverLetterSettingsDto =
+    { Length: string
+      Tone: string }
+
+[<CLIMutable>]
+type UserSettingsDto =
+    { CoverLetter: CoverLetterSettingsDto }
 
 type SavedResumeDto =
     { Id: Guid
@@ -107,6 +117,11 @@ module Mapping =
           Changes = run.Changes |> List.map toChangeDto
           Requirements = run.Requirements |> List.map toRequirementDto
           Structure = run.Structure |> Option.map toStructureDto }
+
+    let toUserSettingsDto (settings: UserSettings) : UserSettingsDto =
+        { CoverLetter =
+            { Length = settings.CoverLetter.Length
+              Tone = settings.CoverLetter.Tone } }
 
     let toSavedResumeDto (resume: SavedResume) : SavedResumeDto =
         let (SavedResumeId id) = resume.Id

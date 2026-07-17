@@ -150,6 +150,10 @@ let main args =
         PostgresSavedResumeRepository(connectionString) :> SavedResumeRepository)
     |> ignore
 
+    builder.Services.AddSingleton<UserSettingsRepository>(fun _ ->
+        PostgresUserSettingsRepository(connectionString) :> UserSettingsRepository)
+    |> ignore
+
     builder.Services.AddSingleton<SavedResumeService>(fun provider ->
         SavedResumeService(provider.GetRequiredService<SavedResumeRepository>(), identityOptions))
     |> ignore

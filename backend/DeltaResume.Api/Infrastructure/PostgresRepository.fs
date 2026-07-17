@@ -45,9 +45,81 @@ module Schema =
 
             CREATE INDEX IF NOT EXISTS idx_saved_resumes_owner
                 ON saved_resumes (owner_key);
+
+            CREATE TABLE IF NOT EXISTS user_settings (
+                owner_key TEXT PRIMARY KEY,
+                settings JSONB NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL
+            );
             """
         )
         |> ignore
+
+type PostgresUserSettingsRepository(connectionString: string) =
+
+    let serialize (settings: UserSettings) : string =
+        System.Text.Json.JsonSerializer.Serialize
+            {| coverLetter =
+                {| length = settings.CoverLetter.Length
+                   tone = settings.CoverLetter.Tone |} |}
+
+    let parse (json: string) : UserSettings =
+        let defaults = UserSettings.defaults
+
+        try
+            use document = System.Text.Json.JsonDocument.Parse json
+
+            let readString (parent: System.Text.Json.JsonElement) (name: string) (fallback: string) =
+                match parent.TryGetProperty name with
+                | true, element when element.ValueKind = System.Text.Json.JsonValueKind.String ->
+                    element.GetString() |> Option.ofObj |> Option.defaultValue fallback
+                | _ -> fallback
+
+            match document.RootElement.TryGetProperty "coverLetter" with
+            | true, coverLetter when coverLetter.ValueKind = System.Text.Json.JsonValueKind.Object ->
+                { CoverLetter =
+                    { Length = readString coverLetter "length" defaults.CoverLetter.Length
+                      Tone = readString coverLetter "tone" defaults.CoverLetter.Tone } }
+            | _ -> defaults
+        with _ ->
+            defaults
+
+    interface UserSettingsRepository with
+
+        member _.Get(ownerKey: string) : Task<UserSettings option> =
+            task {
+                use connection = new NpgsqlConnection(connectionString)
+                do! connection.OpenAsync()
+
+                let! rows =
+                    connection.QueryAsync<string>(
+                        "SELECT settings::text FROM user_settings WHERE owner_key = @OwnerKey",
+                        {| OwnerKey = ownerKey |}
+                    )
+
+                return rows |> Seq.tryHead |> Option.map parse
+            }
+
+        member _.Upsert(ownerKey: string, settings: UserSettings) : Task<unit> =
+            task {
+                use connection = new NpgsqlConnection(connectionString)
+                do! connection.OpenAsync()
+
+                let! _ =
+                    connection.ExecuteAsync(
+                        """
+                        INSERT INTO user_settings (owner_key, settings, updated_at)
+                        VALUES (@OwnerKey, CAST(@Settings AS jsonb), @UpdatedAt)
+                        ON CONFLICT (owner_key) DO UPDATE
+                            SET settings = EXCLUDED.settings, updated_at = EXCLUDED.updated_at
+                        """,
+                        {| OwnerKey = ownerKey
+                           Settings = serialize settings
+                           UpdatedAt = DateTimeOffset.UtcNow |}
+                    )
+
+                return ()
+            }
 
 [<CLIMutable>]
 type private SavedResumeRow =

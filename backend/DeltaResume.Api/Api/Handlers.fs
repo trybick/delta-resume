@@ -15,19 +15,17 @@ module Handlers =
     let private codedErrorResponse (statusCode: int) (code: string) (message: string) : HttpHandler =
         setStatusCode statusCode >=> json {| Code = code; Message = message |}
 
-    let private requireSignedIn (innerHandler: HttpHandler) : HttpHandler =
+    let private requireSignedInWithMessage (message: string) (innerHandler: HttpHandler) : HttpHandler =
         fun next ctx ->
             let identityOptions = ctx.GetService<IdentityOptions>()
 
             match Identity.resolve identityOptions ctx with
             | AuthenticatedUser _ -> innerHandler next ctx
             | GuestVisitor _ ->
-                codedErrorResponse
-                    StatusCodes.Status401Unauthorized
-                    "auth_required"
-                    "Sign in to manage saved resumes."
-                    next
-                    ctx
+                codedErrorResponse StatusCodes.Status401Unauthorized "auth_required" message next ctx
+
+    let private requireSignedIn: HttpHandler -> HttpHandler =
+        requireSignedInWithMessage "Sign in to manage saved resumes."
 
     let private tailorErrorToResponse (error: TailorError) : HttpHandler =
         match error with
@@ -128,12 +126,18 @@ module Handlers =
                                 ctx
                     | Ok() ->
                         let engine = ctx.GetService<CoverLetterEngine>()
+                        let settingsRepository = ctx.GetService<UserSettingsRepository>()
+                        let! storedSettings = settingsRepository.Get(Identity.ownerKey identity)
+
+                        let settings =
+                            storedSettings |> Option.defaultValue UserSettings.defaults
 
                         let! result =
                             engine.GenerateCoverLetter(
                                 request.ResumeText,
                                 request.JobDescription,
                                 request.CandidateName,
+                                settings.CoverLetter,
                                 ctx.RequestAborted
                             )
 
@@ -147,6 +151,59 @@ module Handlers =
                             return! json response next ctx
                         | Error message -> return! errorResponse StatusCodes.Status502BadGateway message next ctx
             }
+
+    let getSettings: HttpHandler =
+        requireSignedInWithMessage "Sign in to manage your settings." (fun next ctx ->
+            task {
+                let identityOptions = ctx.GetService<IdentityOptions>()
+                let identity = Identity.resolve identityOptions ctx
+                let repository = ctx.GetService<UserSettingsRepository>()
+                let! storedSettings = repository.Get(Identity.ownerKey identity)
+
+                let settings =
+                    storedSettings |> Option.defaultValue UserSettings.defaults
+
+                return! json (Mapping.toUserSettingsDto settings) next ctx
+            })
+
+    let updateSettings: HttpHandler =
+        requireSignedInWithMessage "Sign in to manage your settings." (fun next ctx ->
+            task {
+                let! request =
+                    task {
+                        try
+                            let! parsed = ctx.BindJsonAsync<UserSettingsDto>()
+                            return Some parsed
+                        with _ ->
+                            return None
+                    }
+
+                let validated =
+                    match request with
+                    | None -> Error "Invalid settings payload."
+                    | Some dto ->
+                        if isNull (box dto.CoverLetter) then
+                            Error "coverLetter settings are required."
+                        elif not (UserSettings.allowedLengths |> List.contains dto.CoverLetter.Length) then
+                            Error "Invalid cover letter length."
+                        elif not (UserSettings.allowedTones |> List.contains dto.CoverLetter.Tone) then
+                            Error "Invalid cover letter tone."
+                        else
+                            Ok
+                                { CoverLetter =
+                                    { Length = dto.CoverLetter.Length
+                                      Tone = dto.CoverLetter.Tone } }
+
+                match validated with
+                | Error message ->
+                    return! codedErrorResponse StatusCodes.Status400BadRequest "invalid_input" message next ctx
+                | Ok settings ->
+                    let identityOptions = ctx.GetService<IdentityOptions>()
+                    let identity = Identity.resolve identityOptions ctx
+                    let repository = ctx.GetService<UserSettingsRepository>()
+                    do! repository.Upsert(Identity.ownerKey identity, settings)
+                    return! json (Mapping.toUserSettingsDto settings) next ctx
+            })
 
     let listSavedResumes: HttpHandler =
         requireSignedIn (fun next ctx ->
