@@ -17,6 +17,7 @@ import {
   IconCheck,
   IconFileDescription,
   IconFileTypePdf,
+  IconInfoCircle,
 } from '@tabler/icons-react';
 import { renderAsync } from 'docx-preview';
 
@@ -196,8 +197,6 @@ const DocumentPreviewModal = ({
         <Group justify="space-between" align="center" wrap="wrap" gap="sm">
           <Text size="sm" c="dimmed">
             This is exactly what your downloaded file will look like.
-            {originalFile === null &&
-              ' Upload your resume as a .docx to compare with the original and keep your formatting.'}
           </Text>
           <Group gap="sm" wrap="nowrap">
             {canPatchOriginal && (
@@ -221,6 +220,18 @@ const DocumentPreviewModal = ({
             )}
           </Group>
         </Group>
+
+        {originalFile === null && (
+          <Alert
+            color="blue"
+            variant="light"
+            icon={<IconInfoCircle size={18} />}
+            py={8}
+          >
+            Upload your resume as a .docx to compare with the original and keep your formatting on
+            export.
+          </Alert>
+        )}
 
         <Stack gap={4} h="65vh">
           {effectiveView === 'before' && originalFile !== null ? (
