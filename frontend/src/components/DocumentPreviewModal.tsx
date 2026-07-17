@@ -196,6 +196,8 @@ const DocumentPreviewModal = ({
         <Group justify="space-between" align="center" wrap="wrap" gap="sm">
           <Text size="sm" c="dimmed">
             This is exactly what your downloaded file will look like.
+            {originalFile === null &&
+              ' Upload your resume as a .docx to compare with the original and keep your formatting.'}
           </Text>
           <Group gap="sm" wrap="nowrap">
             {canPatchOriginal && (
