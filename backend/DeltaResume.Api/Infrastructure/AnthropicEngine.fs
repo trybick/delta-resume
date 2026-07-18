@@ -49,7 +49,8 @@ Rules for paragraph changes:
 - Only the summary/objective/profile paragraph qualifies. Never treat any other prose as a "paragraph" change.
 - You may make AT MOST 1 paragraph change, and ONLY when the entire paragraph sits on a single line in <resume_lines>. If text extraction hard-wrapped the paragraph across multiple lines, leave it completely alone and make no paragraph change.
 - Rewrite the paragraph to foreground the experience, strengths, and keywords most relevant to the job description, reusing the job description's language where the resume genuinely supports it.
-- Keep the rewrite grounded in the rest of the resume: never claim experience, seniority, technologies, or metrics the resume does not show. Keep roughly the original length (within about 20%).
+- Keep the rewrite grounded in the rest of the resume: never claim experience, seniority, technologies, or metrics the resume does not show.
+- Length is a hard constraint: the tailored paragraph must stay within about 10% of the original word count — never expand it into a longer profile. Prefer swapping or tightening words over adding new clauses. If you cannot improve fit without growing the paragraph, skip the change.
 - Skip the change if the existing paragraph already matches the job description well.
 
 General rules:
