@@ -34,6 +34,22 @@ module private Database =
             if userInfo.Length > 1 then
                 builder.Password <- Uri.UnescapeDataString(userInfo[1])
 
+            let query = uri.Query.TrimStart '?'
+
+            if not (String.IsNullOrEmpty query) then
+                for pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries) do
+                    let parts = pair.Split([| '=' |], 2)
+                    let key = Uri.UnescapeDataString(parts[0].Replace('+', ' '))
+
+                    if not (String.IsNullOrEmpty key) then
+                        let paramValue =
+                            if parts.Length > 1 then
+                                Uri.UnescapeDataString(parts[1].Replace('+', ' '))
+                            else
+                                ""
+
+                        builder.[key] <- paramValue
+
             builder.ConnectionString
 
     let connectionStringFromEnvironment () =
