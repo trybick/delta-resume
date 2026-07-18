@@ -744,7 +744,9 @@ const ResultsPanel = ({
               <IdleStep index={3} label="Review changes" />
             </Group>
             <Text size="xs" c="dimmed" ta="center" maw={360}>
-              You stay in control of every change, and your resume is never stored.
+              {isGuest
+                ? 'You stay in control of every change, and your resume is never stored.'
+                : 'You stay in control of every change. Saved to your account after each run — delete anytime.'}
             </Text>
             {onShowExample && (
               <Button

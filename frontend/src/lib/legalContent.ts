@@ -74,13 +74,13 @@ export const TERMS_OF_SERVICE: LegalDocument = {
 
 export const PRIVACY_POLICY: LegalDocument = {
   title: 'Privacy Policy',
-  lastUpdated: 'July 5, 2026',
+  lastUpdated: 'July 17, 2026',
   sections: [
     {
       heading: '1. Information We Collect',
       paragraphs: [
-        'Resume text and job descriptions you submit for tailoring, which are processed to generate suggestions and are not stored on our servers.',
-        'Resumes you explicitly save to your account for reuse.',
+        'Resume text and job descriptions you submit for tailoring, which are processed to generate suggestions. Guest runs are not stored on our servers. Job descriptions are not retained after processing.',
+        'When you are signed in, your resume is saved automatically to your account after each tailor run so you can reuse it. You can rename or delete saved resumes anytime from the app.',
         'Account information such as your email address if you sign up, managed by our authentication provider, Clerk.',
         'For guest users, a browser fingerprint and IP address used solely to enforce free credit limits.',
         'Basic usage analytics to understand how the Service is used.',
@@ -91,7 +91,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       heading: '2. How We Use Your Information',
       paragraphs: [
         'We use your resume text and job descriptions to generate tailoring suggestions. This content is sent to Anthropic, our AI provider, to produce the suggestions.',
-        'Tailoring content is processed in memory only and discarded after your results are returned. Saved resumes are stored so you can reuse them across sessions.',
+        'Tailoring requests are processed in memory and discarded after your results are returned. When you are signed in, your resume text is stored as a saved resume so you can reuse it across sessions.',
         'We do not sell your personal information or use your resume content to train AI models.',
       ],
     },
@@ -106,7 +106,7 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       heading: '4. Data Retention and Deletion',
       paragraphs: [
-        'Saved resumes are retained while your account is active. Resume text and job descriptions submitted for tailoring are not retained after processing. Contact us to request deletion of your data, and we will remove it within a reasonable period.',
+        'Saved resumes are retained while your account is active and can be deleted anytime from the app. Guest tailor runs and job descriptions submitted for processing are not retained after results are returned. Contact us to request deletion of your data, and we will remove it within a reasonable period.',
       ],
     },
     {

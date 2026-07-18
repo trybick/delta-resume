@@ -318,7 +318,9 @@ const ResumeInput = ({
                 </Stack>
               </Dropzone>
               <Text size="xs" c="dimmed" ta="center">
-                Your resume is never stored.
+                {isSignedIn
+                  ? 'Saved to your account after each run — delete anytime.'
+                  : 'Your resume is never stored.'}
               </Text>
             </Stack>
           )}
