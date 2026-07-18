@@ -781,9 +781,9 @@ const ResultsPanel = ({
   return (
     <Card withBorder shadow="xs" padding="lg">
       <Stack gap="md">
-        <Stack gap="xs">
-          <Group justify="space-between" align="center" wrap="wrap" gap="sm">
-            <Group gap="sm" align="center" wrap="nowrap" style={{ flexShrink: 0 }}>
+        <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
+          <Stack gap="xs" style={{ flexShrink: 0 }}>
+            <Group gap="sm" align="center" wrap="nowrap">
               <ChangeStatsPill
                 bulletCount={bulletChangeCount}
                 skillCount={skillChangeCount}
@@ -795,119 +795,118 @@ const ResultsPanel = ({
                 </Badge>
               )}
             </Group>
-            <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
-              <Tooltip label="Preview the final document before downloading" withArrow>
-                <Button
-                  size="xs"
-                  variant="light"
-                  leftSection={<IconEye size={16} />}
-                  disabled={isExample}
-                  onClick={handlePreviewOpen}
-                >
-                  Preview
-                </Button>
-              </Tooltip>
-              <Menu
-                position="bottom-end"
-                withinPortal
-                onOpen={() => trackEvent(AnalyticsEvents.ResumeExportMenuOpen)}
-              >
-                <Menu.Target>
-                  <Button
-                    size="xs"
-                    variant="light"
-                    leftSection={<IconDownload size={16} />}
-                    rightSection={<IconChevronDown size={14} />}
-                    loading={isExporting}
-                  >
-                    Export
-                  </Button>
-                </Menu.Target>
-                <Menu.Dropdown>
-                  <Menu.Item
-                    leftSection={copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />}
-                    disabled={isExample}
-                    onClick={handleCopy}
-                  >
-                    {copied ? 'Copied' : 'Copy to clipboard'}
-                  </Menu.Item>
-                  <Menu.Divider />
-                  {isExample && (
-                    <>
-                      <Menu.Label>Example preview — export unavailable</Menu.Label>
-                      <Menu.Divider />
-                    </>
-                  )}
-                  {canPatchOriginal && (
-                    <>
-                      <Menu.Label>Keep my formatting</Menu.Label>
-                      <Menu.Item
-                        leftSection={<IconFileDescription size={16} />}
-                        rightSection={
-                          <Badge size="xs" variant="light" color="teal">
-                            Recommended
-                          </Badge>
-                        }
-                        disabled={isExample}
-                        onClick={() => handleExport('keep', 'docx')}
-                      >
-                        Word (.docx)
-                      </Menu.Item>
-                      <Menu.Item
-                        leftSection={<IconFileTypePdf size={16} />}
-                        disabled={isExample}
-                        onClick={() => handleExport('keep', 'pdf')}
-                      >
-                        PDF (.pdf)
-                      </Menu.Item>
-                      <Menu.Divider />
-                    </>
-                  )}
-                  {!canPatchOriginal && !isExample && (
-                    <>
-                      <Menu.Label>Keep my formatting</Menu.Label>
-                      <Text size="xs" c="dimmed" px={12} pb={8} maw={240}>
-                        Upload your resume as a .docx to export with your original formatting
-                        preserved.
-                      </Text>
-                      <Menu.Divider />
-                    </>
-                  )}
-                  <Menu.Label>Clean template</Menu.Label>
-                  <Menu.Item
-                    leftSection={<IconFileDescription size={16} />}
-                    disabled={isExample}
-                    onClick={() => handleExport('clean', 'docx')}
-                  >
-                    Word (.docx)
-                  </Menu.Item>
-                  <Menu.Item
-                    leftSection={<IconFileTypePdf size={16} />}
-                    disabled={isExample}
-                    onClick={() => handleExport('clean', 'pdf')}
-                  >
-                    PDF (.pdf)
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
-            </Group>
-          </Group>
-          {requirements.length > 0 && (
-            <Group gap="sm">
+            {requirements.length > 0 && (
               <Tooltip label="How many of the job's key requirements your resume demonstrates, counting the changes you keep applied.">
                 <Badge
                   size="md"
                   color="green"
                   variant="light"
                   leftSection={<IconTargetArrow size={14} />}
+                  style={{ width: 'fit-content' }}
                 >
                   Covers {coveredCount} of {requirements.length} requirements
                   {coveredByChangesCount > 0 ? ` (+${coveredByChangesCount} from changes)` : ''}
                 </Badge>
               </Tooltip>
-            </Group>
-          )}
-        </Stack>
+            )}
+          </Stack>
+          <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
+            <Tooltip label="Preview the final document before downloading" withArrow>
+              <Button
+                size="xs"
+                variant="light"
+                leftSection={<IconEye size={16} />}
+                disabled={isExample}
+                onClick={handlePreviewOpen}
+              >
+                Preview
+              </Button>
+            </Tooltip>
+            <Menu
+              position="bottom-end"
+              withinPortal
+              onOpen={() => trackEvent(AnalyticsEvents.ResumeExportMenuOpen)}
+            >
+              <Menu.Target>
+                <Button
+                  size="xs"
+                  variant="light"
+                  leftSection={<IconDownload size={16} />}
+                  rightSection={<IconChevronDown size={14} />}
+                  loading={isExporting}
+                >
+                  Export
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />}
+                  disabled={isExample}
+                  onClick={handleCopy}
+                >
+                  {copied ? 'Copied' : 'Copy to clipboard'}
+                </Menu.Item>
+                <Menu.Divider />
+                {isExample && (
+                  <>
+                    <Menu.Label>Example preview — export unavailable</Menu.Label>
+                    <Menu.Divider />
+                  </>
+                )}
+                {canPatchOriginal && (
+                  <>
+                    <Menu.Label>Keep my formatting</Menu.Label>
+                    <Menu.Item
+                      leftSection={<IconFileDescription size={16} />}
+                      rightSection={
+                        <Badge size="xs" variant="light" color="teal">
+                          Recommended
+                        </Badge>
+                      }
+                      disabled={isExample}
+                      onClick={() => handleExport('keep', 'docx')}
+                    >
+                      Word (.docx)
+                    </Menu.Item>
+                    <Menu.Item
+                      leftSection={<IconFileTypePdf size={16} />}
+                      disabled={isExample}
+                      onClick={() => handleExport('keep', 'pdf')}
+                    >
+                      PDF (.pdf)
+                    </Menu.Item>
+                    <Menu.Divider />
+                  </>
+                )}
+                {!canPatchOriginal && !isExample && (
+                  <>
+                    <Menu.Label>Keep my formatting</Menu.Label>
+                    <Text size="xs" c="dimmed" px={12} pb={8} maw={240}>
+                      Upload your resume as a .docx to export with your original formatting
+                      preserved.
+                    </Text>
+                    <Menu.Divider />
+                  </>
+                )}
+                <Menu.Label>Clean template</Menu.Label>
+                <Menu.Item
+                  leftSection={<IconFileDescription size={16} />}
+                  disabled={isExample}
+                  onClick={() => handleExport('clean', 'docx')}
+                >
+                  Word (.docx)
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconFileTypePdf size={16} />}
+                  disabled={isExample}
+                  onClick={() => handleExport('clean', 'pdf')}
+                >
+                  PDF (.pdf)
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
+        </Group>
 
         <CollapsibleInsight
           open={summaryOpen}
