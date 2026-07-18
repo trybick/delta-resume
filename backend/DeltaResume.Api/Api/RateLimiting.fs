@@ -8,33 +8,29 @@ open DeltaResume.Application
 
 type RateLimiters(options: IdentityOptions, disabled: bool) =
 
+    let slidingWindow (permitLimit: int) =
+        SlidingWindowRateLimiterOptions(
+            PermitLimit = permitLimit,
+            Window = TimeSpan.FromMinutes 1.0,
+            SegmentsPerWindow = 4,
+            QueueLimit = 0,
+            AutoReplenishment = true
+        )
+
     let tailorLimiter =
         PartitionedRateLimiter.Create<string, string>(fun key ->
-            RateLimitPartition.GetSlidingWindowLimiter(
-                key,
-                fun _ ->
-                    SlidingWindowRateLimiterOptions(
-                        PermitLimit = 4,
-                        Window = TimeSpan.FromMinutes 1.0,
-                        SegmentsPerWindow = 4,
-                        QueueLimit = 0,
-                        AutoReplenishment = true
-                    )
-            ))
+            RateLimitPartition.GetSlidingWindowLimiter(key, fun _ -> slidingWindow 4))
+
+    let convertPerIpLimiter =
+        PartitionedRateLimiter.Create<string, string>(fun key ->
+            RateLimitPartition.GetSlidingWindowLimiter(key, fun _ -> slidingWindow 6))
+
+    let convertGlobalLimiter =
+        PartitionedRateLimiter.Create<string, string>(fun _ ->
+            RateLimitPartition.GetSlidingWindowLimiter("convert:global", fun _ -> slidingWindow 30))
 
     let convertLimiter =
-        PartitionedRateLimiter.Create<string, string>(fun key ->
-            RateLimitPartition.GetSlidingWindowLimiter(
-                key,
-                fun _ ->
-                    SlidingWindowRateLimiterOptions(
-                        PermitLimit = 10,
-                        Window = TimeSpan.FromMinutes 1.0,
-                        SegmentsPerWindow = 4,
-                        QueueLimit = 0,
-                        AutoReplenishment = true
-                    )
-            ))
+        PartitionedRateLimiter.CreateChained(convertPerIpLimiter, convertGlobalLimiter)
 
     let looseLimiter =
         PartitionedRateLimiter.Create<string, string>(fun key ->
@@ -77,8 +73,7 @@ module RateLimit =
                 if limiters.Disabled then
                     return! next ctx
                 else
-                    let identityKey =
-                        Identity.resolve limiters.IdentityOptions ctx |> Identity.ownerKey
+                    let identityKey = Identity.rateLimitKey limiters.IdentityOptions ctx
 
                     use lease = (selectLimiter limiters).AttemptAcquire identityKey
 

@@ -78,15 +78,22 @@ module Identity =
         else
             Some trimmed
 
-    let private resolveClientIp (options: IdentityOptions) (ctx: HttpContext) : string =
-        let forwarded =
-            if options.TrustForwardedHeaders then
-                ctx.Request.Headers["X-Forwarded-For"].ToString()
-            else
-                ""
+    let private firstNonEmptyHeader (ctx: HttpContext) (name: string) : string option =
+        let value = ctx.Request.Headers[name].ToString().Trim()
 
-        if not (String.IsNullOrWhiteSpace forwarded) then
-            forwarded.Split(',').[0].Trim()
+        if String.IsNullOrWhiteSpace value then None else Some value
+
+    let private resolveClientIp (options: IdentityOptions) (ctx: HttpContext) : string =
+        if options.TrustForwardedHeaders then
+            match firstNonEmptyHeader ctx "X-Real-IP" with
+            | Some realIp -> realIp.Split(',').[0].Trim()
+            | None ->
+                match firstNonEmptyHeader ctx "X-Forwarded-For" with
+                | Some forwarded -> forwarded.Split(',').[0].Trim()
+                | None ->
+                    match ctx.Connection.RemoteIpAddress with
+                    | null -> "unknown"
+                    | ip -> ip.ToString()
         else
             match ctx.Connection.RemoteIpAddress with
             | null -> "unknown"
@@ -132,3 +139,6 @@ module Identity =
         | AuthenticatedUser(userId, _) -> sprintf "user:%s" userId
         | GuestVisitor(Some fingerprint, _) -> sprintf "fp:%s" fingerprint
         | GuestVisitor(None, ipHash) -> sprintf "ip:%s" ipHash
+
+    let rateLimitKey (options: IdentityOptions) (ctx: HttpContext) : string =
+        sprintf "ip:%s" (hashWithSalt options.IpHashSalt (resolveClientIp options ctx))
