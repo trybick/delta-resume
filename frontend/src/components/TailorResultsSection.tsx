@@ -9,7 +9,7 @@ import {
   IconMail,
 } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
-import { appTheme } from '../lib/theme';
+import { proAccent } from '../lib/proAccent';
 import ResultsPanel from './ResultsPanel';
 import CoverLetterPanel from './CoverLetterPanel';
 import type { OriginalDocx } from '../hooks/useResumeDocument';
@@ -83,7 +83,7 @@ const TailorResultsSection = ({
     <Badge
       size="xs"
       variant="gradient"
-      gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
+      gradient={{ ...proAccent.gradient, deg: 45 }}
       h={16}
     >
       Pro

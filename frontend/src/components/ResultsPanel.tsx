@@ -36,6 +36,7 @@ import {
   IconTargetArrow,
 } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { proAccent } from '../lib/proAccent';
 import { useProUpgradeCtaLabel } from '../lib/proPlan';
 import { appTheme } from '../lib/theme';
 import type {
@@ -208,7 +209,7 @@ const GapRow = ({ requirement, addedBullet, onAdd, onUndo }: GapRowProps) => {
         <Badge
           size="xs"
           variant="light"
-          color={requirement.importance === 'must' ? 'orange' : 'gray'}
+          color={requirement.importance === 'must' ? proAccent.badgeColor : 'gray'}
           style={{ flexShrink: 0 }}
         >
           {requirement.importance === 'must' ? 'Must-have' : 'Nice-to-have'}
@@ -364,7 +365,8 @@ const ChangeStatsPill = ({ bulletCount, skillCount, paragraphCount }: ChangeStat
       py={6}
       style={{
         flexShrink: 0,
-        backgroundColor: 'color-mix(in srgb, var(--mantine-color-green-6) 14%, var(--mantine-color-body))',
+        backgroundColor:
+          'color-mix(in srgb, var(--mantine-color-green-6) 14%, var(--mantine-color-body))',
       }}
     >
       <IconCircleCheck size={14} color="var(--mantine-color-green-5)" stroke={1.8} />
@@ -777,7 +779,8 @@ const ResultsPanel = ({
   const lines = result.resumeText.split('\n');
   const segments = buildSegments(lines, changesByLine, addedByAnchor);
   const showGuestNudge = !isExample && isGuest && credits !== null;
-  const showFreeUpgradeNudge = !isExample && !isGuest && !isProPlan && lowCredits && credits !== null;
+  const showFreeUpgradeNudge =
+    !isExample && !isGuest && !isProPlan && lowCredits && credits !== null;
   const nudgeRemaining = credits?.remaining ?? 0;
   const creditWord = nudgeRemaining === 1 ? 'credit' : 'credits';
 
@@ -946,11 +949,11 @@ const ResultsPanel = ({
           <CollapsibleInsight
             open={gapsOpen}
             onToggle={handleGapsToggle}
-            icon={<IconTargetArrow size={13} color="var(--mantine-color-orange-5)" stroke={1.8} />}
+            icon={<IconTargetArrow size={13} color={proAccent.insightIconColor} stroke={1.8} />}
             label={gapsLabel}
-            labelColor="orange.5"
-            borderColor="var(--mantine-color-orange-6)"
-            background="rgba(232, 145, 45, 0.07)"
+            labelColor={proAccent.insightLabelColor}
+            borderColor={proAccent.insightBorderColor}
+            background={proAccent.insightBackground}
             ariaLabel="Requirement gaps"
           >
             <Stack gap="sm">
@@ -990,12 +993,17 @@ const ResultsPanel = ({
                         </Text>
                         <Badge
                           variant="gradient"
-                          gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
+                          gradient={{ ...proAccent.gradient, deg: 45 }}
                         >
                           Pro
                         </Badge>
                       </Group>
-                      <Button size="xs" onClick={handleGapsUpgradeClick}>
+                      <Button
+                        size="xs"
+                        variant="gradient"
+                        gradient={{ ...proAccent.gradient, deg: 45 }}
+                        onClick={handleGapsUpgradeClick}
+                      >
                         {upgradeCtaLabel}
                       </Button>
                     </Stack>

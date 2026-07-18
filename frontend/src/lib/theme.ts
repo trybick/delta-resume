@@ -4,7 +4,6 @@ import type { MantineColorsTuple, MantineThemeOverride } from '@mantine/core';
 export type AppTheme = {
   theme: MantineThemeOverride;
   gradient: { from: string; to: string };
-  upgradeGradient: { from: string; to: string };
   clerkPrimary: string;
 };
 
@@ -42,6 +41,5 @@ export const appTheme: AppTheme = {
     colors: { dark: deepOceanDark },
   }),
   gradient: { from: 'cyan.3', to: 'blue.4' },
-  upgradeGradient: { from: 'yellow.7', to: 'orange.9' },
   clerkPrimary: '#22b8cf',
 };

@@ -17,8 +17,8 @@ import { SignedIn, useUser } from '@clerk/clerk-react';
 import { CheckoutButton } from '@clerk/clerk-react/experimental';
 import { IconSparkles } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { proAccent } from '../lib/proAccent';
 import { PRO_FEATURES, useProPlan, type ProFeature } from '../lib/proPlan';
-import { appTheme } from '../lib/theme';
 
 type BillingPeriod = 'month' | 'annual';
 
@@ -67,7 +67,7 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
       size="md"
       fullWidth
       variant="gradient"
-      gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
+      gradient={{ ...proAccent.gradient, deg: 45 }}
       leftSection={<IconSparkles size={18} />}
     >
       Subscribe to Pro
@@ -92,7 +92,7 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
                 fw={700}
                 size="xl"
                 variant="gradient"
-                gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
+                gradient={{ ...proAccent.gradient, deg: 45 }}
               >
                 Pro
               </Text>
@@ -160,7 +160,7 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
                 size="md"
                 fullWidth
                 variant="gradient"
-                gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
+                gradient={{ ...proAccent.gradient, deg: 45 }}
                 leftSection={<IconSparkles size={18} />}
                 onClick={() => {
                   trackEvent(AnalyticsEvents.SubscribeToPro, { period: billingPeriod });

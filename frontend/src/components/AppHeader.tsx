@@ -17,6 +17,7 @@ import ClerkAuthButton from './ClerkAuthButton';
 import DeltaLogo from './DeltaLogo';
 import { ProFeatureList } from './ProPlanShowcase';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { proAccent } from '../lib/proAccent';
 import { useProPlan } from '../lib/proPlan';
 import { appTheme, spaceGroteskStack } from '../lib/theme';
 
@@ -42,7 +43,7 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
         <Button
           size="xs"
           variant="gradient"
-          gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
+          gradient={{ ...proAccent.gradient, deg: 45 }}
           leftSection={<IconSparkles size={14} />}
           onClick={() => {
             trackEvent(AnalyticsEvents.UpgradeToProHeader);
@@ -65,7 +66,7 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
               fw={700}
               size="md"
               variant="gradient"
-              gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
+              gradient={{ ...proAccent.gradient, deg: 45 }}
             >
               Delta Resume Pro
             </Text>
@@ -88,7 +89,7 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
             size="xs"
             fullWidth
             variant="gradient"
-            gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
+            gradient={{ ...proAccent.gradient, deg: 45 }}
             onClick={() => {
               trackEvent(AnalyticsEvents.SeePlanDetails);
               onUpgradeClick();
@@ -163,7 +164,7 @@ const AppHeader = ({
             <Badge
               size="lg"
               variant="gradient"
-              gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
+              gradient={{ ...proAccent.gradient, deg: 45 }}
               leftSection={<IconCrown size={14} />}
             >
               Pro

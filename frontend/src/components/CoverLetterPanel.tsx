@@ -45,8 +45,8 @@ import {
   prependCoverLetterDate,
 } from '../lib/formatCoverLetter';
 import { SAMPLE_COVER_LETTER_RESULT } from '../lib/mockTailor';
+import { proAccent } from '../lib/proAccent';
 import { useProUpgradeCtaLabel } from '../lib/proPlan';
-import { appTheme } from '../lib/theme';
 import CoverLetterSettingsPanel from './CoverLetterSettingsPanel';
 
 type CoverLetterPanelProps = {
@@ -87,7 +87,7 @@ const LockedTeaser = ({
           <IconLock size={32} color="var(--mantine-primary-color-filled)" />
           <Group gap={6}>
             <Title order={5}>Cover letters are a Pro feature</Title>
-            <Badge variant="gradient" gradient={{ ...appTheme.upgradeGradient, deg: 45 }}>
+            <Badge variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }}>
               Pro
             </Badge>
           </Group>
@@ -98,6 +98,8 @@ const LockedTeaser = ({
           {!isProPlan && (
             <Button
               mt={4}
+              variant="gradient"
+              gradient={{ ...proAccent.gradient, deg: 45 }}
               onClick={() => {
                 trackEvent(AnalyticsEvents.CoverLetterUpgradeTeaser);
                 onUpgradeClick();
@@ -138,6 +140,8 @@ const ExampleCoverLetter = ({
             </Text>
             <Button
               size="xs"
+              variant="gradient"
+              gradient={{ ...proAccent.gradient, deg: 45 }}
               onClick={() => {
                 trackEvent(AnalyticsEvents.CoverLetterUpgradeExample);
                 onUpgradeClick();
