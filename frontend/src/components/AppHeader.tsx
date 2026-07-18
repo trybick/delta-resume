@@ -153,8 +153,8 @@ const AppHeader = ({
                 Resume
               </Text>
             </Title>
-            <Text size="xs" c="dimmed" lh={1.4} visibleFrom="sm">
-              Optimize your resume for any job description
+            <Text size="xs" c="dimmed" lh={1.4}>
+              Tailor your resume to any job in seconds
             </Text>
           </Stack>
         </Group>

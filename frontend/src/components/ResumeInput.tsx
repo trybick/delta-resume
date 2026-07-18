@@ -8,6 +8,7 @@ import {
   Group,
   Loader,
   Paper,
+  Popover,
   ScrollArea,
   SegmentedControl,
   Stack,
@@ -98,6 +99,7 @@ const ResumeInput = ({
   const [parseError, setParseError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [pasteFieldEditable, setPasteFieldEditable] = useState(false);
   const trackPasteResumeText = useMemo(
     () => createDebouncedTracker(AnalyticsEvents.PasteResumeText),
@@ -152,6 +154,7 @@ const ResumeInput = ({
 
   const handleStartRename = (resume: SavedResume) => {
     trackEvent(AnalyticsEvents.RenameSavedResume);
+    setConfirmDeleteId(null);
     setEditingId(resume.id);
     setEditingName(resume.name);
   };
@@ -176,6 +179,22 @@ const ResumeInput = ({
   const handleRenameKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter') handleConfirmRename();
     if (event.key === 'Escape') handleCancelRename();
+  };
+
+  const handleOpenDeleteConfirm = (resumeId: string) => {
+    setEditingId(null);
+    setEditingName('');
+    setConfirmDeleteId(resumeId);
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmDeleteId(null);
+  };
+
+  const handleConfirmDelete = (resumeId: string) => {
+    trackEvent(AnalyticsEvents.DeleteSavedResume);
+    onDeleteSaved(resumeId);
+    setConfirmDeleteId(null);
   };
 
   return (
@@ -266,7 +285,7 @@ const ResumeInput = ({
                   <Text size="xs" c="dimmed">
                     .docx, .pdf, .md, or .txt — up to 5 MB
                   </Text>
-                  <Text size="xs" c="teal.4">
+                  <Text size="xs" c="teal.4" ta="center">
                     .docx works best — we keep your original formatting on export
                   </Text>
                   {parseError && (
@@ -447,18 +466,54 @@ const ResumeInput = ({
                             >
                               <IconPencil size={16} />
                             </ActionIcon>
-                            <ActionIcon
-                              variant="subtle"
-                              color="red"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                trackEvent(AnalyticsEvents.DeleteSavedResume);
-                                onDeleteSaved(resume.id);
+                            <Popover
+                              opened={confirmDeleteId === resume.id}
+                              onChange={(opened) => {
+                                if (!opened) handleCancelDelete();
                               }}
-                              aria-label="Delete saved resume"
+                              position="bottom-end"
+                              withArrow
+                              withinPortal
                             >
-                              <IconTrash size={16} />
-                            </ActionIcon>
+                              <Popover.Target>
+                                <ActionIcon
+                                  variant="subtle"
+                                  color="red"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    if (confirmDeleteId === resume.id) {
+                                      handleCancelDelete();
+                                      return;
+                                    }
+                                    handleOpenDeleteConfirm(resume.id);
+                                  }}
+                                  aria-label="Delete saved resume"
+                                >
+                                  <IconTrash size={16} />
+                                </ActionIcon>
+                              </Popover.Target>
+                              <Popover.Dropdown onClick={(event) => event.stopPropagation()}>
+                                <Stack gap="xs">
+                                  <Text size="sm">Delete this saved resume?</Text>
+                                  <Group gap="xs" justify="flex-end">
+                                    <Button
+                                      size="xs"
+                                      variant="default"
+                                      onClick={handleCancelDelete}
+                                    >
+                                      Cancel
+                                    </Button>
+                                    <Button
+                                      size="xs"
+                                      color="red.7"
+                                      onClick={() => handleConfirmDelete(resume.id)}
+                                    >
+                                      Delete
+                                    </Button>
+                                  </Group>
+                                </Stack>
+                              </Popover.Dropdown>
+                            </Popover>
                           </Group>
                         </Group>
                       </Paper>

@@ -114,7 +114,8 @@ const TailorForm = ({
       <Stack gap="xs">
         <Tooltip label={disabledReason} disabled={disabledReason === null} withArrow>
           <Button
-            size="md"
+            size="lg"
+            fullWidth
             variant="gradient"
             gradient={{ ...appTheme.gradient, deg: 45 }}
             leftSection={
