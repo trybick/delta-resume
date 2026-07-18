@@ -8,7 +8,11 @@ export const formatCoverLetterDate = (date: Date = new Date()): string =>
   });
 
 const cleanSubjectPart = (value: string): string =>
-  value.trim().replace(/^[.\s]+/, '').replace(/[.\s]+$/, '').trim();
+  value
+    .trim()
+    .replace(/^[\s.•\-–—*:;,_]+/, '')
+    .replace(/[\s.•\-–—*;,_]+$/, '')
+    .trim();
 
 export const formatCoverLetterSubject = (jobTitle: string, companyName: string): string | null => {
   const subjectParts = [jobTitle, companyName]
