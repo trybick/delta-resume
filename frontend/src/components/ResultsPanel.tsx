@@ -605,7 +605,7 @@ const ResultsPanel = ({
   };
 
   const handleExport = async (variant: 'keep' | 'clean', format: 'docx' | 'pdf') => {
-    if (!result || isExample || isExporting) return;
+    if (!result || isExample || isExporting) return false;
     trackEvent(AnalyticsEvents.ResumeExport, { variant, format });
     if (variant === 'keep' && activeAddedBullets.length > 0) {
       notifications.show({
@@ -625,34 +625,30 @@ const ResultsPanel = ({
           variant,
           format,
         });
-        return;
+        return true;
       }
-      try {
-        const pdfBlob = await convertDocxToPdfWithFallback(docxBlob);
-        downloadPdf(pdfBlob, 'tailored-resume.pdf');
-        trackEvent(AnalyticsEvents.ExportSuccess, {
-          source: 'resume',
-          variant,
-          format,
-        });
-      } catch {
-        trackEvent(AnalyticsEvents.ExportFailure, {
-          source: 'resume',
-          variant,
-          format,
-        });
-        notifications.show({
-          color: 'red',
-          title: 'PDF export failed',
-          message: 'Could not generate a PDF. Try downloading the .docx instead.',
-        });
-      }
+      const pdfBlob = await convertDocxToPdfWithFallback(docxBlob);
+      downloadPdf(pdfBlob, 'tailored-resume.pdf');
+      trackEvent(AnalyticsEvents.ExportSuccess, {
+        source: 'resume',
+        variant,
+        format,
+      });
+      return true;
     } catch {
       trackEvent(AnalyticsEvents.ExportFailure, {
         source: 'resume',
         variant,
         format,
       });
+      if (format === 'pdf') {
+        notifications.show({
+          color: 'red',
+          title: 'PDF export failed',
+          message: 'Could not generate a PDF. Try downloading the .docx instead.',
+        });
+      }
+      return false;
     } finally {
       setIsExporting(false);
     }

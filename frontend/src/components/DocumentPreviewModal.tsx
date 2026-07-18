@@ -34,7 +34,7 @@ type DocumentPreviewModalProps = {
   originalFile: File | null;
   canPatchOriginal: boolean;
   buildDocx: (variant: PreviewVariant) => Promise<Blob>;
-  onExport: (variant: PreviewVariant, format: ExportFormat) => Promise<void>;
+  onExport: (variant: PreviewVariant, format: ExportFormat) => Promise<boolean>;
 };
 
 type DocxPaneProps = {
@@ -172,7 +172,8 @@ const DocumentPreviewModal = ({
     setDownloadedFormat(null);
     if (downloadedTimeoutRef.current) clearTimeout(downloadedTimeoutRef.current);
     try {
-      await onExport(effectiveVariant, format);
+      const didExport = await onExport(effectiveVariant, format);
+      if (!didExport) return;
       setDownloadedFormat(format);
       downloadedTimeoutRef.current = setTimeout(() => setDownloadedFormat(null), 2500);
     } finally {
