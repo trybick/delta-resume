@@ -7,6 +7,7 @@ import {
   Group,
   Loader,
   Paper,
+  ScrollArea,
   SegmentedControl,
   Stack,
   Text,
@@ -58,6 +59,7 @@ type InputMode = 'upload' | 'paste' | 'saved';
 export const RESUME_TEXT_MAX_LENGTH = 15000;
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
+const SAVED_RESUME_LIST_MAX_HEIGHT = '13.25rem';
 
 const ACCEPTED_MIME_TYPES = [
   'text/plain',
@@ -343,99 +345,109 @@ const ResumeInput = ({
 
         {mode === 'saved' && isSignedIn && !isLoadingSavedResumes && savedResumes.length > 0 && (
           <Stack gap="xs">
-            {savedResumes.map((resume) => {
-              const isSelected = resume.resumeText === resumeText;
-              const isEditing = editingId === resume.id;
-              return (
-                <Paper
-                  key={resume.id}
-                  withBorder
-                  p="sm"
-                  radius="md"
-                  className="saved-resume-card"
-                  style={{
-                    cursor: 'pointer',
-                    borderColor: isSelected ? 'var(--mantine-primary-color-filled)' : undefined,
-                  }}
-                  onClick={() => {
-                    if (!isEditing) {
-                      trackEvent(AnalyticsEvents.SelectSavedResume);
-                      onSelectSaved(resume);
-                    }
-                  }}
-                >
-                  <Group justify="space-between" wrap="nowrap" align="flex-start">
-                    <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-                      {isEditing ? (
-                        <TextInput
-                          size="xs"
-                          aria-label="Rename saved resume"
-                          name="resume-name"
-                          autoComplete="off"
-                          value={editingName}
-                          onChange={(event) => setEditingName(event.currentTarget.value)}
-                          onKeyDown={handleRenameKeyDown}
-                          onClick={(event) => event.stopPropagation()}
-                          autoFocus
-                          rightSection={
-                            <ActionIcon
-                              size="sm"
-                              variant="subtle"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                handleConfirmRename();
-                              }}
-                              aria-label="Save name"
-                            >
-                              <IconCheck size={14} />
-                            </ActionIcon>
-                          }
-                        />
-                      ) : (
-                        <Group gap={6} wrap="nowrap">
-                          <Text size="sm" fw={600} lineClamp={1}>
-                            {resume.name}
-                          </Text>
-                          {isSelected && (
-                            <Badge size="xs" variant="light">
-                              Selected
-                            </Badge>
+            <ScrollArea.Autosize
+              mah={SAVED_RESUME_LIST_MAX_HEIGHT}
+              type="auto"
+              offsetScrollbars
+            >
+              <Stack gap="xs">
+                {savedResumes.map((resume) => {
+                  const isSelected = resume.resumeText === resumeText;
+                  const isEditing = editingId === resume.id;
+                  return (
+                    <Paper
+                      key={resume.id}
+                      withBorder
+                      p="sm"
+                      radius="md"
+                      className="saved-resume-card"
+                      style={{
+                        cursor: 'pointer',
+                        borderColor: isSelected
+                          ? 'var(--mantine-primary-color-filled)'
+                          : undefined,
+                      }}
+                      onClick={() => {
+                        if (!isEditing) {
+                          trackEvent(AnalyticsEvents.SelectSavedResume);
+                          onSelectSaved(resume);
+                        }
+                      }}
+                    >
+                      <Group justify="space-between" wrap="nowrap" align="flex-start">
+                        <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                          {isEditing ? (
+                            <TextInput
+                              size="xs"
+                              aria-label="Rename saved resume"
+                              name="resume-name"
+                              autoComplete="off"
+                              value={editingName}
+                              onChange={(event) => setEditingName(event.currentTarget.value)}
+                              onKeyDown={handleRenameKeyDown}
+                              onClick={(event) => event.stopPropagation()}
+                              autoFocus
+                              rightSection={
+                                <ActionIcon
+                                  size="sm"
+                                  variant="subtle"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    handleConfirmRename();
+                                  }}
+                                  aria-label="Save name"
+                                >
+                                  <IconCheck size={14} />
+                                </ActionIcon>
+                              }
+                            />
+                          ) : (
+                            <Group gap={6} wrap="nowrap">
+                              <Text size="sm" fw={600} lineClamp={1}>
+                                {resume.name}
+                              </Text>
+                              {isSelected && (
+                                <Badge size="xs" variant="light">
+                                  Selected
+                                </Badge>
+                              )}
+                            </Group>
                           )}
+                          <Text size="xs" c="dimmed" lineClamp={2}>
+                            {resume.resumeText}
+                          </Text>
+                        </Stack>
+                        <Group gap={4} wrap="nowrap">
+                          <ActionIcon
+                            variant="subtle"
+                            color="gray"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              handleStartRename(resume);
+                            }}
+                            aria-label="Rename saved resume"
+                          >
+                            <IconPencil size={16} />
+                          </ActionIcon>
+                          <ActionIcon
+                            variant="subtle"
+                            color="red"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              trackEvent(AnalyticsEvents.DeleteSavedResume);
+                              onDeleteSaved(resume.id);
+                            }}
+                            aria-label="Delete saved resume"
+                          >
+                            <IconTrash size={16} />
+                          </ActionIcon>
                         </Group>
-                      )}
-                      <Text size="xs" c="dimmed" lineClamp={2}>
-                        {resume.resumeText}
-                      </Text>
-                    </Stack>
-                    <Group gap={4} wrap="nowrap">
-                      <ActionIcon
-                        variant="subtle"
-                        color="gray"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleStartRename(resume);
-                        }}
-                        aria-label="Rename saved resume"
-                      >
-                        <IconPencil size={16} />
-                      </ActionIcon>
-                      <ActionIcon
-                        variant="subtle"
-                        color="red"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          trackEvent(AnalyticsEvents.DeleteSavedResume);
-                          onDeleteSaved(resume.id);
-                        }}
-                        aria-label="Delete saved resume"
-                      >
-                        <IconTrash size={16} />
-                      </ActionIcon>
-                    </Group>
-                  </Group>
-                </Paper>
-              );
-            })}
+                      </Group>
+                    </Paper>
+                  );
+                })}
+              </Stack>
+            </ScrollArea.Autosize>
             {atSavedLimit && (
               <Stack gap="xs" align="center">
                 <Text size="xs" c="dimmed" ta="center">
