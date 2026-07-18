@@ -810,7 +810,7 @@ const ResultsPanel = ({
               </Tooltip>
             )}
           </Stack>
-          <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
+          <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0, marginLeft: 'auto' }}>
             <Tooltip label="Preview the final document before downloading" withArrow>
               <Button
                 size="xs"
@@ -984,7 +984,22 @@ const ResultsPanel = ({
           </CollapsibleInsight>
         )}
 
-        <div>
+        <Paper
+          withBorder
+          radius="md"
+          p="lg"
+          style={{
+            backgroundColor:
+              'color-mix(in srgb, var(--mantine-color-default-hover) 40%, var(--mantine-color-body))',
+            boxShadow: 'inset 0 1px 3px rgba(0, 0, 0, 0.12)',
+          }}
+        >
+          <Group gap={6} mb="sm" wrap="nowrap">
+            <IconFileText size={13} color="var(--mantine-color-gray-5)" stroke={1.8} />
+            <Text size="xs" fw={600} c="dimmed" tt="uppercase" lts={0.6}>
+              Your tailored resume
+            </Text>
+          </Group>
           {segments.map((segment) => {
             if (segment.kind === 'change') {
               return (
@@ -1033,7 +1048,7 @@ const ResultsPanel = ({
               </div>
             );
           })}
-        </div>
+        </Paper>
       </Stack>
       <DocumentPreviewModal
         opened={previewOpen}
