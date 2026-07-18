@@ -65,7 +65,7 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
               fw={700}
               size="md"
               variant="gradient"
-              gradient={{ ...appTheme.gradient, deg: 45 }}
+              gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
             >
               Delta Resume Pro
             </Text>
@@ -163,7 +163,7 @@ const AppHeader = ({
             <Badge
               size="lg"
               variant="gradient"
-              gradient={{ ...appTheme.gradient, deg: 45 }}
+              gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
               leftSection={<IconCrown size={14} />}
             >
               Pro

@@ -47,6 +47,7 @@ import {
   prependCoverLetterDate,
 } from '../lib/formatCoverLetter';
 import { SAMPLE_COVER_LETTER_RESULT } from '../lib/mockTailor';
+import { appTheme } from '../lib/theme';
 import CoverLetterSettingsPanel from './CoverLetterSettingsPanel';
 
 type CoverLetterPanelProps = {
@@ -84,7 +85,7 @@ const LockedTeaser = ({
         <IconLock size={32} color="var(--mantine-primary-color-filled)" />
         <Group gap={6}>
           <Title order={5}>Cover letters are a Pro feature</Title>
-          <Badge variant="gradient" gradient={{ from: 'indigo', to: 'cyan' }}>
+          <Badge variant="gradient" gradient={{ ...appTheme.upgradeGradient, deg: 45 }}>
             Pro
           </Badge>
         </Group>

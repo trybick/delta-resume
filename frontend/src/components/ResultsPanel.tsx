@@ -965,7 +965,10 @@ const ResultsPanel = ({
                         <Text size="sm" fw={600}>
                           See all {gaps.length} missing requirements with Pro
                         </Text>
-                        <Badge variant="gradient" gradient={{ from: 'indigo', to: 'cyan' }}>
+                        <Badge
+                          variant="gradient"
+                          gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
+                        >
                           Pro
                         </Badge>
                       </Group>

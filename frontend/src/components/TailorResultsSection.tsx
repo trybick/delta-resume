@@ -9,6 +9,7 @@ import {
   IconMail,
 } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { appTheme } from '../lib/theme';
 import ResultsPanel from './ResultsPanel';
 import CoverLetterPanel from './CoverLetterPanel';
 import type { OriginalDocx } from '../hooks/useResumeDocument';
@@ -70,7 +71,12 @@ const TailorResultsSection = ({
   ) : null;
 
   const coverLetterTabIndicator = !planLoaded ? null : !isProPlan ? (
-    <Badge size="xs" variant="light" h={16}>
+    <Badge
+      size="xs"
+      variant="gradient"
+      gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
+      h={16}
+    >
       Pro
     </Badge>
   ) : showingExample ? null : coverLetterStatus === 'loading' ? (

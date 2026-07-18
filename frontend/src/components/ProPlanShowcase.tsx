@@ -91,7 +91,7 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
                 fw={700}
                 size="xl"
                 variant="gradient"
-                gradient={{ ...appTheme.gradient, deg: 45 }}
+                gradient={{ ...appTheme.upgradeGradient, deg: 45 }}
               >
                 Pro
               </Text>
