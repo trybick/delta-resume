@@ -224,7 +224,7 @@ const ResumeInput = ({
 
         <Box h={TAB_PANEL_HEIGHT} style={{ minHeight: TAB_PANEL_HEIGHT }}>
           {mode === 'upload' && attachedFile && (
-            <Stack h="100%" justify="center">
+            <Stack gap="xs" h="100%" style={{ minHeight: 0 }}>
               <Paper withBorder p="sm" radius="md" bg="dark.5">
                 <Group justify="space-between" wrap="nowrap">
                   <Group gap="sm" wrap="nowrap">
@@ -250,6 +250,28 @@ const ResumeInput = ({
                     <IconX size={16} />
                   </ActionIcon>
                 </Group>
+              </Paper>
+              <Paper
+                withBorder
+                p="sm"
+                radius="md"
+                style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
+              >
+                <Text size="xs" c="dimmed" fw={600} mb={4}>
+                  Extracted text
+                </Text>
+                <ScrollArea type="auto" offsetScrollbars style={{ flex: 1, minHeight: 0 }}>
+                  <Text
+                    size="xs"
+                    c="dimmed"
+                    style={{
+                      whiteSpace: 'pre-wrap',
+                      fontFamily: 'ui-monospace, monospace',
+                    }}
+                  >
+                    {resumeText}
+                  </Text>
+                </ScrollArea>
               </Paper>
             </Stack>
           )}
