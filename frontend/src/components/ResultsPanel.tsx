@@ -163,10 +163,9 @@ const buildSegments = (
 
 const ContextLine = ({ line }: { line: string }) => (
   <Text
+    size="sm"
     c="dimmed"
     style={{
-      fontFamily: 'ui-monospace, monospace',
-      fontSize: 'var(--mantine-font-size-xs)',
       lineHeight: 1.6,
       whiteSpace: 'pre-wrap',
     }}

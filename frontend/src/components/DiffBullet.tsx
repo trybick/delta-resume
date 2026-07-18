@@ -43,9 +43,8 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
     return (
       <Text
         component="div"
+        size="sm"
         style={{
-          fontFamily: 'ui-monospace, monospace',
-          fontSize: 'var(--mantine-font-size-xs)',
           lineHeight: 1.5,
         }}
       >

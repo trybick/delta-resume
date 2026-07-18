@@ -32,11 +32,9 @@ const AddedBulletRow = ({ bullet, onTextChange, onRemove }: AddedBulletRowProps)
           onChange={(event) => onTextChange(bullet.id, event.currentTarget.value)}
           autosize
           minRows={1}
-          size="xs"
+          size="sm"
           styles={{
             input: {
-              fontFamily: 'ui-monospace, monospace',
-              fontSize: 'var(--mantine-font-size-xs)',
               lineHeight: 1.5,
             },
           }}
