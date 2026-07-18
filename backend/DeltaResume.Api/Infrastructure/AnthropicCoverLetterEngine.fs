@@ -58,7 +58,8 @@ Rules for the letter:
 - Try to sound like a real human. Never use em dashes (—).
 
 Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
-{"jobTitle":"<extracted job title or empty string>","companyName":"<extracted company name or empty string>","letter":"<the full letter with \n\n between paragraphs>"}"""
+{"jobTitle":"<extracted job title or empty string>","companyName":"<extracted company name or empty string>","letter":"<the full letter with \n\n between paragraphs>"}
+Use plain UTF-8 characters inside JSON strings. Never encode characters as \\uXXXX escapes."""
             wordTarget
             toneDescription
             paragraphTarget
@@ -91,6 +92,15 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
         else
             trimmed
 
+    let unicodeEscapePattern =
+        Regex(@"\\u([0-9a-fA-F]{4})", RegexOptions.Compiled)
+
+    let unescapeUnicodeEscapes (text: string) : string =
+        unicodeEscapePattern.Replace(
+            text,
+            fun (m: Match) -> string (char (Convert.ToInt32(m.Groups[1].Value, 16)))
+        )
+
     let missingJobTitleKeyPattern =
         Regex("^\\{\"([^\"]*)\",\"companyName\"", RegexOptions.Compiled)
 
@@ -104,6 +114,12 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
             .Replace("\"\"letter", "\"\",\"letter")
             .Replace("\"},\"companyName\"", "\",\"companyName\"")
             .Replace("\"}, \"companyName\"", "\", \"companyName\"")
+
+    let withAssistantPrefill (body: string) : string =
+        if body.StartsWith("\"", StringComparison.Ordinal) || body.StartsWith("{", StringComparison.Ordinal) then
+            assistantPrefill + body
+        else
+            assistantPrefill + "\"" + body
 
     let tryParseDraft (jsonText: string) : CoverLetterDraft option =
         try
@@ -129,11 +145,15 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
 
     let parseDraft (content: string) : Result<CoverLetterDraft, string> =
         let stripped = stripCodeFences content |> normalizeContinuation
+        let unescaped = unescapeUnicodeEscapes stripped |> normalizeContinuation
 
         let candidates =
             [ stripped
-              assistantPrefill + stripped
-              assistantPrefill + stripped.TrimStart('{') ]
+              unescaped
+              withAssistantPrefill stripped
+              withAssistantPrefill unescaped
+              assistantPrefill + stripped.TrimStart('{')
+              assistantPrefill + unescaped.TrimStart('{') ]
             |> List.distinct
 
         match candidates |> List.tryPick tryParseDraft with
@@ -157,9 +177,15 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                 match apiKey with
                 | None -> return Error "ANTHROPIC_API_KEY is not set on the server."
                 | Some apiKey ->
+                    let maxTokens =
+                        match settings.Length with
+                        | "long" -> 4096
+                        | "short" -> 2048
+                        | _ -> 3072
+
                     let requestBody =
                         {| model = model
-                           max_tokens = 2048
+                           max_tokens = maxTokens
                            temperature = 0.4
                            system = buildSystemPrompt settings
                            messages =
