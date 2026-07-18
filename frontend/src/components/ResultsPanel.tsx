@@ -36,6 +36,7 @@ import {
   IconTargetArrow,
 } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { useProUpgradeCtaLabel } from '../lib/proPlan';
 import { appTheme } from '../lib/theme';
 import type {
   AddedBullet,
@@ -474,6 +475,7 @@ const ResultsPanel = ({
   const [gapsOpen, setGapsOpen] = useState(() => (result ? hasMustHaveGaps(result) : false));
   const [isExporting, setIsExporting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const upgradeCtaLabel = useProUpgradeCtaLabel();
 
   useEffect(() => {
     setExpandedSegments(new Set());
@@ -994,7 +996,7 @@ const ResultsPanel = ({
                         </Badge>
                       </Group>
                       <Button size="xs" onClick={handleGapsUpgradeClick}>
-                        Upgrade to Pro
+                        {upgradeCtaLabel}
                       </Button>
                     </Stack>
                   </Center>

@@ -45,6 +45,7 @@ import {
   prependCoverLetterDate,
 } from '../lib/formatCoverLetter';
 import { SAMPLE_COVER_LETTER_RESULT } from '../lib/mockTailor';
+import { useProUpgradeCtaLabel } from '../lib/proPlan';
 import { appTheme } from '../lib/theme';
 import CoverLetterSettingsPanel from './CoverLetterSettingsPanel';
 
@@ -65,47 +66,51 @@ const LockedTeaser = ({
 }: {
   isProPlan: boolean;
   onUpgradeClick: () => void;
-}) => (
-  <Card withBorder shadow="xs" padding="lg" style={{ position: 'relative', overflow: 'hidden' }}>
-    <Stack gap="md" style={{ filter: 'blur(5px)', userSelect: 'none' }} aria-hidden>
-      <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-        {prependCoverLetterDate(SAMPLE_COVER_LETTER_RESULT.letter)}
-      </Text>
-    </Stack>
-    <Center
-      style={{
-        position: 'absolute',
-        inset: 0,
-        backgroundColor: 'color-mix(in srgb, var(--mantine-color-body) 55%, transparent)',
-      }}
-    >
-      <Stack align="center" gap="xs" p="md">
-        <IconLock size={32} color="var(--mantine-primary-color-filled)" />
-        <Group gap={6}>
-          <Title order={5}>Cover letters are a Pro feature</Title>
-          <Badge variant="gradient" gradient={{ ...appTheme.upgradeGradient, deg: 45 }}>
-            Pro
-          </Badge>
-        </Group>
-        <Text size="sm" c="dimmed" ta="center" maw={340}>
-          Every tailor run also writes a matching cover letter, ready to copy or download as a
-          polished .docx.
+}) => {
+  const upgradeCtaLabel = useProUpgradeCtaLabel();
+
+  return (
+    <Card withBorder shadow="xs" padding="lg" style={{ position: 'relative', overflow: 'hidden' }}>
+      <Stack gap="md" style={{ filter: 'blur(5px)', userSelect: 'none' }} aria-hidden>
+        <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+          {prependCoverLetterDate(SAMPLE_COVER_LETTER_RESULT.letter)}
         </Text>
-        {!isProPlan && (
-          <Button
-            mt={4}
-            onClick={() => {
-              trackEvent(AnalyticsEvents.CoverLetterUpgradeTeaser);
-              onUpgradeClick();
-            }}
-          >
-            Upgrade to Pro
-          </Button>
-        )}
       </Stack>
-    </Center>
-  </Card>
-);
+      <Center
+        style={{
+          position: 'absolute',
+          inset: 0,
+          backgroundColor: 'color-mix(in srgb, var(--mantine-color-body) 55%, transparent)',
+        }}
+      >
+        <Stack align="center" gap="xs" p="md">
+          <IconLock size={32} color="var(--mantine-primary-color-filled)" />
+          <Group gap={6}>
+            <Title order={5}>Cover letters are a Pro feature</Title>
+            <Badge variant="gradient" gradient={{ ...appTheme.upgradeGradient, deg: 45 }}>
+              Pro
+            </Badge>
+          </Group>
+          <Text size="sm" c="dimmed" ta="center" maw={340}>
+            Every tailor run also writes a matching cover letter, ready to copy or download as a
+            polished .docx.
+          </Text>
+          {!isProPlan && (
+            <Button
+              mt={4}
+              onClick={() => {
+                trackEvent(AnalyticsEvents.CoverLetterUpgradeTeaser);
+                onUpgradeClick();
+              }}
+            >
+              {upgradeCtaLabel}
+            </Button>
+          )}
+        </Stack>
+      </Center>
+    </Card>
+  );
+};
 
 const ExampleCoverLetter = ({
   exampleResult,
@@ -115,45 +120,49 @@ const ExampleCoverLetter = ({
   exampleResult: CoverLetterResult;
   isProPlan: boolean;
   onUpgradeClick: () => void;
-}) => (
-  <Card withBorder shadow="xs" padding="lg">
-    <Stack gap="md">
-      <Group gap="sm">
-        <Badge color="cyan" variant="light">
-          Example
-        </Badge>
-      </Group>
-      {!isProPlan && (
-        <Group justify="space-between" align="center" wrap="wrap">
-          <Text size="sm" c="dimmed">
-            On the Pro plan, every tailor run also writes a cover letter like this one.
-          </Text>
-          <Button
-            size="xs"
-            onClick={() => {
-              trackEvent(AnalyticsEvents.CoverLetterUpgradeExample);
-              onUpgradeClick();
-            }}
-          >
-            Upgrade to Pro
-          </Button>
+}) => {
+  const upgradeCtaLabel = useProUpgradeCtaLabel();
+
+  return (
+    <Card withBorder shadow="xs" padding="lg">
+      <Stack gap="md">
+        <Group gap="sm">
+          <Badge color="cyan" variant="light">
+            Example
+          </Badge>
         </Group>
-      )}
-      <Box
-        p="md"
-        style={{
-          borderRadius: 8,
-          border: '1px solid var(--mantine-color-default-border)',
-          backgroundColor: 'var(--mantine-color-default-hover)',
-        }}
-      >
-        <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
-          {prependCoverLetterDate(exampleResult.letter)}
-        </Text>
-      </Box>
-    </Stack>
-  </Card>
-);
+        {!isProPlan && (
+          <Group justify="space-between" align="center" wrap="wrap">
+            <Text size="sm" c="dimmed">
+              On the Pro plan, every tailor run also writes a cover letter like this one.
+            </Text>
+            <Button
+              size="xs"
+              onClick={() => {
+                trackEvent(AnalyticsEvents.CoverLetterUpgradeExample);
+                onUpgradeClick();
+              }}
+            >
+              {upgradeCtaLabel}
+            </Button>
+          </Group>
+        )}
+        <Box
+          p="md"
+          style={{
+            borderRadius: 8,
+            border: '1px solid var(--mantine-color-default-border)',
+            backgroundColor: 'var(--mantine-color-default-hover)',
+          }}
+        >
+          <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
+            {prependCoverLetterDate(exampleResult.letter)}
+          </Text>
+        </Box>
+      </Stack>
+    </Card>
+  );
+};
 
 const writingStageMessages: string[] = [
   'Reading the job description…',

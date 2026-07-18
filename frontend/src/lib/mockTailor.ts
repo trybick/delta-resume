@@ -155,8 +155,6 @@ In my current role I rebuilt the checkout flow in React and TypeScript, lifting 
 
 I have also carried features well beyond the frontend when the product needed it. I led the migration of 14 legacy services to AWS with Docker, cutting infrastructure costs by 30%, and redesigned a public REST API used by more than 200 integration partners, improving p95 latency by 40%. That end-to-end comfort means I can own a feature from database schema to pixel-level polish without waiting on handoffs.
 
-Beyond shipping, I care about how teams ship. I mentor junior engineers, maintain an open-source kanban library with over 2,000 GitHub stars, and push for the details your team clearly values: accessible components, fast feedback loops, and interfaces that feel effortless.
-
 I would welcome the chance to talk about how I can help Acme ship its next chapter.
 
 Sincerely,

@@ -85,3 +85,11 @@ export const useProPlan = (): ProPriceInfo => {
     planId: proPlan.id,
   };
 };
+
+export const getProUpgradeCtaLabel = (price: string | null): string =>
+  price ? `Upgrade to Pro — from ${price}/mo` : 'Upgrade to Pro';
+
+export const useProUpgradeCtaLabel = (): string => {
+  const { annualMonthlyPrice, monthlyPrice } = useProPlan();
+  return getProUpgradeCtaLabel(annualMonthlyPrice ?? monthlyPrice);
+};
