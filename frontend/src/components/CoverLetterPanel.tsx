@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   ActionIcon,
   Alert,
@@ -219,6 +219,7 @@ type NameAndSettingsRowProps = {
   settingsOpened: boolean;
   onToggleSettings: () => void;
   onCloseSettings: () => void;
+  trailing?: ReactNode;
 };
 
 const NameAndSettingsRow = ({
@@ -227,10 +228,11 @@ const NameAndSettingsRow = ({
   settingsOpened,
   onToggleSettings,
   onCloseSettings,
+  trailing,
 }: NameAndSettingsRowProps) => (
   <Stack gap="sm">
-    <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
-      <Group gap="sm" align="center" wrap="wrap" style={{ flex: 1, minWidth: 0 }}>
+    <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
+      <Group gap="sm" align="center" wrap="wrap" style={{ flex: '1 1 16rem', minWidth: 0 }}>
         <Text
           component="label"
           htmlFor="cover-letter-candidate-name"
@@ -248,20 +250,23 @@ const NameAndSettingsRow = ({
           value={candidateName}
           onChange={(event) => onCandidateNameChange(event.currentTarget.value)}
           maw={280}
-          style={{ flex: 1 }}
+          style={{ flex: 1, minWidth: 140 }}
         />
       </Group>
-      <Tooltip label="Cover letter settings">
-        <ActionIcon
-          variant={settingsOpened ? 'light' : 'subtle'}
-          color="gray"
-          aria-label="Cover letter settings"
-          aria-expanded={settingsOpened}
-          onClick={onToggleSettings}
-        >
-          <IconSettings size={18} />
-        </ActionIcon>
-      </Tooltip>
+      <Stack gap={4} align="flex-end" style={{ marginLeft: 'auto' }}>
+        {trailing}
+        <Tooltip label="Cover letter settings">
+          <ActionIcon
+            variant={settingsOpened ? 'light' : 'subtle'}
+            color="gray"
+            aria-label="Cover letter settings"
+            aria-expanded={settingsOpened}
+            onClick={onToggleSettings}
+          >
+            <IconSettings size={18} />
+          </ActionIcon>
+        </Tooltip>
+      </Stack>
     </Group>
     <Collapse expanded={settingsOpened}>
       <Box
@@ -459,49 +464,55 @@ const CoverLetterPanel = ({
   return (
     <Card withBorder shadow="xs" padding="lg">
       <Stack gap="md">
-        <Group justify="flex-end" align="center" wrap="wrap">
-          <Menu
-            position="bottom-end"
-            withinPortal
-            onOpen={() => trackEvent(AnalyticsEvents.CoverLetterExportMenuOpen)}
-          >
-            <Menu.Target>
-              <Button
-                size="xs"
-                variant="light"
-                leftSection={<IconDownload size={16} />}
-                rightSection={<IconChevronDown size={14} />}
-                loading={isExporting}
-              >
-                Export
-              </Button>
-            </Menu.Target>
-            <Menu.Dropdown>
-              <Menu.Item
-                leftSection={
-                  clipboard.copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />
-                }
-                onClick={handleCopy}
-              >
-                {clipboard.copied ? 'Copied' : 'Copy to clipboard'}
-              </Menu.Item>
-              <Menu.Divider />
-              <Menu.Item
-                leftSection={<IconFileDescription size={16} />}
-                onClick={() => handleExport('docx')}
-              >
-                Word (.docx)
-              </Menu.Item>
-              <Menu.Item
-                leftSection={<IconFileTypePdf size={16} />}
-                onClick={() => handleExport('pdf')}
-              >
-                PDF (.pdf)
-              </Menu.Item>
-            </Menu.Dropdown>
-          </Menu>
-        </Group>
-        {nameAndSettingsRow}
+        <NameAndSettingsRow
+          candidateName={candidateName}
+          onCandidateNameChange={handleCandidateNameChange}
+          settingsOpened={settingsOpened}
+          onToggleSettings={handleToggleSettings}
+          onCloseSettings={handleCloseSettings}
+          trailing={
+            <Menu
+              position="bottom-end"
+              withinPortal
+              onOpen={() => trackEvent(AnalyticsEvents.CoverLetterExportMenuOpen)}
+            >
+              <Menu.Target>
+                <Button
+                  size="xs"
+                  variant="light"
+                  leftSection={<IconDownload size={16} />}
+                  rightSection={<IconChevronDown size={14} />}
+                  loading={isExporting}
+                >
+                  Export
+                </Button>
+              </Menu.Target>
+              <Menu.Dropdown>
+                <Menu.Item
+                  leftSection={
+                    clipboard.copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />
+                  }
+                  onClick={handleCopy}
+                >
+                  {clipboard.copied ? 'Copied' : 'Copy to clipboard'}
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                  leftSection={<IconFileDescription size={16} />}
+                  onClick={() => handleExport('docx')}
+                >
+                  Word (.docx)
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconFileTypePdf size={16} />}
+                  onClick={() => handleExport('pdf')}
+                >
+                  PDF (.pdf)
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          }
+        />
         <Box
           p="md"
           style={{
