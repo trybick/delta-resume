@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import {
   ActionIcon,
   Badge,
+  Box,
   Button,
   Card,
   Group,
@@ -59,7 +60,7 @@ type InputMode = 'upload' | 'paste' | 'saved';
 export const RESUME_TEXT_MAX_LENGTH = 15000;
 
 const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
-const SAVED_RESUME_LIST_MAX_HEIGHT = '13.25rem';
+const TAB_PANEL_HEIGHT = '15rem';
 
 const ACCEPTED_MIME_TYPES = [
   'text/plain',
@@ -97,6 +98,7 @@ const ResumeInput = ({
   const [parseError, setParseError] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [pasteFieldEditable, setPasteFieldEditable] = useState(false);
   const trackPasteResumeText = useMemo(
     () => createDebouncedTracker(AnalyticsEvents.PasteResumeText),
     [],
@@ -187,6 +189,7 @@ const ResumeInput = ({
             onChange={(value) => {
               const nextMode = value as InputMode;
               trackEvent(AnalyticsEvents.ResumeModeSwitch, { mode: nextMode });
+              if (nextMode !== 'paste') setPasteFieldEditable(false);
               setMode(nextMode);
             }}
             data={[
@@ -200,275 +203,291 @@ const ResumeInput = ({
           />
         </Group>
 
-        {mode === 'upload' && attachedFile && (
-          <Paper withBorder p="sm" radius="md" bg="dark.5">
-            <Group justify="space-between" wrap="nowrap">
-              <Group gap="sm" wrap="nowrap">
-                <IconFileText size={22} color="var(--mantine-primary-color-filled)" />
-                <div>
-                  <Text size="sm" fw={600} lineClamp={1}>
-                    {attachedFile.name}
+        <Box h={TAB_PANEL_HEIGHT} style={{ minHeight: TAB_PANEL_HEIGHT }}>
+          {mode === 'upload' && attachedFile && (
+            <Stack h="100%" justify="center">
+              <Paper withBorder p="sm" radius="md" bg="dark.5">
+                <Group justify="space-between" wrap="nowrap">
+                  <Group gap="sm" wrap="nowrap">
+                    <IconFileText size={22} color="var(--mantine-primary-color-filled)" />
+                    <div>
+                      <Text size="sm" fw={600} lineClamp={1}>
+                        {attachedFile.name}
+                      </Text>
+                      <Text size="xs" c="dimmed">
+                        {formatFileSize(attachedFile.size)}
+                      </Text>
+                    </div>
+                  </Group>
+                  <ActionIcon
+                    variant="subtle"
+                    color="gray"
+                    onClick={() => {
+                      trackEvent(AnalyticsEvents.RemoveAttachedResume);
+                      onClear();
+                    }}
+                    aria-label="Remove attached resume"
+                  >
+                    <IconX size={16} />
+                  </ActionIcon>
+                </Group>
+              </Paper>
+            </Stack>
+          )}
+
+          {mode === 'upload' && !attachedFile && (
+            <Stack gap="xs" h="100%">
+              <Dropzone
+                onDrop={handleDrop}
+                onReject={handleDropReject}
+                onFileDialogOpen={() => trackEvent(AnalyticsEvents.DropzoneBrowse)}
+                accept={ACCEPTED_MIME_TYPES}
+                maxSize={MAX_FILE_SIZE_BYTES}
+                maxFiles={1}
+                multiple={false}
+                loading={isParsing}
+                style={{ flex: 1, display: 'flex' }}
+                styles={{
+                  inner: {
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  },
+                }}
+              >
+                <Stack align="center" gap={6} style={{ pointerEvents: 'none' }}>
+                  <IconFileUpload size={32} color="var(--mantine-primary-color-filled)" />
+                  <Text size="sm" fw={500}>
+                    {isParsing
+                      ? 'Reading your resume…'
+                      : 'Drop your resume here or click to browse'}
                   </Text>
                   <Text size="xs" c="dimmed">
-                    {formatFileSize(attachedFile.size)}
+                    .docx, .pdf, .md, or .txt — up to 5 MB
                   </Text>
-                </div>
-              </Group>
-              <ActionIcon
-                variant="subtle"
-                color="gray"
-                onClick={() => {
-                  trackEvent(AnalyticsEvents.RemoveAttachedResume);
-                  onClear();
+                  <Text size="xs" c="teal.4">
+                    .docx works best — we keep your original formatting on export
+                  </Text>
+                  {parseError && (
+                    <Text size="sm" c="red" ta="center">
+                      {parseError}
+                    </Text>
+                  )}
+                </Stack>
+              </Dropzone>
+            </Stack>
+          )}
+
+          {mode === 'paste' && (
+            <Stack gap={4} h="100%">
+              <Textarea
+                aria-label="Resume text"
+                name="resume-paste"
+                autoComplete="off"
+                readOnly={!pasteFieldEditable}
+                onFocus={() => setPasteFieldEditable(true)}
+                value={pasteFieldText}
+                onChange={(event) => {
+                  trackPasteResumeText();
+                  onResumeTextChange(event.currentTarget.value.slice(0, RESUME_TEXT_MAX_LENGTH));
                 }}
-                aria-label="Remove attached resume"
-              >
-                <IconX size={16} />
-              </ActionIcon>
-            </Group>
-          </Paper>
-        )}
-
-        {mode === 'upload' && !attachedFile && (
-          <Stack gap="xs">
-            <Dropzone
-              onDrop={handleDrop}
-              onReject={handleDropReject}
-              onFileDialogOpen={() => trackEvent(AnalyticsEvents.DropzoneBrowse)}
-              accept={ACCEPTED_MIME_TYPES}
-              maxSize={MAX_FILE_SIZE_BYTES}
-              maxFiles={1}
-              multiple={false}
-              loading={isParsing}
-            >
-              <Stack align="center" gap={6} py="md" style={{ pointerEvents: 'none' }}>
-                <IconFileUpload size={32} color="var(--mantine-primary-color-filled)" />
-                <Text size="sm" fw={500}>
-                  {isParsing ? 'Reading your resume…' : 'Drop your resume here or click to browse'}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  .docx, .pdf, .md, or .txt — up to 5 MB
-                </Text>
-                <Text size="xs" c="teal.4">
-                  .docx works best — we keep your original formatting on export
-                </Text>
-              </Stack>
-            </Dropzone>
-            {parseError && (
-              <Text size="sm" c="red">
-                {parseError}
-              </Text>
-            )}
-          </Stack>
-        )}
-
-        {mode === 'paste' && (
-          <Stack gap={4}>
-            <Textarea
-              aria-label="Resume text"
-              name="resume-text"
-              autoComplete="off"
-              value={pasteFieldText}
-              onChange={(event) => {
-                trackPasteResumeText();
-                onResumeTextChange(event.currentTarget.value.slice(0, RESUME_TEXT_MAX_LENGTH));
-              }}
-              placeholder="Paste your resume text here…"
-              maxLength={RESUME_TEXT_MAX_LENGTH}
-              autosize
-              minRows={10}
-              maxRows={10}
-              styles={{
-                input: {
-                  fontFamily: 'ui-monospace, monospace',
-                  fontSize: 'var(--mantine-font-size-xs)',
-                },
-              }}
-            />
-            {pasteFieldText.length > 0 && (
+                placeholder="Paste your resume text here…"
+                maxLength={RESUME_TEXT_MAX_LENGTH}
+                style={{ flex: 1 }}
+                styles={{
+                  root: { flex: 1, display: 'flex', flexDirection: 'column' },
+                  wrapper: { flex: 1 },
+                  input: {
+                    height: '100%',
+                    fontFamily: 'ui-monospace, monospace',
+                    fontSize: 'var(--mantine-font-size-xs)',
+                  },
+                }}
+              />
               <Text
                 size="xs"
                 c={RESUME_TEXT_MAX_LENGTH - pasteFieldText.length <= 0 ? 'red' : 'dimmed'}
                 ta="right"
+                style={{ visibility: pasteFieldText.length > 0 ? 'visible' : 'hidden' }}
               >
                 {(RESUME_TEXT_MAX_LENGTH - pasteFieldText.length).toLocaleString()} characters left
               </Text>
-            )}
-          </Stack>
-        )}
-
-        {mode === 'saved' && !isSignedIn && (
-          <Paper withBorder p="lg" radius="md">
-            <Stack align="center" gap="xs">
-              <IconFileText size={28} color="var(--mantine-primary-color-filled)" />
-              <Text size="sm" fw={500} ta="center">
-                Sign in to save resumes to your account
-              </Text>
-              <Text size="xs" c="dimmed" ta="center">
-                Resumes are saved automatically after each tailor run.
-              </Text>
-              <SignInButton mode="modal">
-                <ClerkAuthButton
-                  size="compact-xs"
-                  variant="light"
-                  leftSection={<IconLogin2 size={14} />}
-                  onClick={() => trackEvent(AnalyticsEvents.SignIn)}
-                >
-                  Sign in
-                </ClerkAuthButton>
-              </SignInButton>
             </Stack>
-          </Paper>
-        )}
+          )}
 
-        {mode === 'saved' && isSignedIn && isLoadingSavedResumes && (
-          <Paper withBorder p="lg" radius="md">
-            <Stack align="center" gap={4}>
-              <Loader size="sm" />
-            </Stack>
-          </Paper>
-        )}
-
-        {mode === 'saved' && isSignedIn && !isLoadingSavedResumes && savedResumes.length === 0 && (
-          <Paper withBorder p="lg" radius="md">
-            <Stack align="center" gap={4}>
-              <IconFileText size={28} color="var(--mantine-primary-color-filled)" />
-              <Text size="sm" fw={500} ta="center">
-                No saved resumes yet
-              </Text>
-              <Text size="xs" c="dimmed" ta="center">
-                Your resumes are saved here automatically after you tailor.
-              </Text>
-            </Stack>
-          </Paper>
-        )}
-
-        {mode === 'saved' && isSignedIn && !isLoadingSavedResumes && savedResumes.length > 0 && (
-          <Stack gap="xs">
-            <ScrollArea.Autosize
-              mah={SAVED_RESUME_LIST_MAX_HEIGHT}
-              type="auto"
-              offsetScrollbars
-            >
-              <Stack gap="xs">
-                {savedResumes.map((resume) => {
-                  const isSelected = resume.resumeText === resumeText;
-                  const isEditing = editingId === resume.id;
-                  return (
-                    <Paper
-                      key={resume.id}
-                      withBorder
-                      p="sm"
-                      radius="md"
-                      className="saved-resume-card"
-                      style={{
-                        cursor: 'pointer',
-                        borderColor: isSelected
-                          ? 'var(--mantine-primary-color-filled)'
-                          : undefined,
-                      }}
-                      onClick={() => {
-                        if (!isEditing) {
-                          trackEvent(AnalyticsEvents.SelectSavedResume);
-                          onSelectSaved(resume);
-                        }
-                      }}
-                    >
-                      <Group justify="space-between" wrap="nowrap" align="flex-start">
-                        <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
-                          {isEditing ? (
-                            <TextInput
-                              size="xs"
-                              aria-label="Rename saved resume"
-                              name="resume-name"
-                              autoComplete="off"
-                              value={editingName}
-                              onChange={(event) => setEditingName(event.currentTarget.value)}
-                              onKeyDown={handleRenameKeyDown}
-                              onClick={(event) => event.stopPropagation()}
-                              autoFocus
-                              rightSection={
-                                <ActionIcon
-                                  size="sm"
-                                  variant="subtle"
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    handleConfirmRename();
-                                  }}
-                                  aria-label="Save name"
-                                >
-                                  <IconCheck size={14} />
-                                </ActionIcon>
-                              }
-                            />
-                          ) : (
-                            <Group gap={6} wrap="nowrap">
-                              <Text size="sm" fw={600} lineClamp={1}>
-                                {resume.name}
-                              </Text>
-                              {isSelected && (
-                                <Badge size="xs" variant="light">
-                                  Selected
-                                </Badge>
-                              )}
-                            </Group>
-                          )}
-                          <Text size="xs" c="dimmed" lineClamp={2}>
-                            {resume.resumeText}
-                          </Text>
-                        </Stack>
-                        <Group gap={4} wrap="nowrap">
-                          <ActionIcon
-                            variant="subtle"
-                            color="gray"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleStartRename(resume);
-                            }}
-                            aria-label="Rename saved resume"
-                          >
-                            <IconPencil size={16} />
-                          </ActionIcon>
-                          <ActionIcon
-                            variant="subtle"
-                            color="red"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              trackEvent(AnalyticsEvents.DeleteSavedResume);
-                              onDeleteSaved(resume.id);
-                            }}
-                            aria-label="Delete saved resume"
-                          >
-                            <IconTrash size={16} />
-                          </ActionIcon>
-                        </Group>
-                      </Group>
-                    </Paper>
-                  );
-                })}
-              </Stack>
-            </ScrollArea.Autosize>
-            {atSavedLimit && (
-              <Stack gap="xs" align="center">
-                <Text size="xs" c="dimmed" ta="center">
-                  You can save{' '}
-                  {savedResumeLimit === 1 ? 'one resume' : `${savedResumeLimit} resumes`}.
+          {mode === 'saved' && !isSignedIn && (
+            <Paper withBorder p="lg" radius="md" h="100%">
+              <Stack align="center" justify="center" gap="xs" h="100%">
+                <IconFileText size={28} color="var(--mantine-primary-color-filled)" />
+                <Text size="sm" fw={500} ta="center">
+                  Sign in to save resumes to your account
                 </Text>
-                <Button
-                  size="compact-xs"
-                  variant="light"
-                  w="fit-content"
-                  onClick={() => {
-                    trackEvent(AnalyticsEvents.UpgradeToSaveMore);
-                    onUpgradeClick();
-                  }}
-                >
-                  Upgrade to save more
-                </Button>
+                <Text size="xs" c="dimmed" ta="center">
+                  Resumes are saved automatically after each tailor run.
+                </Text>
+                <SignInButton mode="modal">
+                  <ClerkAuthButton
+                    size="compact-xs"
+                    variant="light"
+                    leftSection={<IconLogin2 size={14} />}
+                    onClick={() => trackEvent(AnalyticsEvents.SignIn)}
+                  >
+                    Sign in
+                  </ClerkAuthButton>
+                </SignInButton>
               </Stack>
+            </Paper>
+          )}
+
+          {mode === 'saved' && isSignedIn && isLoadingSavedResumes && (
+            <Paper withBorder p="lg" radius="md" h="100%">
+              <Stack align="center" justify="center" gap={4} h="100%">
+                <Loader size="sm" />
+              </Stack>
+            </Paper>
+          )}
+
+          {mode === 'saved' &&
+            isSignedIn &&
+            !isLoadingSavedResumes &&
+            savedResumes.length === 0 && (
+              <Paper withBorder p="lg" radius="md" h="100%">
+                <Stack align="center" justify="center" gap={4} h="100%">
+                  <IconFileText size={28} color="var(--mantine-primary-color-filled)" />
+                  <Text size="sm" fw={500} ta="center">
+                    No saved resumes yet
+                  </Text>
+                  <Text size="xs" c="dimmed" ta="center">
+                    Your resumes are saved here automatically after you tailor.
+                  </Text>
+                </Stack>
+              </Paper>
             )}
-          </Stack>
-        )}
+
+          {mode === 'saved' && isSignedIn && !isLoadingSavedResumes && savedResumes.length > 0 && (
+            <Stack gap="xs" h="100%" style={{ minHeight: 0 }}>
+              <ScrollArea type="auto" offsetScrollbars style={{ flex: 1, minHeight: 0 }}>
+                <Stack gap="xs">
+                  {savedResumes.map((resume) => {
+                    const isSelected = resume.resumeText === resumeText;
+                    const isEditing = editingId === resume.id;
+                    return (
+                      <Paper
+                        key={resume.id}
+                        withBorder
+                        p="sm"
+                        radius="md"
+                        className="saved-resume-card"
+                        style={{
+                          cursor: 'pointer',
+                          borderColor: isSelected
+                            ? 'var(--mantine-primary-color-filled)'
+                            : undefined,
+                        }}
+                        onClick={() => {
+                          if (!isEditing) {
+                            trackEvent(AnalyticsEvents.SelectSavedResume);
+                            onSelectSaved(resume);
+                          }
+                        }}
+                      >
+                        <Group justify="space-between" wrap="nowrap" align="flex-start">
+                          <Stack gap={2} style={{ flex: 1, minWidth: 0 }}>
+                            {isEditing ? (
+                              <TextInput
+                                size="xs"
+                                aria-label="Rename saved resume"
+                                name="resume-name"
+                                autoComplete="off"
+                                value={editingName}
+                                onChange={(event) => setEditingName(event.currentTarget.value)}
+                                onKeyDown={handleRenameKeyDown}
+                                onClick={(event) => event.stopPropagation()}
+                                autoFocus
+                                rightSection={
+                                  <ActionIcon
+                                    size="sm"
+                                    variant="subtle"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      handleConfirmRename();
+                                    }}
+                                    aria-label="Save name"
+                                  >
+                                    <IconCheck size={14} />
+                                  </ActionIcon>
+                                }
+                              />
+                            ) : (
+                              <Group gap={6} wrap="nowrap">
+                                <Text size="sm" fw={600} lineClamp={1}>
+                                  {resume.name}
+                                </Text>
+                                {isSelected && (
+                                  <Badge size="xs" variant="light">
+                                    Selected
+                                  </Badge>
+                                )}
+                              </Group>
+                            )}
+                            <Text size="xs" c="dimmed" lineClamp={2}>
+                              {resume.resumeText}
+                            </Text>
+                          </Stack>
+                          <Group gap={4} wrap="nowrap">
+                            <ActionIcon
+                              variant="subtle"
+                              color="gray"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                handleStartRename(resume);
+                              }}
+                              aria-label="Rename saved resume"
+                            >
+                              <IconPencil size={16} />
+                            </ActionIcon>
+                            <ActionIcon
+                              variant="subtle"
+                              color="red"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                trackEvent(AnalyticsEvents.DeleteSavedResume);
+                                onDeleteSaved(resume.id);
+                              }}
+                              aria-label="Delete saved resume"
+                            >
+                              <IconTrash size={16} />
+                            </ActionIcon>
+                          </Group>
+                        </Group>
+                      </Paper>
+                    );
+                  })}
+                </Stack>
+              </ScrollArea>
+              {atSavedLimit && (
+                <Stack gap="xs" align="center">
+                  <Text size="xs" c="dimmed" ta="center">
+                    You can save{' '}
+                    {savedResumeLimit === 1 ? 'one resume' : `${savedResumeLimit} resumes`}.
+                  </Text>
+                  <Button
+                    size="compact-xs"
+                    variant="light"
+                    w="fit-content"
+                    onClick={() => {
+                      trackEvent(AnalyticsEvents.UpgradeToSaveMore);
+                      onUpgradeClick();
+                    }}
+                  >
+                    Upgrade to save more
+                  </Button>
+                </Stack>
+              )}
+            </Stack>
+          )}
+        </Box>
       </Stack>
     </Card>
   );

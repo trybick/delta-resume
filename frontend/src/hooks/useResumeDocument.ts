@@ -78,14 +78,6 @@ export const useResumeDocument = ({
     setPasteFieldText('');
   };
 
-  const restoreSavedDocx = async (savedResumeText: string) => {
-    const file = await loadOriginalDocx(savedResumeText);
-    if (!file || pendingDocxRestoreRef.current !== savedResumeText) return;
-    pendingDocxRestoreRef.current = null;
-    setAttachedFile({ name: file.name, size: file.size });
-    setOriginalDocx({ file, parsedText: savedResumeText });
-  };
-
   const handleSelectSaved = (resume: SavedResume) => {
     const matchesAttachedDocx =
       originalDocx !== null &&
@@ -93,15 +85,30 @@ export const useResumeDocument = ({
         normalizeResumeTextForComparison(resume.resumeText);
 
     setResumeText(resume.resumeText);
-    setPasteFieldText(resume.resumeText);
+
     if (matchesAttachedDocx) {
       pendingDocxRestoreRef.current = null;
+      setPasteFieldText('');
       return;
     }
+
     setAttachedFile(null);
     setOriginalDocx(null);
+    setPasteFieldText('');
     pendingDocxRestoreRef.current = resume.resumeText;
-    void restoreSavedDocx(resume.resumeText);
+
+    void (async () => {
+      const file = await loadOriginalDocx(resume.resumeText);
+      if (pendingDocxRestoreRef.current !== resume.resumeText) return;
+      pendingDocxRestoreRef.current = null;
+      if (file) {
+        setAttachedFile({ name: file.name, size: file.size });
+        setOriginalDocx({ file, parsedText: resume.resumeText });
+        setPasteFieldText('');
+        return;
+      }
+      setPasteFieldText(resume.resumeText);
+    })();
   };
 
   const persistOriginalDocx = () => {
