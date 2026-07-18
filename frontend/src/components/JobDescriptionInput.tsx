@@ -7,22 +7,14 @@ export const JOB_DESCRIPTION_MAX_LENGTH = 10000;
 type JobDescriptionInputProps = {
   value: string;
   onChange: (text: string) => void;
-  onSubmitShortcut?: () => void;
 };
 
-const JobDescriptionInput = ({ value, onChange, onSubmitShortcut }: JobDescriptionInputProps) => {
+const JobDescriptionInput = ({ value, onChange }: JobDescriptionInputProps) => {
   const remainingCharacters = JOB_DESCRIPTION_MAX_LENGTH - value.length;
   const trackEditJobDescription = useMemo(
     () => createDebouncedTracker(AnalyticsEvents.EditJobDescription),
     [],
   );
-
-  const handleKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
-      event.preventDefault();
-      onSubmitShortcut?.();
-    }
-  };
 
   return (
     <Card withBorder shadow="xs" padding="lg">
@@ -44,7 +36,6 @@ const JobDescriptionInput = ({ value, onChange, onSubmitShortcut }: JobDescripti
             trackEditJobDescription();
             onChange(event.currentTarget.value.slice(0, JOB_DESCRIPTION_MAX_LENGTH));
           }}
-          onKeyDown={handleKeyDown}
           placeholder="Paste the job description you're targeting…"
           maxLength={JOB_DESCRIPTION_MAX_LENGTH}
           autosize

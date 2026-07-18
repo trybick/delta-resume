@@ -84,11 +84,6 @@ const TailorForm = ({
     onTailor();
   };
 
-  const handleSubmitShortcut = () => {
-    if (isButtonInert || outOfCredits) return;
-    handleTailorAction();
-  };
-
   return (
     <Stack gap="lg">
       <ResumeInput
@@ -111,7 +106,6 @@ const TailorForm = ({
       <JobDescriptionInput
         value={jobDescription}
         onChange={onJobDescriptionChange}
-        onSubmitShortcut={handleSubmitShortcut}
       />
       <Stack gap="xs">
         {freeTrialLabel && !outOfCredits && (
