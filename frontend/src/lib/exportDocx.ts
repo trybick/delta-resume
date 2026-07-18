@@ -363,5 +363,7 @@ export const downloadDocx = (blob: Blob, filename: string): void => {
   anchor.href = url;
   anchor.download = filename;
   anchor.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 0);
 };
