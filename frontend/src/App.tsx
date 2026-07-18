@@ -5,6 +5,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import AppHeader from './components/AppHeader';
 import AppFooter from './components/AppFooter';
+import LandingStrip from './components/LandingStrip';
 import TailorForm from './components/TailorForm';
 import TailorResultsSection from './components/TailorResultsSection';
 import PaywallModal from './components/PaywallModal';
@@ -257,6 +258,10 @@ const App = () => {
           </Grid.Col>
         </Grid>
       </Container>
+
+      {status === 'idle' && runCount === 0 && (
+        <LandingStrip onUpgradeClick={() => openPaywall('upgrade')} />
+      )}
 
       <AppFooter />
 

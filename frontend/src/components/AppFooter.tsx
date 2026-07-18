@@ -9,7 +9,7 @@ type LegalModalProps = {
   onClose: () => void;
 };
 
-const LegalModal = ({ document, onClose }: LegalModalProps) => (
+export const LegalModal = ({ document, onClose }: LegalModalProps) => (
   <Modal
     opened={document !== null}
     onClose={onClose}

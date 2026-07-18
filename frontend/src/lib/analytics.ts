@@ -71,6 +71,9 @@ export const AnalyticsEvents = {
   CoverLetterSettingsSave: 'cover_letter_settings_save',
   EditCandidateName: 'edit_candidate_name',
 
+  LandingUpgradeClick: 'landing_upgrade_click',
+  LandingPrivacyPolicy: 'landing_privacy_policy',
+
   PaywallClose: 'paywall_close',
   BillingPeriodChange: 'billing_period_change',
   SubscribeToPro: 'subscribe_to_pro',
