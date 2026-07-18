@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
+  Anchor,
   Badge,
   Box,
   Button,
@@ -40,6 +41,7 @@ import type {
   AddedBullet,
   BulletChange,
   ChangeDecision,
+  CreditStatus,
   JobRequirement,
   TailorResult,
   TailorStatus,
@@ -69,9 +71,13 @@ type ResultsPanelProps = {
   result: TailorResult | null;
   isExample?: boolean;
   isProPlan: boolean;
+  isGuest?: boolean;
+  lowCredits?: boolean;
+  credits?: CreditStatus | null;
   originalDocx?: OriginalDocx | null;
   onShowExample?: () => void;
   onUpgradeClick: () => void;
+  onNudgeClick?: () => void;
 };
 
 const buildDecisionMap = (result: TailorResult | null): Record<string, ChangeDecision> => {
@@ -451,9 +457,13 @@ const ResultsPanel = ({
   result,
   isExample = false,
   isProPlan,
+  isGuest = false,
+  lowCredits = false,
+  credits = null,
   originalDocx = null,
   onShowExample,
   onUpgradeClick,
+  onNudgeClick,
 }: ResultsPanelProps) => {
   const [decisions, setDecisions] = useState<Record<string, ChangeDecision>>(() =>
     buildDecisionMap(result),
@@ -764,6 +774,10 @@ const ResultsPanel = ({
   ).length;
   const lines = result.resumeText.split('\n');
   const segments = buildSegments(lines, changesByLine, addedByAnchor);
+  const showGuestNudge = !isExample && isGuest && credits !== null;
+  const showFreeUpgradeNudge = !isExample && !isGuest && !isProPlan && lowCredits && credits !== null;
+  const nudgeRemaining = credits?.remaining ?? 0;
+  const creditWord = nudgeRemaining === 1 ? 'credit' : 'credits';
 
   return (
     <Card withBorder shadow="xs" padding="lg">
@@ -795,6 +809,22 @@ const ResultsPanel = ({
                   {coveredByChangesCount > 0 ? ` (+${coveredByChangesCount} from changes)` : ''}
                 </Badge>
               </Tooltip>
+            )}
+            {showGuestNudge && (
+              <Text size="xs" c="dimmed">
+                {nudgeRemaining} free {creditWord} left —{' '}
+                <Anchor size="xs" component="button" type="button" onClick={onNudgeClick}>
+                  sign up to save your resumes automatically
+                </Anchor>
+              </Text>
+            )}
+            {showFreeUpgradeNudge && (
+              <Text size="xs" c="dimmed">
+                {nudgeRemaining} {creditWord} left —{' '}
+                <Anchor size="xs" component="button" type="button" onClick={onNudgeClick}>
+                  upgrade to Pro
+                </Anchor>
+              </Text>
             )}
           </Stack>
           <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0, marginLeft: 'auto' }}>

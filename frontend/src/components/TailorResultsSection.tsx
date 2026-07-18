@@ -17,6 +17,7 @@ import { SAMPLE_COVER_LETTER_RESULT, SAMPLE_TAILOR_RESULT } from '../lib/mockTai
 import type {
   CoverLetterResult,
   CoverLetterStatus,
+  CreditStatus,
   TailorResult,
   TailorStatus,
 } from '../lib/types';
@@ -35,12 +36,16 @@ type TailorResultsSectionProps = {
   onShowExample: () => void;
   planLoaded: boolean;
   isProPlan: boolean;
+  isGuest: boolean;
+  lowCredits: boolean;
+  credits: CreditStatus | null;
   coverLetterStatus: CoverLetterStatus;
   coverLetterResult: CoverLetterResult | null;
   coverLetterError: string | null;
   onRetryCoverLetter: () => void;
   onUpgradeClick: () => void;
   onGapsUpgradeClick: () => void;
+  onNudgeClick: () => void;
 };
 
 const TailorResultsSection = ({
@@ -57,12 +62,16 @@ const TailorResultsSection = ({
   onShowExample,
   planLoaded,
   isProPlan,
+  isGuest,
+  lowCredits,
+  credits,
   coverLetterStatus,
   coverLetterResult,
   coverLetterError,
   onRetryCoverLetter,
   onUpgradeClick,
   onGapsUpgradeClick,
+  onNudgeClick,
 }: TailorResultsSectionProps) => {
   const resumeTabIndicator = showingExample ? null : status === 'loading' ? (
     <Loader size={12} />
@@ -175,9 +184,13 @@ const TailorResultsSection = ({
             result={showingExample ? SAMPLE_TAILOR_RESULT : result}
             isExample={showingExample}
             isProPlan={isProPlan}
+            isGuest={isGuest}
+            lowCredits={lowCredits}
+            credits={credits}
             originalDocx={showingExample ? null : originalDocx}
             onShowExample={status === 'idle' ? onShowExample : undefined}
             onUpgradeClick={onGapsUpgradeClick}
+            onNudgeClick={onNudgeClick}
           />
         </Tabs.Panel>
         <Tabs.Panel value="coverLetter" pt="md">

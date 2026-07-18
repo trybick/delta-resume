@@ -9,6 +9,7 @@ const PAYWALL_REASONS: PaywallReason[] = [
   'upgrade',
   'coverLetter',
   'gaps',
+  'signUp',
 ];
 
 const readPendingPaywallReason = (): PaywallReason | null => {
@@ -66,6 +67,8 @@ export const usePaywall = ({
     const pendingReason = readPendingPaywallReason();
     if (!pendingReason) return;
     sessionStorage.removeItem(PENDING_PAYWALL_KEY);
+
+    if (pendingReason === 'signUp') return;
 
     let shouldTrack = false;
     setPaywallReason((current) => {

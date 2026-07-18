@@ -317,6 +317,9 @@ const ResumeInput = ({
                   )}
                 </Stack>
               </Dropzone>
+              <Text size="xs" c="dimmed" ta="center">
+                Your resume is never stored.
+              </Text>
             </Stack>
           )}
 

@@ -42,7 +42,7 @@ const embeddedSignUpAppearance = {
   },
 } as const;
 
-export type PaywallReason = 'credits' | 'savedLimit' | 'upgrade' | 'coverLetter' | 'gaps';
+export type PaywallReason = 'credits' | 'savedLimit' | 'upgrade' | 'coverLetter' | 'gaps' | 'signUp';
 
 type PaywallModalProps = {
   opened: boolean;
@@ -85,6 +85,13 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
     }
   }, [opened, reason, hasProPlan, onClose]);
 
+  useEffect(() => {
+    if (!opened || !isSignedIn) return;
+    if (reason === 'signUp') {
+      onClose();
+    }
+  }, [opened, isSignedIn, reason, onClose]);
+
   const signedInTitle =
     reason === 'savedLimit'
       ? 'Upgrade to save more resumes'
@@ -124,7 +131,9 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
           ? 'See missing requirements with Pro'
           : reason === 'upgrade'
             ? 'Go Pro with Delta Resume'
-            : 'You\u2019ve used your 3 free tailors';
+            : reason === 'credits'
+              ? 'You\u2019ve used your 3 free tailors'
+              : null;
   const signedOutDescription =
     reason === 'savedLimit'
       ? 'Create a free account and upgrade to Pro to save up to 10 resumes.'
@@ -134,7 +143,9 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
           ? 'Create a free account and upgrade to Pro to unlock every job requirement your resume doesn\u2019t cover yet.'
           : reason === 'upgrade'
             ? 'Sign in to continue \u2014 it takes seconds with Google.'
-            : 'Create a free account to keep tailoring. Signing in with Google takes seconds.';
+            : reason === 'credits'
+              ? 'Create a free account to keep tailoring. Signing in with Google takes seconds.'
+              : null;
 
   const handleSubscriptionComplete = () => {
     trackEvent(AnalyticsEvents.SubscriptionComplete, { reason });
@@ -169,12 +180,14 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
         </Stack>
       ) : (
         <Stack gap="md" align="center">
-          <Stack gap={4} align="center">
-            <Title order={4}>{signedOutHeading}</Title>
-            <Text size="sm" c="dimmed" ta="center">
-              {signedOutDescription}
-            </Text>
-          </Stack>
+          {signedOutHeading && signedOutDescription && (
+            <Stack gap={4} align="center">
+              <Title order={4}>{signedOutHeading}</Title>
+              <Text size="sm" c="dimmed" ta="center">
+                {signedOutDescription}
+              </Text>
+            </Stack>
+          )}
           <Paper
             p="md"
             radius="md"
