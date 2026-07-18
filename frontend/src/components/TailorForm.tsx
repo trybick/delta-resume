@@ -135,7 +135,15 @@ const TailorForm = ({
         {creditsError && credits === null && (
           <Text size="xs" c="dimmed" ta="center">
             Couldn&apos;t load your credits.{' '}
-            <Anchor component="button" type="button" size="xs" onClick={onRetryCredits}>
+            <Anchor
+              component="button"
+              type="button"
+              size="xs"
+              onClick={() => {
+                trackEvent(AnalyticsEvents.RetryCredits, { source: 'tailor_form' });
+                onRetryCredits();
+              }}
+            >
               Retry
             </Anchor>
           </Text>

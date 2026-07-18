@@ -20,6 +20,7 @@ import {
   IconInfoCircle,
 } from '@tabler/icons-react';
 import { renderAsync } from 'docx-preview';
+import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 
 export type PreviewVariant = 'keep' | 'clean';
 
@@ -179,6 +180,18 @@ const DocumentPreviewModal = ({
     }
   };
 
+  const handleVariantChange = (value: string) => {
+    const next = value as PreviewVariant;
+    trackEvent(AnalyticsEvents.ResumePreviewVariantChange, { variant: next });
+    setVariant(next);
+  };
+
+  const handleViewChange = (value: string) => {
+    const next = value as PreviewView;
+    trackEvent(AnalyticsEvents.ResumePreviewViewChange, { view: next });
+    setView(next);
+  };
+
   const viewOptions = [
     { value: 'after', label: 'Tailored' },
     { value: 'before', label: 'Original' },
@@ -203,7 +216,7 @@ const DocumentPreviewModal = ({
               <SegmentedControl
                 size="xs"
                 value={variant}
-                onChange={(value) => setVariant(value as PreviewVariant)}
+                onChange={handleVariantChange}
                 data={[
                   { value: 'keep', label: 'Keep my formatting' },
                   { value: 'clean', label: 'Clean template' },
@@ -214,7 +227,7 @@ const DocumentPreviewModal = ({
               <SegmentedControl
                 size="xs"
                 value={effectiveView}
-                onChange={(value) => setView(value as PreviewView)}
+                onChange={handleViewChange}
                 data={viewOptions}
               />
             )}

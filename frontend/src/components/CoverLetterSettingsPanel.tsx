@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button, Group, Select, Stack, Text } from '@mantine/core';
 import { IconInfoCircle, IconSettings } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
+import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { getSettings, putSettings } from '../lib/api';
 import {
   coverLetterLengthOptions,
@@ -58,6 +59,11 @@ const CoverLetterSettingsPanel = ({ opened, onClose }: CoverLetterSettingsPanelP
     setTone(value as CoverLetterTone);
   };
 
+  const handleCancel = () => {
+    trackEvent(AnalyticsEvents.CoverLetterSettingsCancel);
+    onClose();
+  };
+
   const handleSave = async () => {
     if (!hasChanges) return;
     setIsSaving(true);
@@ -65,6 +71,7 @@ const CoverLetterSettingsPanel = ({ opened, onClose }: CoverLetterSettingsPanelP
       await putSettings({ coverLetter: { length, tone } });
       setSavedLength(length);
       setSavedTone(tone);
+      trackEvent(AnalyticsEvents.CoverLetterSettingsSave, { length, tone });
       notifications.show({
         title: 'Settings saved',
         message: 'They will apply to your next cover letter.',
@@ -114,7 +121,7 @@ const CoverLetterSettingsPanel = ({ opened, onClose }: CoverLetterSettingsPanelP
         </Text>
       </Group>
       <Group justify="flex-end">
-        <Button variant="default" size="xs" onClick={onClose}>
+        <Button variant="default" size="xs" onClick={handleCancel}>
           Cancel
         </Button>
         <Button

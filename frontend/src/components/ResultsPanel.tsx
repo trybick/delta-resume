@@ -668,6 +668,7 @@ const ResultsPanel = ({
   };
 
   const handlePreviewClose = () => {
+    trackEvent(AnalyticsEvents.ResumePreviewClose);
     setPreviewOpen(false);
   };
 
@@ -704,11 +705,19 @@ const ResultsPanel = ({
   };
 
   const handleSummaryToggle = () => {
-    setSummaryOpen((current) => !current);
+    setSummaryOpen((current) => {
+      const next = !current;
+      trackEvent(AnalyticsEvents.SummaryToggle, { open: next });
+      return next;
+    });
   };
 
   const handleGapsToggle = () => {
-    setGapsOpen((current) => !current);
+    setGapsOpen((current) => {
+      const next = !current;
+      trackEvent(AnalyticsEvents.GapsToggle, { open: next });
+      return next;
+    });
   };
 
   if (status === 'idle') {

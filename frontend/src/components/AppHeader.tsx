@@ -188,7 +188,10 @@ const AppHeader = ({
               variant="light"
               color="red"
               style={{ cursor: 'pointer' }}
-              onClick={onRetryCredits}
+              onClick={() => {
+                trackEvent(AnalyticsEvents.RetryCredits, { source: 'header' });
+                onRetryCredits();
+              }}
             >
               Credits unavailable · Retry
             </Badge>
@@ -208,7 +211,9 @@ const AppHeader = ({
             </SignInButton>
           </SignedOut>
           <SignedIn>
-            <UserButton />
+            <span onClick={() => trackEvent(AnalyticsEvents.UserButtonOpen)}>
+              <UserButton />
+            </span>
           </SignedIn>
         </Group>
       </Group>

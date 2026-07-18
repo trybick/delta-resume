@@ -329,7 +329,13 @@ const CoverLetterPanel = ({
     setCandidateName((current) => (current.length === 0 ? clerkFullName : current));
   }, [clerkFullName]);
 
-  const handleToggleSettings = () => setSettingsOpened((current) => !current);
+  const handleToggleSettings = () => {
+    setSettingsOpened((current) => {
+      const next = !current;
+      trackEvent(AnalyticsEvents.CoverLetterSettingsToggle, { open: next });
+      return next;
+    });
+  };
   const handleCloseSettings = () => setSettingsOpened(false);
 
   const handleCandidateNameChange = (value: string) => {

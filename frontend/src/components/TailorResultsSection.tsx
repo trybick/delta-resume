@@ -91,7 +91,10 @@ const TailorResultsSection = ({
           icon={<IconAlertCircle size={18} />}
           title="Tailoring failed"
           withCloseButton
-          onClose={onClearError}
+          onClose={() => {
+            trackEvent(AnalyticsEvents.DismissTailorError);
+            onClearError();
+          }}
         >
           {errorMessage}
         </Alert>

@@ -172,7 +172,10 @@ const App = () => {
             icon={<IconAlertCircle size={18} />}
             title="Rate limited"
             withCloseButton
-            onClose={() => setRateLimitMessage(null)}
+            onClose={() => {
+              trackEvent(AnalyticsEvents.DismissRateLimit);
+              setRateLimitMessage(null);
+            }}
             mb="lg"
           >
             {rateLimitMessage}

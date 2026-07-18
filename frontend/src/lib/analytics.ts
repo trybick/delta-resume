@@ -14,6 +14,7 @@ export const AnalyticsEvents = {
   SeePlanDetails: 'see_plan_details',
   SignIn: 'sign_in',
   UserButtonOpen: 'user_button_open',
+  RetryCredits: 'retry_credits',
 
   ResumeModeSwitch: 'resume_mode_switch',
   DropzoneBrowse: 'dropzone_browse',
@@ -35,12 +36,19 @@ export const AnalyticsEvents = {
 
   PreviewExample: 'preview_example',
   DismissExample: 'dismiss_example',
+  DismissRateLimit: 'dismiss_rate_limit',
+  DismissTailorError: 'dismiss_tailor_error',
 
   ResultsTabResume: 'results_tab_resume',
   ResultsTabCoverLetter: 'results_tab_cover_letter',
+  SummaryToggle: 'summary_toggle',
+  GapsToggle: 'gaps_toggle',
 
   ResumeExportMenuOpen: 'resume_export_menu_open',
   ResumePreviewOpen: 'resume_preview_open',
+  ResumePreviewClose: 'resume_preview_close',
+  ResumePreviewVariantChange: 'resume_preview_variant_change',
+  ResumePreviewViewChange: 'resume_preview_view_change',
   ResumeCopy: 'resume_copy',
   ResumeExport: 'resume_export',
   ShowHiddenLines: 'show_hidden_lines',
@@ -58,6 +66,9 @@ export const AnalyticsEvents = {
   CoverLetterExportMenuOpen: 'cover_letter_export_menu_open',
   CoverLetterCopy: 'cover_letter_copy',
   CoverLetterExport: 'cover_letter_export',
+  CoverLetterSettingsToggle: 'cover_letter_settings_toggle',
+  CoverLetterSettingsCancel: 'cover_letter_settings_cancel',
+  CoverLetterSettingsSave: 'cover_letter_settings_save',
   EditCandidateName: 'edit_candidate_name',
   SignatureInfoClick: 'signature_info_click',
 
@@ -69,6 +80,7 @@ export const AnalyticsEvents = {
   TermsOfService: 'terms_of_service',
   PrivacyPolicy: 'privacy_policy',
   CloseLegalModal: 'close_legal_modal',
+  SupportEmailClick: 'support_email_click',
 
   ErrorReload: 'error_reload',
 

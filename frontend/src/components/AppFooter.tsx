@@ -88,7 +88,12 @@ const AppFooter = () => {
             >
               Privacy Policy
             </Anchor>
-            <Anchor size="sm" c="dimmed" href={`mailto:${SUPPORT_EMAIL}`}>
+            <Anchor
+              size="sm"
+              c="dimmed"
+              href={`mailto:${SUPPORT_EMAIL}`}
+              onClick={() => trackEvent(AnalyticsEvents.SupportEmailClick)}
+            >
               {SUPPORT_EMAIL}
             </Anchor>
           </Group>
