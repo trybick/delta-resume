@@ -65,10 +65,6 @@ const LockedTeaser = ({
 }) => (
   <Card withBorder shadow="xs" padding="lg" style={{ position: 'relative', overflow: 'hidden' }}>
     <Stack gap="md" style={{ filter: 'blur(5px)', userSelect: 'none' }} aria-hidden>
-      <Group gap="sm">
-        <IconMail size={20} color="var(--mantine-primary-color-filled)" />
-        <Title order={4}>Cover letter</Title>
-      </Group>
       <Text size="sm" style={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>
         {prependCoverLetterDate(SAMPLE_COVER_LETTER_RESULT.letter)}
       </Text>
@@ -120,8 +116,6 @@ const ExampleCoverLetter = ({
   <Card withBorder shadow="xs" padding="lg">
     <Stack gap="md">
       <Group gap="sm">
-        <IconMail size={20} color="var(--mantine-primary-color-filled)" />
-        <Title order={4}>Cover letter</Title>
         <Badge color="cyan" variant="light">
           Example
         </Badge>
@@ -376,10 +370,6 @@ const CoverLetterPanel = ({
     return (
       <Card withBorder shadow="xs" padding="lg">
         <Stack gap="md">
-          <Group gap="sm">
-            <IconMail size={20} color="var(--mantine-primary-color-filled)" />
-            <Title order={4}>Cover letter</Title>
-          </Group>
           {nameAndSettingsRow}
           <Alert color="red" icon={<IconAlertCircle size={18} />} title="Cover letter failed">
             {errorMessage ?? 'Something went wrong while writing your cover letter.'}
@@ -469,11 +459,7 @@ const CoverLetterPanel = ({
   return (
     <Card withBorder shadow="xs" padding="lg">
       <Stack gap="md">
-        <Group justify="space-between" align="center" wrap="wrap">
-          <Group gap="sm">
-            <IconMail size={20} color="var(--mantine-primary-color-filled)" />
-            <Title order={4}>Cover letter</Title>
-          </Group>
+        <Group justify="flex-end" align="center" wrap="wrap">
           <Menu
             position="bottom-end"
             withinPortal
