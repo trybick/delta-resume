@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 import { FocusTrap, Modal, Paper, Stack, Text, Title } from '@mantine/core';
 import { SignUp, useAuth, useUser } from '@clerk/clerk-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
-import ProPlanShowcase, { ProFeatureList } from './ProPlanShowcase';
+import ProFeatureList from './ProFeatureList';
+import ProPlanShowcase from './ProPlanShowcase';
 
 const embeddedSignUpAppearance = {
   elements: {

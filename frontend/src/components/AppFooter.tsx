@@ -1,44 +1,9 @@
 import { useState } from 'react';
-import { Anchor, Box, Container, Group, Modal, Stack, Text, Title } from '@mantine/core';
+import { Anchor, Box, Container, Group, Text } from '@mantine/core';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { PRIVACY_POLICY, SUPPORT_EMAIL, TERMS_OF_SERVICE } from '../lib/legalContent';
 import type { LegalDocument } from '../lib/legalContent';
-
-type LegalModalProps = {
-  document: LegalDocument | null;
-  onClose: () => void;
-};
-
-export const LegalModal = ({ document, onClose }: LegalModalProps) => (
-  <Modal
-    opened={document !== null}
-    onClose={onClose}
-    title={
-      <Text fw={600} size="lg">
-        {document?.title}
-      </Text>
-    }
-    size="lg"
-  >
-    {document && (
-      <Stack gap="md" pb="sm">
-        <Text size="xs" c="dimmed">
-          Last updated: {document.lastUpdated}
-        </Text>
-        {document.sections.map((section) => (
-          <Stack key={section.heading} gap={6}>
-            <Title order={5}>{section.heading}</Title>
-            {section.paragraphs.map((paragraph) => (
-              <Text key={paragraph} size="sm" c="gray.4">
-                {paragraph}
-              </Text>
-            ))}
-          </Stack>
-        ))}
-      </Stack>
-    )}
-  </Modal>
-);
+import LegalModal from './LegalModal';
 
 const AppFooter = () => {
   const [openDocument, setOpenDocument] = useState<LegalDocument | null>(null);

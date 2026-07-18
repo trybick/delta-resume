@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   Anchor,
   Badge,
@@ -6,7 +6,6 @@ import {
   Button,
   Card,
   Center,
-  Collapse,
   Group,
   Menu,
   Paper,
@@ -15,23 +14,17 @@ import {
   ThemeIcon,
   Title,
   Tooltip,
-  UnstyledButton,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import {
-  IconArrowsVertical,
-  IconBolt,
   IconChevronDown,
-  IconCircleCheck,
   IconCopy,
   IconDownload,
   IconEye,
   IconFileDescription,
   IconFileText,
   IconFileTypePdf,
-  IconList,
   IconLock,
-  IconPlus,
   IconSparkles,
   IconTargetArrow,
 } from '@tabler/icons-react';
@@ -59,9 +52,16 @@ import {
 } from '../lib/exportDocx';
 import { convertDocxToPdfWithFallback, downloadPdf } from '../lib/exportPdf';
 import AddedBulletRow from './AddedBulletRow';
+import ChangeStatsPill from './ChangeStatsPill';
+import CollapsedContext from './CollapsedContext';
+import CollapsibleInsight from './CollapsibleInsight';
+import ContextLine from './ContextLine';
 import DiffBullet from './DiffBullet';
 import DocumentPreviewModal, { type PreviewVariant } from './DocumentPreviewModal';
+import GapRow from './GapRow';
+import IdleStep from './IdleStep';
 import TailoringLoader from './TailoringLoader';
+import { hasDraftBullet } from '../lib/hasDraftBullet';
 
 type OriginalDocx = {
   file: File;
@@ -168,236 +168,6 @@ const buildSegments = (
   return segments;
 };
 
-const ContextLine = ({ line }: { line: string }) => (
-  <Text
-    size="sm"
-    c="dimmed"
-    style={{
-      lineHeight: 1.6,
-      whiteSpace: 'pre-wrap',
-    }}
-  >
-    {line.trim() === '' ? '\u00A0' : line}
-  </Text>
-);
-
-type CollapsedContextProps = {
-  hiddenCount: number;
-  onExpand: () => void;
-};
-
-type GapRowProps = {
-  requirement: JobRequirement;
-  addedBullet?: AddedBullet;
-  onAdd?: (requirement: JobRequirement) => void;
-  onUndo?: (id: string) => void;
-};
-
-const hasDraftBullet = (
-  requirement: JobRequirement,
-): requirement is JobRequirement & { draftBullet: string; insertAfterLine: number } =>
-  typeof requirement.draftBullet === 'string' &&
-  requirement.draftBullet.length > 0 &&
-  typeof requirement.insertAfterLine === 'number';
-
-const GapRow = ({ requirement, addedBullet, onAdd, onUndo }: GapRowProps) => {
-  const canAdd = onAdd !== undefined && addedBullet === undefined && hasDraftBullet(requirement);
-
-  return (
-    <Stack gap={2}>
-      <Group gap="xs" wrap="nowrap" align="center">
-        <Badge
-          size="xs"
-          variant="light"
-          color={requirement.importance === 'must' ? proAccent.badgeColor : 'gray'}
-          style={{ flexShrink: 0 }}
-        >
-          {requirement.importance === 'must' ? 'Must-have' : 'Nice-to-have'}
-        </Badge>
-        <Text size="sm" fw={500} style={{ flex: 1, minWidth: 0 }}>
-          {requirement.text}
-        </Text>
-        {addedBullet && onUndo && (
-          <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
-            <IconCircleCheck size={14} color="var(--mantine-color-green-5)" />
-            <Text size="xs" fw={600} c="green.5">
-              Added
-            </Text>
-            <Button
-              size="compact-xs"
-              variant="subtle"
-              color="gray"
-              onClick={() => onUndo(addedBullet.id)}
-            >
-              Undo
-            </Button>
-          </Group>
-        )}
-        {canAdd && (
-          <Button
-            size="compact-xs"
-            variant="light"
-            leftSection={<IconPlus size={12} />}
-            style={{ flexShrink: 0 }}
-            onClick={() => onAdd(requirement)}
-          >
-            Add to resume
-          </Button>
-        )}
-      </Group>
-      {requirement.gapHint && !addedBullet && (
-        <Text size="xs" c="dimmed">
-          {requirement.gapHint}
-        </Text>
-      )}
-    </Stack>
-  );
-};
-
-type CollapsibleInsightProps = {
-  open: boolean;
-  onToggle: () => void;
-  icon: ReactNode;
-  label: string;
-  labelColor: string;
-  borderColor: string;
-  background: string;
-  ariaLabel: string;
-  children: ReactNode;
-};
-
-const CollapsibleInsight = ({
-  open,
-  onToggle,
-  icon,
-  label,
-  labelColor,
-  borderColor,
-  background,
-  ariaLabel,
-  children,
-}: CollapsibleInsightProps) => (
-  <Paper
-    component="section"
-    aria-label={ariaLabel}
-    px="md"
-    py="xs"
-    style={{
-      borderLeft: `2px solid ${borderColor}`,
-      borderRadius: '0 var(--mantine-radius-md) var(--mantine-radius-md) 0',
-      background,
-    }}
-  >
-    <UnstyledButton onClick={onToggle} w="100%" aria-expanded={open} style={{ display: 'block' }}>
-      <Group justify="space-between" wrap="nowrap" gap="sm">
-        <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
-          {icon}
-          <Text size="xs" fw={600} c={labelColor} tt="uppercase" lts={0.6} truncate>
-            {label}
-          </Text>
-        </Group>
-        <IconChevronDown
-          size={14}
-          color="var(--mantine-color-gray-5)"
-          style={{
-            flexShrink: 0,
-            transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
-            transition: 'transform 150ms ease',
-          }}
-        />
-      </Group>
-    </UnstyledButton>
-    <Collapse expanded={open}>
-      <Box pt={6}>{children}</Box>
-    </Collapse>
-  </Paper>
-);
-
-type ChangeStatSegmentProps = {
-  icon: ReactNode;
-  count: number;
-  label: string;
-};
-
-const ChangeStatSegment = ({ icon, count, label }: ChangeStatSegmentProps) => (
-  <Group
-    gap={6}
-    wrap="nowrap"
-    px={12}
-    py={6}
-    style={{
-      flexShrink: 0,
-      borderLeft: '1px solid color-mix(in srgb, var(--mantine-color-green-6) 20%, transparent)',
-    }}
-  >
-    {icon}
-    <Text size="sm" fw={700} c="green.5" lh={1}>
-      {count}
-    </Text>
-    <Text size="sm" fw={500} c="dimmed" lh={1}>
-      {label}
-    </Text>
-  </Group>
-);
-
-type ChangeStatsPillProps = {
-  bulletCount: number;
-  skillCount: number;
-  paragraphCount: number;
-};
-
-const ChangeStatsPill = ({ bulletCount, skillCount, paragraphCount }: ChangeStatsPillProps) => (
-  <Group
-    gap={0}
-    align="stretch"
-    wrap="nowrap"
-    style={{
-      flexShrink: 0,
-      borderRadius: 999,
-      overflow: 'hidden',
-      border: '1px solid color-mix(in srgb, var(--mantine-color-green-6) 25%, transparent)',
-    }}
-  >
-    <Group
-      gap={6}
-      wrap="nowrap"
-      px={12}
-      py={6}
-      style={{
-        flexShrink: 0,
-        backgroundColor:
-          'color-mix(in srgb, var(--mantine-color-green-6) 14%, var(--mantine-color-body))',
-      }}
-    >
-      <IconCircleCheck size={14} color="var(--mantine-color-green-5)" stroke={1.8} />
-      <Text size="xs" fw={700} c="green.5" tt="uppercase" lts={0.6} lh={1}>
-        Updated
-      </Text>
-    </Group>
-    {bulletCount > 0 && (
-      <ChangeStatSegment
-        icon={<IconList size={14} color="var(--mantine-color-green-5)" stroke={1.8} />}
-        count={bulletCount}
-        label={bulletCount === 1 ? 'bullet' : 'bullets'}
-      />
-    )}
-    {skillCount > 0 && (
-      <ChangeStatSegment
-        icon={<IconBolt size={14} color="var(--mantine-color-green-5)" stroke={1.8} />}
-        count={skillCount}
-        label={skillCount === 1 ? 'skill' : 'skills'}
-      />
-    )}
-    {paragraphCount > 0 && (
-      <ChangeStatSegment
-        icon={<IconFileText size={14} color="var(--mantine-color-green-5)" stroke={1.8} />}
-        count={paragraphCount}
-        label="summary"
-      />
-    )}
-  </Group>
-);
-
 const hasMustHaveGaps = (result: TailorResult): boolean => {
   const changesByLine = new Map(result.changes.map((change) => [change.lineIndex, change]));
   return result.requirements.some((requirement) => {
@@ -407,53 +177,6 @@ const hasMustHaveGaps = (result: TailorResult): boolean => {
     return !covered && requirement.importance === 'must';
   });
 };
-
-type IdleStepProps = {
-  index: number;
-  label: string;
-};
-
-const IdleStep = ({ index, label }: IdleStepProps) => (
-  <Group
-    gap={6}
-    wrap="nowrap"
-    px={10}
-    py={5}
-    style={{
-      borderRadius: 999,
-      border: '1px dashed var(--mantine-color-default-border)',
-    }}
-  >
-    <Text size="xs" fw={700} c="cyan.4" lh={1}>
-      {index}
-    </Text>
-    <Text size="xs" c="dimmed" lh={1}>
-      {label}
-    </Text>
-  </Group>
-);
-
-const CollapsedContext = ({ hiddenCount, onExpand }: CollapsedContextProps) => (
-  <UnstyledButton
-    onClick={onExpand}
-    my={6}
-    style={{
-      display: 'flex',
-      alignItems: 'center',
-      gap: 8,
-      width: '100%',
-      padding: '4px 10px',
-      borderRadius: 6,
-      border: '1px dashed var(--mantine-color-default-border)',
-      backgroundColor: 'var(--mantine-color-default-hover)',
-    }}
-  >
-    <IconArrowsVertical size={14} color="var(--mantine-primary-color-filled)" />
-    <Text size="xs" c="dimmed">
-      Show {hiddenCount} hidden line{hiddenCount === 1 ? '' : 's'} from original
-    </Text>
-  </UnstyledButton>
-);
 
 const ResultsPanel = ({
   status,

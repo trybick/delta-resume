@@ -1,53 +1,23 @@
 import { useState } from 'react';
 import {
   Badge,
-  Box,
   Button,
   Group,
   Paper,
   SegmentedControl,
-  SimpleGrid,
   Skeleton,
   Stack,
   Text,
-  ThemeIcon,
-  type SimpleGridProps,
 } from '@mantine/core';
 import { SignedIn, useUser } from '@clerk/clerk-react';
 import { CheckoutButton } from '@clerk/clerk-react/experimental';
 import { IconSparkles } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { proAccent } from '../lib/proAccent';
-import { PRO_FEATURES, useProPlan, type ProFeature } from '../lib/proPlan';
+import { PRO_FEATURES, useProPlan } from '../lib/proPlan';
+import FeatureRow from './FeatureRow';
 
 type BillingPeriod = 'month' | 'annual';
-
-type FeatureRowProps = {
-  feature: ProFeature;
-  compact: boolean;
-};
-
-const FeatureRow = ({ feature, compact }: FeatureRowProps) => {
-  const Icon = feature.icon;
-
-  return (
-    <Group gap="sm" wrap="nowrap" align={compact ? 'center' : 'flex-start'}>
-      <ThemeIcon size={compact ? 28 : 36} radius="md" variant="light" color="cyan">
-        <Icon size={compact ? 15 : 19} />
-      </ThemeIcon>
-      <Box>
-        <Text size={compact ? 'xs' : 'sm'} fw={600} lh={1.3}>
-          {feature.title}
-        </Text>
-        {!compact && (
-          <Text size="xs" c="dimmed" lh={1.4}>
-            {feature.description}
-          </Text>
-        )}
-      </Box>
-    </Group>
-  );
-};
 
 type ProPlanShowcaseProps = {
   onCheckoutOpen: () => void;
@@ -182,17 +152,5 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
     </Paper>
   );
 };
-
-type ProFeatureListProps = {
-  columns?: SimpleGridProps['cols'];
-};
-
-export const ProFeatureList = ({ columns = 1 }: ProFeatureListProps) => (
-  <SimpleGrid cols={columns} spacing="md" verticalSpacing="xs">
-    {PRO_FEATURES.map((feature) => (
-      <FeatureRow key={feature.title} feature={feature} compact />
-    ))}
-  </SimpleGrid>
-);
 
 export default ProPlanShowcase;
