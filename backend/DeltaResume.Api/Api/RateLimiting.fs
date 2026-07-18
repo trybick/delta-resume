@@ -22,6 +22,20 @@ type RateLimiters(options: IdentityOptions, disabled: bool) =
                     )
             ))
 
+    let convertLimiter =
+        PartitionedRateLimiter.Create<string, string>(fun key ->
+            RateLimitPartition.GetSlidingWindowLimiter(
+                key,
+                fun _ ->
+                    SlidingWindowRateLimiterOptions(
+                        PermitLimit = 10,
+                        Window = TimeSpan.FromMinutes 1.0,
+                        SegmentsPerWindow = 4,
+                        QueueLimit = 0,
+                        AutoReplenishment = true
+                    )
+            ))
+
     let looseLimiter =
         PartitionedRateLimiter.Create<string, string>(fun key ->
             RateLimitPartition.GetFixedWindowLimiter(
@@ -38,6 +52,7 @@ type RateLimiters(options: IdentityOptions, disabled: bool) =
     member _.IdentityOptions = options
     member _.Disabled = disabled
     member _.Tailor = tailorLimiter
+    member _.Convert = convertLimiter
     member _.Loose = looseLimiter
 
 module RateLimit =
@@ -74,5 +89,7 @@ module RateLimit =
             }
 
     let tailorPolicy: HttpHandler = limitWith (fun limiters -> limiters.Tailor)
+
+    let convertPolicy: HttpHandler = limitWith (fun limiters -> limiters.Convert)
 
     let loosePolicy: HttpHandler = limitWith (fun limiters -> limiters.Loose)

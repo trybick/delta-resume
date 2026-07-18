@@ -185,6 +185,15 @@ module Handlers =
                     | Ok pdfBytes ->
                         ctx.SetContentType "application/pdf"
                         return! ctx.WriteBytesAsync pdfBytes
+                    | Error ConverterBusy ->
+                        return!
+                            (setHttpHeader "Retry-After" "15"
+                             >=> codedErrorResponse
+                                     StatusCodes.Status503ServiceUnavailable
+                                     "pdf_converter_busy"
+                                     "PDF conversion is busy right now. Please try again in a moment.")
+                                next
+                                ctx
                     | Error ConverterUnavailable ->
                         return!
                             codedErrorResponse

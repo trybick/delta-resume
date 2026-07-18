@@ -9,6 +9,7 @@ open System.Threading.Tasks
 
 type PdfConversionError =
     | ConverterUnavailable
+    | ConverterBusy
     | ConversionFailed of string
 
 type PdfConverter() =
@@ -20,6 +21,7 @@ type PdfConverter() =
 
     let concurrencyGate = new SemaphoreSlim(2)
     let conversionTimeout = TimeSpan.FromSeconds 30.0
+    let gateWaitTimeout = TimeSpan.FromSeconds 10.0
 
     let runConversion (workingDir: string) (inputPath: string) (cancellationToken: CancellationToken) =
         task {
@@ -66,7 +68,11 @@ type PdfConverter() =
         (docxBytes: byte[], cancellationToken: CancellationToken)
         : Task<Result<byte[], PdfConversionError>> =
         task {
-            do! concurrencyGate.WaitAsync cancellationToken
+            let! gateAcquired = concurrencyGate.WaitAsync(gateWaitTimeout, cancellationToken)
+
+            if not gateAcquired then
+                return Error ConverterBusy
+            else
 
             let workingDir = Path.Combine(Path.GetTempPath(), $"delta-pdf-{Guid.NewGuid():N}")
 
