@@ -27,7 +27,6 @@ import {
   IconDownload,
   IconFileDescription,
   IconFileTypePdf,
-  IconInfoCircle,
   IconLock,
   IconMail,
   IconRefresh,
@@ -238,28 +237,15 @@ const NameAndSettingsRow = ({
   <Stack gap="sm">
     <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
       <Group gap="sm" align="center" wrap="wrap" style={{ flex: 1, minWidth: 0 }}>
-        <Group gap={4} align="center" wrap="nowrap">
-          <Text
-            component="label"
-            htmlFor="cover-letter-candidate-name"
-            size="sm"
-            fw={500}
-            style={{ whiteSpace: 'nowrap' }}
-          >
-            Your name
-          </Text>
-          <Tooltip label="Used for the signature.">
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              size="xs"
-              aria-label="Used for the signature"
-              onClick={() => trackEvent(AnalyticsEvents.SignatureInfoClick)}
-            >
-              <IconInfoCircle size={14} />
-            </ActionIcon>
-          </Tooltip>
-        </Group>
+        <Text
+          component="label"
+          htmlFor="cover-letter-candidate-name"
+          size="sm"
+          fw={500}
+          style={{ whiteSpace: 'nowrap' }}
+        >
+          Signature name
+        </Text>
         <TextInput
           id="cover-letter-candidate-name"
           name="name"

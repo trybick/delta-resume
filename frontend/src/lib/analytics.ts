@@ -70,7 +70,6 @@ export const AnalyticsEvents = {
   CoverLetterSettingsCancel: 'cover_letter_settings_cancel',
   CoverLetterSettingsSave: 'cover_letter_settings_save',
   EditCandidateName: 'edit_candidate_name',
-  SignatureInfoClick: 'signature_info_click',
 
   PaywallClose: 'paywall_close',
   BillingPeriodChange: 'billing_period_change',
