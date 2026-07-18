@@ -57,42 +57,57 @@ module Handlers =
                     else
                         "You've used your 3 free credits. Sign up to continue." |}
 
+    let private tryBindJson<'T> (ctx: HttpContext) =
+        task {
+            try
+                let! parsed = ctx.BindJsonAsync<'T>()
+                return Some parsed
+            with _ ->
+                return None
+        }
+
+    let private invalidJsonResponse: HttpHandler =
+        codedErrorResponse StatusCodes.Status400BadRequest "invalid_input" "Invalid request payload."
+
     let tailor: HttpHandler =
         fun next ctx ->
             task {
                 let service = ctx.GetService<TailoringService>()
-                let! request = ctx.BindJsonAsync<TailorRequestDto>()
+                let! request = tryBindJson<TailorRequestDto> ctx
 
-                match service.ValidateInputs(request.ResumeText, request.JobDescription, request.ResumeName) with
-                | Error error -> return! tailorErrorToResponse error next ctx
-                | Ok() ->
-                    let creditService = ctx.GetService<CreditService>()
-                    let! spendResult = creditService.TrySpend(ctx, ctx.RequestAborted)
+                match request with
+                | None -> return! invalidJsonResponse next ctx
+                | Some request ->
+                    match service.ValidateInputs(request.ResumeText, request.JobDescription, request.ResumeName) with
+                    | Error error -> return! tailorErrorToResponse error next ctx
+                    | Ok() ->
+                        let creditService = ctx.GetService<CreditService>()
+                        let! spendResult = creditService.TrySpend(ctx, ctx.RequestAborted)
 
-                    match spendResult with
-                    | SpendExhausted ->
-                        let! creditStatus = creditService.GetStatus(ctx, ctx.RequestAborted)
-                        return! creditsExhaustedResponse creditStatus next ctx
-                    | SpendRecorded operationId ->
-                        try
-                            let! result =
-                                service.TailorResume(request.ResumeText, request.JobDescription, ctx.RequestAborted)
+                        match spendResult with
+                        | SpendExhausted ->
+                            let! creditStatus = creditService.GetStatus(ctx, ctx.RequestAborted)
+                            return! creditsExhaustedResponse creditStatus next ctx
+                        | SpendRecorded operationId ->
+                            try
+                                let! result =
+                                    service.TailorResume(request.ResumeText, request.JobDescription, ctx.RequestAborted)
 
-                            match result with
-                            | Ok run ->
-                                try
-                                    let savedResumeService = ctx.GetService<SavedResumeService>()
-                                    do! savedResumeService.AutoSave(ctx, request.ResumeText, request.ResumeName)
-                                with ex ->
-                                    eprintfn "Failed to auto-save resume: %s" ex.Message
+                                match result with
+                                | Ok run ->
+                                    try
+                                        let savedResumeService = ctx.GetService<SavedResumeService>()
+                                        do! savedResumeService.AutoSave(ctx, request.ResumeText, request.ResumeName)
+                                    with ex ->
+                                        eprintfn "Failed to auto-save resume: %s" ex.Message
 
-                                return! json (Mapping.toResponseDto run) next ctx
-                            | Error error ->
+                                    return! json (Mapping.toResponseDto run) next ctx
+                                | Error error ->
+                                    do! creditService.Refund(operationId, CancellationToken.None)
+                                    return! tailorErrorToResponse error next ctx
+                            with :? OperationCanceledException when ctx.RequestAborted.IsCancellationRequested ->
                                 do! creditService.Refund(operationId, CancellationToken.None)
-                                return! tailorErrorToResponse error next ctx
-                        with :? OperationCanceledException when ctx.RequestAborted.IsCancellationRequested ->
-                            do! creditService.Refund(operationId, CancellationToken.None)
-                            return! earlyReturn ctx
+                                return! earlyReturn ctx
             }
 
     let coverLetter: HttpHandler =
@@ -110,48 +125,51 @@ module Handlers =
                             next
                             ctx
                 else
-                    let! request = ctx.BindJsonAsync<CoverLetterRequestDto>()
+                    let! request = tryBindJson<CoverLetterRequestDto> ctx
 
-                    match
-                        InputValidation.validate
-                            request.ResumeText
-                            request.JobDescription
-                            request.CandidateName
-                    with
-                    | Error message ->
-                        return!
-                            codedErrorResponse
-                                StatusCodes.Status400BadRequest
-                                "invalid_input"
-                                message
-                                next
-                                ctx
-                    | Ok() ->
-                        let engine = ctx.GetService<CoverLetterEngine>()
-                        let settingsRepository = ctx.GetService<UserSettingsRepository>()
-                        let! storedSettings = settingsRepository.Get(Identity.ownerKey identity)
+                    match request with
+                    | None -> return! invalidJsonResponse next ctx
+                    | Some request ->
+                        match
+                            InputValidation.validate
+                                request.ResumeText
+                                request.JobDescription
+                                request.CandidateName
+                        with
+                        | Error message ->
+                            return!
+                                codedErrorResponse
+                                    StatusCodes.Status400BadRequest
+                                    "invalid_input"
+                                    message
+                                    next
+                                    ctx
+                        | Ok() ->
+                            let engine = ctx.GetService<CoverLetterEngine>()
+                            let settingsRepository = ctx.GetService<UserSettingsRepository>()
+                            let! storedSettings = settingsRepository.Get(Identity.ownerKey identity)
 
-                        let settings =
-                            storedSettings |> Option.defaultValue UserSettings.defaults
+                            let settings =
+                                storedSettings |> Option.defaultValue UserSettings.defaults
 
-                        let! result =
-                            engine.GenerateCoverLetter(
-                                request.ResumeText,
-                                request.JobDescription,
-                                request.CandidateName,
-                                settings.CoverLetter,
-                                ctx.RequestAborted
-                            )
+                            let! result =
+                                engine.GenerateCoverLetter(
+                                    request.ResumeText,
+                                    request.JobDescription,
+                                    request.CandidateName,
+                                    settings.CoverLetter,
+                                    ctx.RequestAborted
+                                )
 
-                        match result with
-                        | Ok draft ->
-                            let response: CoverLetterResponseDto =
-                                { JobTitle = draft.JobTitle
-                                  CompanyName = draft.CompanyName
-                                  Letter = draft.Letter }
+                            match result with
+                            | Ok draft ->
+                                let response: CoverLetterResponseDto =
+                                    { JobTitle = draft.JobTitle
+                                      CompanyName = draft.CompanyName
+                                      Letter = draft.Letter }
 
-                            return! json response next ctx
-                        | Error message -> return! errorResponse StatusCodes.Status502BadGateway message next ctx
+                                return! json response next ctx
+                            | Error message -> return! errorResponse StatusCodes.Status502BadGateway message next ctx
             }
 
     // PDF-only: converts a client-built .docx to a real text-based PDF via LibreOffice.
@@ -223,14 +241,7 @@ module Handlers =
     let updateSettings: HttpHandler =
         requireSignedInWithMessage "Sign in to manage your settings." (fun next ctx ->
             task {
-                let! request =
-                    task {
-                        try
-                            let! parsed = ctx.BindJsonAsync<UserSettingsDto>()
-                            return Some parsed
-                        with _ ->
-                            return None
-                    }
+                let! request = tryBindJson<UserSettingsDto> ctx
 
                 let validated =
                     match request with
@@ -271,20 +282,23 @@ module Handlers =
         requireSignedIn (fun next ctx ->
             task {
                 let service = ctx.GetService<SavedResumeService>()
-                let! request = ctx.BindJsonAsync<RenameSavedResumeRequestDto>()
+                let! request = tryBindJson<RenameSavedResumeRequestDto> ctx
 
-                match Guid.TryParse resumeId with
-                | false, _ -> return! errorResponse StatusCodes.Status400BadRequest "Invalid resume id." next ctx
-                | true, id ->
-                    if String.IsNullOrWhiteSpace request.Name then
-                        return! errorResponse StatusCodes.Status400BadRequest "Name is required." next ctx
-                    else
-                        let! renamed = service.Rename(ctx, SavedResumeId id, request.Name)
-
-                        if renamed then
-                            return! setStatusCode StatusCodes.Status204NoContent next ctx
+                match request with
+                | None -> return! invalidJsonResponse next ctx
+                | Some request ->
+                    match Guid.TryParse resumeId with
+                    | false, _ -> return! errorResponse StatusCodes.Status400BadRequest "Invalid resume id." next ctx
+                    | true, id ->
+                        if String.IsNullOrWhiteSpace request.Name then
+                            return! errorResponse StatusCodes.Status400BadRequest "Name is required." next ctx
                         else
-                            return! errorResponse StatusCodes.Status404NotFound "Resume not found." next ctx
+                            let! renamed = service.Rename(ctx, SavedResumeId id, request.Name)
+
+                            if renamed then
+                                return! setStatusCode StatusCodes.Status204NoContent next ctx
+                            else
+                                return! errorResponse StatusCodes.Status404NotFound "Resume not found." next ctx
             })
 
     let deleteSavedResume (resumeId: string) : HttpHandler =
