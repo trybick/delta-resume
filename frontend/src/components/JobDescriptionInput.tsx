@@ -28,7 +28,7 @@ const JobDescriptionInput = ({ value, onChange, onSubmitShortcut }: JobDescripti
     <Card withBorder shadow="xs" padding="lg">
       <Stack gap="sm">
         <Group justify="space-between" align="center">
-          <Title order={4}>Job description</Title>
+          <Title order={4}>2 · Job description</Title>
           {value.length > 0 && (
             <Text size="xs" c={remainingCharacters <= 0 ? 'red' : 'dimmed'}>
               {remainingCharacters.toLocaleString()} characters left

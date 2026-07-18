@@ -201,7 +201,7 @@ const ResumeInput = ({
     <Card withBorder shadow="xs" padding="lg">
       <Stack gap="sm">
         <Group justify="space-between" align="center">
-          <Title order={4}>Base resume</Title>
+          <Title order={4}>1 · Base resume</Title>
           <SegmentedControl
             size="xs"
             value={mode}
