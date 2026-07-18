@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { Alert, Box, Container, Grid } from '@mantine/core';
+import { Alert, Box, Container, Grid, useMantineTheme } from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { useAuth } from '@clerk/clerk-react';
 import { IconAlertCircle } from '@tabler/icons-react';
 import AppHeader from './components/AppHeader';
@@ -20,6 +21,8 @@ import { formatDefaultResumeName } from './lib/formatDefaultResumeName';
 
 const App = () => {
   const { isSignedIn, getToken } = useAuth();
+  const theme = useMantineTheme();
+  const isStackedLayout = useMediaQuery(`(max-width: ${theme.breakpoints.md})`);
   const [jobDescription, setJobDescription] = useState('');
   const [lastSuccessfulInputs, setLastSuccessfulInputs] = useState<{
     resumeText: string;
@@ -29,6 +32,7 @@ const App = () => {
   const [activeTab, setActiveTab] = useState<string | null>('resume');
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
   const tailorActionInFlightRef = useRef(false);
+  const resultsSectionRef = useRef<HTMLDivElement>(null);
 
   const { credits, outOfCredits, creditsLabel, isLoadingCredits, creditsError, loadCredits } =
     useCredits();
@@ -114,6 +118,11 @@ const App = () => {
     void loadCredits();
     void loadSavedResumes();
   }, [isSignedIn, loadCredits, loadSavedResumes]);
+
+  useEffect(() => {
+    if (status !== 'done' || !isStackedLayout) return;
+    resultsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [status, isStackedLayout]);
 
   const handleShowExample = () => {
     setShowingExample(true);
@@ -219,7 +228,7 @@ const App = () => {
               onRetryCredits={() => void loadCredits()}
             />
           </Grid.Col>
-          <Grid.Col span={{ base: 12, md: 7 }}>
+          <Grid.Col span={{ base: 12, md: 7 }} ref={resultsSectionRef}>
             <TailorResultsSection
               errorMessage={errorMessage}
               onClearError={clearError}
