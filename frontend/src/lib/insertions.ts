@@ -14,15 +14,23 @@ export const formatAddedBulletLine = (text: string, anchorLine: string | undefin
   return trimmed;
 };
 
-const groupByAnchor = (addedBullets: AddedBullet[]): Map<number, AddedBullet[]> => {
+const clampAfterLineIndex = (index: number, lineCount: number): number =>
+  Math.max(0, Math.min(index, lineCount - 1));
+
+const groupByAnchor = (
+  addedBullets: AddedBullet[],
+  lineCount: number,
+): Map<number, AddedBullet[]> => {
   const groups = new Map<number, AddedBullet[]>();
   addedBullets.forEach((bullet) => {
-    const group = groups.get(bullet.afterLineIndex);
+    const afterLineIndex =
+      lineCount === 0 ? 0 : clampAfterLineIndex(bullet.afterLineIndex, lineCount);
+    const group = groups.get(afterLineIndex);
     if (group) {
       group.push(bullet);
       return;
     }
-    groups.set(bullet.afterLineIndex, [bullet]);
+    groups.set(afterLineIndex, [bullet]);
   });
   return groups;
 };
@@ -93,23 +101,35 @@ export const applyAddedBullets = (
     return { lines, structure: structure ?? null };
   }
 
-  const groups = groupByAnchor(addedBullets);
+  const groups = groupByAnchor(addedBullets, lines.length);
   const mergedLines: string[] = [];
   const oldToNew: number[] = [];
   const insertedIndexesByAnchor = new Map<number, number[]>();
 
-  lines.forEach((line, lineIndex) => {
-    oldToNew[lineIndex] = mergedLines.length;
-    mergedLines.push(line);
-    const group = groups.get(lineIndex);
-    if (!group) return;
-    const insertedIndexes: number[] = [];
-    group.forEach((bullet) => {
-      insertedIndexes.push(mergedLines.length);
-      mergedLines.push(formatAddedBulletLine(bullet.text, line));
+  if (lines.length === 0) {
+    const group = groups.get(0);
+    if (group) {
+      const insertedIndexes: number[] = [];
+      group.forEach((bullet) => {
+        insertedIndexes.push(mergedLines.length);
+        mergedLines.push(formatAddedBulletLine(bullet.text, undefined));
+      });
+      insertedIndexesByAnchor.set(0, insertedIndexes);
+    }
+  } else {
+    lines.forEach((line, lineIndex) => {
+      oldToNew[lineIndex] = mergedLines.length;
+      mergedLines.push(line);
+      const group = groups.get(lineIndex);
+      if (!group) return;
+      const insertedIndexes: number[] = [];
+      group.forEach((bullet) => {
+        insertedIndexes.push(mergedLines.length);
+        mergedLines.push(formatAddedBulletLine(bullet.text, line));
+      });
+      insertedIndexesByAnchor.set(lineIndex, insertedIndexes);
     });
-    insertedIndexesByAnchor.set(lineIndex, insertedIndexes);
-  });
+  }
 
   return {
     lines: mergedLines,
