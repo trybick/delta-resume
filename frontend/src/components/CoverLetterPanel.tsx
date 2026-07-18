@@ -15,13 +15,11 @@ import {
   TextInput,
   Title,
 } from '@mantine/core';
-import { useClipboard } from '@mantine/hooks';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import {
   IconAlertCircle,
   IconChevronDown,
   IconCopy,
-  IconCopyCheck,
   IconDownload,
   IconFileDescription,
   IconFileTypePdf,
@@ -344,7 +342,6 @@ const CoverLetterPanel = ({
   );
   const [isSettingsLoading, setIsSettingsLoading] = useState(false);
   const hasPrefilledName = useRef(false);
-  const clipboard = useClipboard({ timeout: 1500 });
   const trackEditCandidateName = useMemo(
     () => createDebouncedTracker(AnalyticsEvents.EditCandidateName),
     [],
@@ -483,13 +480,23 @@ const CoverLetterPanel = ({
 
   const displayLetter = formatCoverLetterText(result.letter, candidateName);
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     trackEvent(AnalyticsEvents.CoverLetterCopy);
     try {
-      clipboard.copy(displayLetter);
+      await navigator.clipboard.writeText(displayLetter);
       trackEvent(AnalyticsEvents.CopySuccess, { source: 'cover_letter' });
+      notifications.show({
+        color: 'green',
+        title: 'Copied',
+        message: 'Cover letter copied to clipboard.',
+      });
     } catch {
       trackEvent(AnalyticsEvents.CopyFailure, { source: 'cover_letter' });
+      notifications.show({
+        color: 'red',
+        title: 'Copy failed',
+        message: 'Could not copy the cover letter to your clipboard.',
+      });
     }
   };
 
@@ -572,13 +579,8 @@ const CoverLetterPanel = ({
                 </Button>
               </Menu.Target>
               <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={
-                    clipboard.copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />
-                  }
-                  onClick={handleCopy}
-                >
-                  {clipboard.copied ? 'Copied' : 'Copy to clipboard'}
+                <Menu.Item leftSection={<IconCopy size={16} />} onClick={handleCopy}>
+                  Copy to clipboard
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item

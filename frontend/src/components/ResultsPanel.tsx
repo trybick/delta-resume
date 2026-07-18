@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   Badge,
   Box,
@@ -23,7 +23,6 @@ import {
   IconChevronDown,
   IconCircleCheck,
   IconCopy,
-  IconCopyCheck,
   IconDownload,
   IconEye,
   IconFileDescription,
@@ -465,19 +464,10 @@ const ResultsPanel = ({
   const [gapsOpen, setGapsOpen] = useState(() => (result ? hasMustHaveGaps(result) : false));
   const [isExporting, setIsExporting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const copiedTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     setExpandedSegments(new Set());
   }, [result]);
-
-  useEffect(
-    () => () => {
-      if (copiedTimeoutRef.current !== null) window.clearTimeout(copiedTimeoutRef.current);
-    },
-    [],
-  );
 
   const handleExpandSegment = (startIndex: number, hiddenCount: number) => {
     trackEvent(AnalyticsEvents.ShowHiddenLines, { hidden_count: hiddenCount });
@@ -559,9 +549,11 @@ const ResultsPanel = ({
       const merged = buildMergedResume();
       await copyResumeRichText(merged.lines, merged.structure);
       trackEvent(AnalyticsEvents.CopySuccess, { source: 'resume' });
-      setCopied(true);
-      if (copiedTimeoutRef.current !== null) window.clearTimeout(copiedTimeoutRef.current);
-      copiedTimeoutRef.current = window.setTimeout(() => setCopied(false), 1500);
+      notifications.show({
+        color: 'green',
+        title: 'Copied',
+        message: 'Resume copied to clipboard.',
+      });
     } catch {
       trackEvent(AnalyticsEvents.CopyFailure, { source: 'resume' });
       notifications.show({
@@ -835,11 +827,11 @@ const ResultsPanel = ({
               </Menu.Target>
               <Menu.Dropdown>
                 <Menu.Item
-                  leftSection={copied ? <IconCopyCheck size={16} /> : <IconCopy size={16} />}
+                  leftSection={<IconCopy size={16} />}
                   disabled={isExample}
                   onClick={handleCopy}
                 >
-                  {copied ? 'Copied' : 'Copy to clipboard'}
+                  Copy to clipboard
                 </Menu.Item>
                 <Menu.Divider />
                 {isExample && (
