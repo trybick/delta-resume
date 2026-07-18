@@ -1,4 +1,4 @@
-import { Anchor, Button, Loader, Stack, Text, Tooltip } from '@mantine/core';
+import { Anchor, Badge, Button, Loader, Stack, Text, Tooltip } from '@mantine/core';
 import { IconSparkles } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { appTheme } from '../lib/theme';
@@ -30,6 +30,7 @@ type TailorFormProps = {
   credits: CreditStatus | null;
   creditsError: boolean;
   inputsUnchangedSinceLastRun: boolean;
+  freeTrialLabel: string | null;
   onTailor: () => void;
   onRetryCredits: () => void;
 };
@@ -57,6 +58,7 @@ const TailorForm = ({
   credits,
   creditsError,
   inputsUnchangedSinceLastRun,
+  freeTrialLabel,
   onTailor,
   onRetryCredits,
 }: TailorFormProps) => {
@@ -112,6 +114,11 @@ const TailorForm = ({
         onSubmitShortcut={handleSubmitShortcut}
       />
       <Stack gap="xs">
+        {freeTrialLabel && !outOfCredits && (
+          <Badge size="md" variant="light" color="teal" style={{ alignSelf: 'center' }}>
+            {freeTrialLabel}
+          </Badge>
+        )}
         <Tooltip label={disabledReason} disabled={disabledReason === null} withArrow>
           <Button
             size="lg"
@@ -161,15 +168,14 @@ const TailorForm = ({
               : 'You have used your 3 free credits. Sign up to continue.'}
           </Text>
         )}
-        {credits !== null && !outOfCredits && !inputsUnchangedSinceLastRun && (
-          <Text size="xs" c="dimmed" ta="center">
-            {credits.isAuthenticated
-              ? `Uses 1 credit · ${credits.remaining} remaining`
-              : `Free to try — ${credits.remaining} ${
-                  credits.remaining === 1 ? 'credit' : 'credits'
-                } remaining, no sign-up needed`}
-          </Text>
-        )}
+        {credits !== null &&
+          credits.isAuthenticated &&
+          !outOfCredits &&
+          !inputsUnchangedSinceLastRun && (
+            <Text size="xs" c="dimmed" ta="center">
+              {`Uses 1 credit · ${credits.remaining} remaining`}
+            </Text>
+          )}
       </Stack>
     </Stack>
   );

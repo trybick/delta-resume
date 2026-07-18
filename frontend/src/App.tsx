@@ -77,7 +77,15 @@ const App = () => {
     retryCoverLetter,
   } = useCoverLetter();
 
+  const isGuest = isSignedIn === false;
   const isProPlan = credits?.plan === 'pro';
+  const freeTrialLabel = !isGuest
+    ? null
+    : credits === null
+      ? 'Free to try · no account needed'
+      : credits.remaining > 0
+        ? `${credits.remaining} free ${credits.remaining === 1 ? 'run' : 'runs'} · no account needed`
+        : null;
   const planLoaded = credits !== null;
   const lowCredits =
     credits !== null &&
@@ -206,6 +214,7 @@ const App = () => {
               credits={credits}
               creditsError={creditsError}
               inputsUnchangedSinceLastRun={inputsUnchangedSinceLastRun}
+              freeTrialLabel={freeTrialLabel}
               onTailor={handleTailor}
               onRetryCredits={() => void loadCredits()}
             />
