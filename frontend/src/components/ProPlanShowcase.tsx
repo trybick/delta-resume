@@ -57,9 +57,10 @@ type ProPlanShowcaseProps = {
 const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShowcaseProps) => {
   const { isSignedIn } = useUser();
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('annual');
-  const { monthlyPrice, annualMonthlyPrice, planId } = useProPlan();
+  const { monthlyPrice, annualMonthlyPrice, annualSavingsPercent, planId } = useProPlan();
 
   const displayedPrice = billingPeriod === 'annual' ? annualMonthlyPrice : monthlyPrice;
+  const showAnnualSavings = billingPeriod === 'annual' && annualSavingsPercent != null;
 
   const subscribeButton = (
     <Button
@@ -99,9 +100,9 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
                 size="sm"
                 variant="light"
                 color="cyan"
-                style={{ visibility: billingPeriod === 'annual' ? 'visible' : 'hidden' }}
+                style={{ visibility: showAnnualSavings ? 'visible' : 'hidden' }}
               >
-                Best value
+                Save {annualSavingsPercent}%
               </Badge>
             </Group>
             <Group gap={6} align="baseline">

@@ -45,7 +45,19 @@ export const PRO_FEATURES: ProFeature[] = [
 export type ProPriceInfo = {
   monthlyPrice: string | null;
   annualMonthlyPrice: string | null;
+  annualSavingsPercent: number | null;
   planId: string | null;
+};
+
+const getAnnualSavingsPercent = (
+  monthlyAmount: number | undefined,
+  annualMonthlyAmount: number | undefined,
+): number | null => {
+  if (!monthlyAmount || !annualMonthlyAmount || annualMonthlyAmount >= monthlyAmount) {
+    return null;
+  }
+
+  return Math.round(((monthlyAmount - annualMonthlyAmount) / monthlyAmount) * 100);
 };
 
 export const useProPlan = (): ProPriceInfo => {
@@ -53,7 +65,12 @@ export const useProPlan = (): ProPriceInfo => {
   const proPlan = plans?.find((plan) => plan.slug === 'pro');
 
   if (!proPlan) {
-    return { monthlyPrice: null, annualMonthlyPrice: null, planId: null };
+    return {
+      monthlyPrice: null,
+      annualMonthlyPrice: null,
+      annualSavingsPercent: null,
+      planId: null,
+    };
   }
 
   return {
@@ -61,6 +78,10 @@ export const useProPlan = (): ProPriceInfo => {
     annualMonthlyPrice: proPlan.annualMonthlyFee
       ? `${proPlan.annualMonthlyFee.currencySymbol}${proPlan.annualMonthlyFee.amountFormatted}`
       : null,
+    annualSavingsPercent: getAnnualSavingsPercent(
+      proPlan.fee?.amount,
+      proPlan.annualMonthlyFee?.amount,
+    ),
     planId: proPlan.id,
   };
 };
