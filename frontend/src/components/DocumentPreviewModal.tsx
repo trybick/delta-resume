@@ -50,25 +50,41 @@ const DocxPane = ({ source, isLoading, hasError }: DocxPaneProps) => {
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container || !source) return;
+    if (!container) return;
+
+    if (!source) {
+      container.replaceChildren();
+      setIsRendering(false);
+      setRenderFailed(false);
+      return;
+    }
+
     let cancelled = false;
+    const mount = document.createElement('div');
+    container.replaceChildren(mount);
     setIsRendering(true);
     setRenderFailed(false);
-    renderAsync(source, container, container, {
+
+    void renderAsync(source, mount, mount, {
       inWrapper: true,
       ignoreWidth: false,
       ignoreHeight: false,
       breakPages: true,
       experimental: true,
     })
-      .catch(() => {
-        if (!cancelled) setRenderFailed(true);
+      .then(() => {
+        if (cancelled) return;
+        setIsRendering(false);
       })
-      .finally(() => {
-        if (!cancelled) setIsRendering(false);
+      .catch(() => {
+        if (cancelled) return;
+        setRenderFailed(true);
+        setIsRendering(false);
       });
+
     return () => {
       cancelled = true;
+      mount.remove();
     };
   }, [source]);
 
