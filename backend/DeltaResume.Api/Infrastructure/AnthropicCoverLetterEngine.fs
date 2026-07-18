@@ -5,6 +5,7 @@ open System.Net.Http
 open System.Net.Http.Headers
 open System.Text
 open System.Text.Json
+open System.Text.RegularExpressions
 open System.Threading
 open System.Threading.Tasks
 open DeltaResume.Application
@@ -90,8 +91,14 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
         else
             trimmed
 
+    let missingJobTitleKeyPattern =
+        Regex("^\\{\"([^\"]*)\",\"companyName\"", RegexOptions.Compiled)
+
     let normalizeContinuation (text: string) : string =
-        text
+        let withJobTitleKey =
+            missingJobTitleKeyPattern.Replace(text, "{\"jobTitle\":\"$1\",\"companyName\"", 1)
+
+        withJobTitleKey
             .Replace("\"\"jobTitle", "\"\",\"jobTitle")
             .Replace("\"\"companyName", "\"\",\"companyName")
             .Replace("\"\"letter", "\"\",\"letter")
@@ -124,10 +131,10 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
         let stripped = stripCodeFences content |> normalizeContinuation
 
         let candidates =
-            if stripped.StartsWith "{" then
-                [ stripped; assistantPrefill + stripped ]
-            else
-                [ assistantPrefill + stripped; stripped ]
+            [ stripped
+              assistantPrefill + stripped
+              assistantPrefill + stripped.TrimStart('{') ]
+            |> List.distinct
 
         match candidates |> List.tryPick tryParseDraft with
         | Some draft -> Ok draft
