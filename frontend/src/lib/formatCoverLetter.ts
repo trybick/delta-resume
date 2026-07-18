@@ -7,8 +7,13 @@ export const formatCoverLetterDate = (date: Date = new Date()): string =>
     day: 'numeric',
   });
 
+const cleanSubjectPart = (value: string): string =>
+  value.trim().replace(/^[.\s]+/, '').replace(/[.\s]+$/, '').trim();
+
 export const formatCoverLetterSubject = (jobTitle: string, companyName: string): string | null => {
-  const subjectParts = [jobTitle.trim(), companyName.trim()].filter((part) => part.length > 0);
+  const subjectParts = [jobTitle, companyName]
+    .map(cleanSubjectPart)
+    .filter((part) => part.length > 0);
   if (subjectParts.length === 0) return null;
   return `Re: ${subjectParts.join(' at ')}`;
 };
