@@ -170,7 +170,7 @@ const AppHeader = ({
             </Badge>
           )}
           {creditsLabel && (
-            <Tooltip label="One credit is used when tailoring starts">
+            <Tooltip label={`${creditsLabel} remaining. One credit is used when tailoring starts.`}>
               <Badge
                 size="lg"
                 variant="light"
