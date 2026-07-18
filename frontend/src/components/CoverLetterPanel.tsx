@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
-  ActionIcon,
   Alert,
   Badge,
   Box,
@@ -15,7 +14,6 @@ import {
   Text,
   TextInput,
   Title,
-  Tooltip,
 } from '@mantine/core';
 import { useClipboard } from '@mantine/hooks';
 import { useAuth, useUser } from '@clerk/clerk-react';
@@ -34,7 +32,13 @@ import {
 } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { AnalyticsEvents, createDebouncedTracker, trackEvent } from '../lib/analytics';
-import type { CoverLetterResult, CoverLetterStatus } from '../lib/types';
+import type { CoverLetterResult, CoverLetterSettings, CoverLetterStatus } from '../lib/types';
+import {
+  coverLetterLengthOptions,
+  coverLetterToneOptions,
+  defaultUserSettings,
+} from '../lib/types';
+import { getSettings, putSettings } from '../lib/api';
 import { buildCoverLetterDocx, downloadDocx } from '../lib/exportDocx';
 import { convertDocxToPdfWithFallback, downloadPdf } from '../lib/exportPdf';
 import {
@@ -218,8 +222,20 @@ type NameAndSettingsRowProps = {
   onCandidateNameChange: (value: string) => void;
   settingsOpened: boolean;
   onToggleSettings: () => void;
-  onCloseSettings: () => void;
+  settings: CoverLetterSettings;
+  isSettingsLoading: boolean;
+  onSettingsChange: (next: CoverLetterSettings) => void;
   trailing?: ReactNode;
+};
+
+const buildSettingsHint = (settings: CoverLetterSettings): string => {
+  const lengthLabel =
+    coverLetterLengthOptions
+      .find((option) => option.value === settings.length)
+      ?.label.split(' (')[0] ?? '';
+  const toneLabel =
+    coverLetterToneOptions.find((option) => option.value === settings.tone)?.label ?? '';
+  return `${lengthLabel}, ${toneLabel}`;
 };
 
 const NameAndSettingsRow = ({
@@ -227,7 +243,9 @@ const NameAndSettingsRow = ({
   onCandidateNameChange,
   settingsOpened,
   onToggleSettings,
-  onCloseSettings,
+  settings,
+  isSettingsLoading,
+  onSettingsChange,
   trailing,
 }: NameAndSettingsRowProps) => (
   <Stack gap="sm">
@@ -253,20 +271,37 @@ const NameAndSettingsRow = ({
           style={{ flex: 1, minWidth: 140 }}
         />
       </Group>
-      <Stack gap={4} align="flex-end" style={{ marginLeft: 'auto' }}>
-        {trailing}
-        <Tooltip label="Cover letter settings">
-          <ActionIcon
-            variant={settingsOpened ? 'light' : 'subtle'}
-            color="gray"
-            aria-label="Cover letter settings"
-            aria-expanded={settingsOpened}
-            onClick={onToggleSettings}
-          >
-            <IconSettings size={18} />
-          </ActionIcon>
-        </Tooltip>
-      </Stack>
+      {trailing && (
+        <Group gap="xs" wrap="nowrap" style={{ marginLeft: 'auto' }}>
+          {trailing}
+        </Group>
+      )}
+    </Group>
+    <Group>
+      <Button
+        size="xs"
+        variant={settingsOpened ? 'light' : 'subtle'}
+        color="gray"
+        leftSection={<IconSettings size={16} />}
+        rightSection={
+          <IconChevronDown
+            size={14}
+            style={{
+              transform: settingsOpened ? 'rotate(180deg)' : 'none',
+              transition: 'transform 150ms ease',
+            }}
+          />
+        }
+        aria-expanded={settingsOpened}
+        onClick={onToggleSettings}
+      >
+        Settings
+        {!isSettingsLoading && (
+          <Text span size="xs" c="dimmed" ml={6}>
+            {buildSettingsHint(settings)}
+          </Text>
+        )}
+      </Button>
     </Group>
     <Collapse expanded={settingsOpened}>
       <Box
@@ -277,7 +312,11 @@ const NameAndSettingsRow = ({
           backgroundColor: 'var(--mantine-color-default-hover)',
         }}
       >
-        <CoverLetterSettingsPanel opened={settingsOpened} onClose={onCloseSettings} />
+        <CoverLetterSettingsPanel
+          settings={settings}
+          isLoading={isSettingsLoading}
+          onChange={onSettingsChange}
+        />
       </Box>
     </Collapse>
   </Stack>
@@ -299,6 +338,10 @@ const CoverLetterPanel = ({
   const [candidateName, setCandidateName] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [settingsOpened, setSettingsOpened] = useState(false);
+  const [coverLetterSettings, setCoverLetterSettings] = useState<CoverLetterSettings>(
+    defaultUserSettings.coverLetter,
+  );
+  const [isSettingsLoading, setIsSettingsLoading] = useState(false);
   const hasPrefilledName = useRef(false);
   const clipboard = useClipboard({ timeout: 1500 });
   const trackEditCandidateName = useMemo(
@@ -314,6 +357,24 @@ const CoverLetterPanel = ({
     setCandidateName((current) => (current.length === 0 ? clerkFullName : current));
   }, [clerkFullName]);
 
+  useEffect(() => {
+    if (!onProPlan || isExample) return;
+    let cancelled = false;
+    setIsSettingsLoading(true);
+    getSettings()
+      .then((settings) => {
+        if (cancelled) return;
+        setCoverLetterSettings(settings.coverLetter);
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setIsSettingsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [onProPlan, isExample]);
+
   const handleToggleSettings = () => {
     setSettingsOpened((current) => {
       const next = !current;
@@ -321,7 +382,25 @@ const CoverLetterPanel = ({
       return next;
     });
   };
-  const handleCloseSettings = () => setSettingsOpened(false);
+
+  const handleSettingsChange = async (next: CoverLetterSettings) => {
+    const previous = coverLetterSettings;
+    setCoverLetterSettings(next);
+    try {
+      await putSettings({ coverLetter: next });
+      trackEvent(AnalyticsEvents.CoverLetterSettingsSave, {
+        length: next.length,
+        tone: next.tone,
+      });
+    } catch {
+      setCoverLetterSettings(previous);
+      notifications.show({
+        color: 'red',
+        title: 'Could not save settings',
+        message: 'Something went wrong. Please try again.',
+      });
+    }
+  };
 
   const handleCandidateNameChange = (value: string) => {
     trackEditCandidateName();
@@ -334,7 +413,9 @@ const CoverLetterPanel = ({
       onCandidateNameChange={handleCandidateNameChange}
       settingsOpened={settingsOpened}
       onToggleSettings={handleToggleSettings}
-      onCloseSettings={handleCloseSettings}
+      settings={coverLetterSettings}
+      isSettingsLoading={isSettingsLoading}
+      onSettingsChange={handleSettingsChange}
     />
   );
 
@@ -469,7 +550,9 @@ const CoverLetterPanel = ({
           onCandidateNameChange={handleCandidateNameChange}
           settingsOpened={settingsOpened}
           onToggleSettings={handleToggleSettings}
-          onCloseSettings={handleCloseSettings}
+          settings={coverLetterSettings}
+          isSettingsLoading={isSettingsLoading}
+          onSettingsChange={handleSettingsChange}
           trailing={
             <Menu
               position="bottom-end"
