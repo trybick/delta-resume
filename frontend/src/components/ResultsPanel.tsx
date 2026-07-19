@@ -543,11 +543,11 @@ const ResultsPanel = ({
         <CollapsibleInsight
           open={summaryOpen}
           onToggle={handleSummaryToggle}
-          icon={<IconSparkles size={13} color="var(--mantine-color-cyan-4)" stroke={1.8} />}
+          icon={<IconSparkles size={13} color="var(--mantine-color-violet-4)" stroke={1.8} />}
           label="Summary of changes"
-          labelColor="cyan.4"
-          borderColor="var(--mantine-color-cyan-6)"
-          background="rgba(34, 184, 207, 0.07)"
+          labelColor="violet.4"
+          borderColor="var(--mantine-color-violet-6)"
+          background="rgba(151, 117, 250, 0.07)"
           ariaLabel="Summary of changes"
         >
           <Text size="sm" c="dimmed" lh={1.6}>
