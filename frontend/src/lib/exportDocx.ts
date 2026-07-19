@@ -128,8 +128,12 @@ export const isHeadingLine = (line: string): boolean => {
   const trimmed = line.trim();
   if (trimmed.length === 0 || trimmed.length > 48) return false;
   if (isBulletLine(line)) return false;
-  if (SECTION_NAMES.has(trimmed.replace(/:$/, '').toLowerCase())) return true;
-  return /[A-Z]/.test(trimmed) && trimmed === trimmed.toUpperCase();
+  const withoutColon = trimmed.replace(/:$/, '');
+  if (SECTION_NAMES.has(withoutColon.toLowerCase())) return true;
+  if (!/[A-Z]/.test(trimmed) || trimmed !== trimmed.toUpperCase()) return false;
+  if (trimmed.includes(',')) return false;
+  const words = withoutColon.split(/\s+/).filter((word) => word.length > 0);
+  return words.length > 0 && words.length <= 3;
 };
 
 type RunOptions = {
