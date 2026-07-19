@@ -43,8 +43,8 @@ const AppHeader = ({
         WebkitBackdropFilter: 'blur(12px)',
       }}
     >
-      <Group justify="space-between">
-        <Group gap="sm" align="center" wrap="nowrap" style={{ minWidth: 0 }}>
+      <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
+        <Group gap="sm" align="center" wrap="nowrap" style={{ minWidth: 0, flex: '1 1 auto' }}>
           <DeltaLogo size={38} />
           <Stack gap={2} style={{ minWidth: 0 }}>
             <Title
@@ -65,7 +65,7 @@ const AppHeader = ({
             </Text>
           </Stack>
         </Group>
-        <Group gap="xs">
+        <Group gap="xs" justify="flex-end" wrap="nowrap" style={{ flexShrink: 0 }}>
           {planLoaded && isProPlan && (
             <Badge
               size="lg"
