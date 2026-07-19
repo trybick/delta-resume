@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import {
-  ActionIcon,
-  Group,
-  Paper,
-  ScrollArea,
-  Stack,
-  Text,
-} from '@mantine/core';
+import { ActionIcon, Group, Paper, ScrollArea, Stack, Text } from '@mantine/core';
 import { Dropzone, type FileRejection } from '@mantine/dropzone';
 import { IconFileText, IconFileUpload, IconX } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
@@ -185,11 +178,6 @@ const ResumeUploadPanel = ({
           )}
         </Stack>
       </Dropzone>
-      <Text size="xs" c="dimmed" ta="center">
-        {isSignedIn
-          ? 'Saved to your account after each run — delete anytime.'
-          : 'Your resume is never stored.'}
-      </Text>
     </Stack>
   );
 };
