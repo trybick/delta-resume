@@ -6,13 +6,14 @@ open System.Threading.Tasks
 open Dapper
 open Npgsql
 open DeltaResume.Application
+open DeltaResume.Domain
 
 type PostgresCreditStore(connectionString: string) =
 
     interface CreditStore with
 
         member _.CountUsage
-            (identityKey: string, period: string, cancellationToken: CancellationToken)
+            (identityKey: OwnerKey, period: UsagePeriod, cancellationToken: CancellationToken)
             : Task<int> =
             task {
                 use connection = new NpgsqlConnection(connectionString)
@@ -22,8 +23,8 @@ type PostgresCreditStore(connectionString: string) =
                     connection.ExecuteScalarAsync<int>(
                         CommandDefinition(
                         "SELECT COUNT(*)::int FROM credit_usage WHERE identity_key = @IdentityKey AND period = @Period",
-                        {| IdentityKey = identityKey
-                           Period = period |},
+                        {| IdentityKey = OwnerKey.value identityKey
+                           Period = UsagePeriod.toString period |},
                         cancellationToken = cancellationToken
                         )
                     )
@@ -40,7 +41,8 @@ type PostgresCreditStore(connectionString: string) =
 
                 let lockKeys =
                     entries
-                    |> List.map (fun entry -> sprintf "%s:%s" entry.IdentityKey entry.Period)
+                    |> List.map (fun entry ->
+                        sprintf "%s:%s" (OwnerKey.value entry.IdentityKey) (UsagePeriod.toString entry.Period))
                     |> List.distinct
                     |> List.sort
 
@@ -68,8 +70,8 @@ type PostgresCreditStore(connectionString: string) =
                                 FROM credit_usage
                                 WHERE identity_key = @IdentityKey AND period = @Period
                                 """,
-                                {| IdentityKey = entry.IdentityKey
-                                   Period = entry.Period |},
+                                {| IdentityKey = OwnerKey.value entry.IdentityKey
+                                   Period = UsagePeriod.toString entry.Period |},
                                 transaction,
                                 cancellationToken = cancellationToken
                             )
@@ -81,7 +83,7 @@ type PostgresCreditStore(connectionString: string) =
                     do! transaction.RollbackAsync(cancellationToken)
                     return SpendExhausted
                 else
-                    let operationId = string (Guid.NewGuid())
+                    let operationId = OperationId.create ()
                     let usedAt = DateTimeOffset.UtcNow
 
                     for entry in entries do
@@ -95,11 +97,11 @@ type PostgresCreditStore(connectionString: string) =
                                         (@Id, @IdentityKey, @Kind, @Period, @UsedAt, @OperationId)
                                     """,
                                     {| Id = string (Guid.NewGuid())
-                                       IdentityKey = entry.IdentityKey
-                                       Kind = entry.Kind
-                                       Period = entry.Period
+                                       IdentityKey = OwnerKey.value entry.IdentityKey
+                                       Kind = CreditKind.toString entry.Kind
+                                       Period = UsagePeriod.toString entry.Period
                                        UsedAt = usedAt
-                                       OperationId = operationId |},
+                                       OperationId = OperationId.asString operationId |},
                                     transaction,
                                     cancellationToken = cancellationToken
                                 )
@@ -112,7 +114,7 @@ type PostgresCreditStore(connectionString: string) =
             }
 
         member _.DeleteUsageByOperation
-            (operationId: string, cancellationToken: CancellationToken)
+            (operationId: OperationId, cancellationToken: CancellationToken)
             : Task<unit> =
             task {
                 use connection = new NpgsqlConnection(connectionString)
@@ -122,7 +124,7 @@ type PostgresCreditStore(connectionString: string) =
                     connection.ExecuteAsync(
                         CommandDefinition(
                             "DELETE FROM credit_usage WHERE operation_id = @OperationId",
-                            {| OperationId = operationId |},
+                            {| OperationId = OperationId.asString operationId |},
                             cancellationToken = cancellationToken
                         )
                     )

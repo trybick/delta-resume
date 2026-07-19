@@ -141,9 +141,22 @@ type TailorRun =
 
 type SavedResumeId = SavedResumeId of Guid
 
+type OwnerKey = private OwnerKey of string
+
+module OwnerKey =
+    let value (OwnerKey key) = key
+
+    let forUser (userId: string) = OwnerKey(sprintf "user:%s" userId)
+
+    let forFingerprint (fingerprint: string) = OwnerKey(sprintf "fp:%s" fingerprint)
+
+    let forIpHash (ipHash: string) = OwnerKey(sprintf "ip:%s" ipHash)
+
+    let ofPersisted (key: string) = OwnerKey key
+
 type SavedResume =
     { Id: SavedResumeId
-      OwnerKey: string
+      OwnerKey: OwnerKey
       Name: string
       ResumeText: string
       ContentHash: string

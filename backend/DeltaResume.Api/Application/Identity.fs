@@ -5,6 +5,7 @@ open System.Security.Claims
 open System.Security.Cryptography
 open System.Text
 open Microsoft.AspNetCore.Http
+open DeltaResume.Domain
 
 type CreditPlan =
     | GuestPlan
@@ -138,11 +139,11 @@ module Identity =
         | AuthenticatedUser(_, plan) -> plan
         | GuestVisitor _ -> GuestPlan
 
-    let ownerKey (identity: RequestIdentity) : string =
+    let ownerKey (identity: RequestIdentity) : OwnerKey =
         match identity with
-        | AuthenticatedUser(userId, _) -> sprintf "user:%s" userId
-        | GuestVisitor(Some fingerprint, _) -> sprintf "fp:%s" fingerprint
-        | GuestVisitor(None, ipHash) -> sprintf "ip:%s" ipHash
+        | AuthenticatedUser(userId, _) -> OwnerKey.forUser userId
+        | GuestVisitor(Some fingerprint, _) -> OwnerKey.forFingerprint fingerprint
+        | GuestVisitor(None, ipHash) -> OwnerKey.forIpHash ipHash
 
     let rateLimitKey (options: IdentityOptions) (ctx: HttpContext) : string =
         sprintf "ip:%s" (hashWithSalt options.IpHashSalt (resolveClientIp options ctx))

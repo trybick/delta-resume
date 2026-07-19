@@ -23,18 +23,18 @@ type AnthropicCoverLetterEngine(httpClient: HttpClient) =
 
     let assistantPrefill = """{"jobTitle":"""
 
-    let lengthGuidance (length: string) : string * string =
+    let lengthGuidance (length: CoverLetterLength) : string * string =
         match length with
-        | "short" -> "Around 150 words in the body.", "2-3 short paragraphs"
-        | "long" -> "Around 400 words in the body.", "4-5 short paragraphs"
-        | _ -> "Around 250 words in the body.", "3-4 short paragraphs"
+        | Short -> "Around 150 words in the body.", "2-3 short paragraphs"
+        | Long -> "Around 400 words in the body.", "4-5 short paragraphs"
+        | Standard -> "Around 250 words in the body.", "3-4 short paragraphs"
 
-    let toneGuidance (tone: string) : string =
+    let toneGuidance (tone: CoverLetterTone) : string =
         match tone with
-        | "friendly" -> "Friendly, approachable, personable while staying professional; specific"
-        | "enthusiastic" -> "Energetic and genuinely enthusiastic about the role and company; specific, never gushing"
-        | "formal" -> "Formal, polished, measured; specific"
-        | _ -> "Confident, warm, specific"
+        | Friendly -> "Friendly, approachable, personable while staying professional; specific"
+        | Enthusiastic -> "Energetic and genuinely enthusiastic about the role and company; specific, never gushing"
+        | Formal -> "Formal, polished, measured; specific"
+        | Professional -> "Confident, warm, specific"
 
     let systemPrompt =
         """You are Delta Resume, a cover letter writing assistant. You are given a complete resume inside <resume> and a job description inside <job_description>.
@@ -186,9 +186,9 @@ Use plain UTF-8 characters inside JSON strings. Never encode characters as \\uXX
                 | Some apiKey ->
                     let maxTokens =
                         match settings.Length with
-                        | "long" -> 4096
-                        | "short" -> 2048
-                        | _ -> 3072
+                        | Long -> 4096
+                        | Short -> 2048
+                        | Standard -> 3072
 
                     let requestBody =
                         {| model = model

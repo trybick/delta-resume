@@ -78,7 +78,19 @@ type TailorResponseDto =
 
 type ErrorResponseDto = { Message: string }
 
+type CreditStatusDto =
+    { Remaining: int
+      Total: int
+      Plan: string
+      IsAuthenticated: bool }
+
 module Mapping =
+    let toCreditStatusDto (status: CreditStatus) : CreditStatusDto =
+        { Remaining = status.Remaining
+          Total = status.Total
+          Plan = CreditPlan.toString status.Plan
+          IsAuthenticated = status.IsAuthenticated }
+
     let toChangeDto (change: BulletChange) : BulletChangeDto =
         let (ChangeId id) = change.Id
 
@@ -158,8 +170,8 @@ module Mapping =
 
     let toUserSettingsDto (settings: UserSettings) : UserSettingsDto =
         { CoverLetter =
-            { Length = settings.CoverLetter.Length
-              Tone = settings.CoverLetter.Tone } }
+            { Length = CoverLetterLength.toString settings.CoverLetter.Length
+              Tone = CoverLetterTone.toString settings.CoverLetter.Tone } }
 
     let toSavedResumeDto (resume: SavedResume) : SavedResumeDto =
         let (SavedResumeId id) = resume.Id

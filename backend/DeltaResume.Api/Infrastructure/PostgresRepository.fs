@@ -73,8 +73,8 @@ type PostgresUserSettingsRepository(connectionString: string) =
     let serialize (settings: UserSettings) : string =
         System.Text.Json.JsonSerializer.Serialize
             {| coverLetter =
-                {| length = settings.CoverLetter.Length
-                   tone = settings.CoverLetter.Tone |} |}
+                {| length = CoverLetterLength.toString settings.CoverLetter.Length
+                   tone = CoverLetterTone.toString settings.CoverLetter.Tone |} |}
 
     let parse (json: string) : UserSettings =
         let defaults = UserSettings.defaults
@@ -82,24 +82,32 @@ type PostgresUserSettingsRepository(connectionString: string) =
         try
             use document = System.Text.Json.JsonDocument.Parse json
 
-            let readString (parent: System.Text.Json.JsonElement) (name: string) (fallback: string) =
+            let readString (parent: System.Text.Json.JsonElement) (name: string) =
                 match parent.TryGetProperty name with
                 | true, element when element.ValueKind = System.Text.Json.JsonValueKind.String ->
-                    element.GetString() |> Option.ofObj |> Option.defaultValue fallback
-                | _ -> fallback
+                    element.GetString() |> Option.ofObj
+                | _ -> None
 
             match document.RootElement.TryGetProperty "coverLetter" with
             | true, coverLetter when coverLetter.ValueKind = System.Text.Json.JsonValueKind.Object ->
-                { CoverLetter =
-                    { Length = readString coverLetter "length" defaults.CoverLetter.Length
-                      Tone = readString coverLetter "tone" defaults.CoverLetter.Tone } }
+                let length =
+                    readString coverLetter "length"
+                    |> Option.bind CoverLetterLength.tryParse
+                    |> Option.defaultValue defaults.CoverLetter.Length
+
+                let tone =
+                    readString coverLetter "tone"
+                    |> Option.bind CoverLetterTone.tryParse
+                    |> Option.defaultValue defaults.CoverLetter.Tone
+
+                { CoverLetter = { Length = length; Tone = tone } }
             | _ -> defaults
         with _ ->
             defaults
 
     interface UserSettingsRepository with
 
-        member _.Get(ownerKey: string) : Task<UserSettings option> =
+        member _.Get(ownerKey: OwnerKey) : Task<UserSettings option> =
             task {
                 use connection = new NpgsqlConnection(connectionString)
                 do! connection.OpenAsync()
@@ -107,13 +115,13 @@ type PostgresUserSettingsRepository(connectionString: string) =
                 let! rows =
                     connection.QueryAsync<string>(
                         "SELECT settings::text FROM user_settings WHERE owner_key = @OwnerKey",
-                        {| OwnerKey = ownerKey |}
+                        {| OwnerKey = OwnerKey.value ownerKey |}
                     )
 
                 return rows |> Seq.tryHead |> Option.map parse
             }
 
-        member _.Upsert(ownerKey: string, settings: UserSettings) : Task<unit> =
+        member _.Upsert(ownerKey: OwnerKey, settings: UserSettings) : Task<unit> =
             task {
                 use connection = new NpgsqlConnection(connectionString)
                 do! connection.OpenAsync()
@@ -126,7 +134,7 @@ type PostgresUserSettingsRepository(connectionString: string) =
                         ON CONFLICT (owner_key) DO UPDATE
                             SET settings = EXCLUDED.settings, updated_at = EXCLUDED.updated_at
                         """,
-                        {| OwnerKey = ownerKey
+                        {| OwnerKey = OwnerKey.value ownerKey
                            Settings = serialize settings
                            UpdatedAt = DateTimeOffset.UtcNow |}
                     )
@@ -147,7 +155,7 @@ type PostgresSavedResumeRepository(connectionString: string) =
 
     let toDomain (row: SavedResumeRow) : SavedResume =
         { Id = SavedResumeId(Guid.Parse row.id)
-          OwnerKey = row.owner_key
+          OwnerKey = OwnerKey.ofPersisted row.owner_key
           Name = row.name
           ResumeText = row.resume_text
           ContentHash = row.content_hash
@@ -155,7 +163,7 @@ type PostgresSavedResumeRepository(connectionString: string) =
 
     interface SavedResumeRepository with
 
-        member _.ListByOwner(ownerKey: string) : Task<SavedResume list> =
+        member _.ListByOwner(ownerKey: OwnerKey) : Task<SavedResume list> =
             task {
                 use connection = new NpgsqlConnection(connectionString)
                 do! connection.OpenAsync()
@@ -168,13 +176,13 @@ type PostgresSavedResumeRepository(connectionString: string) =
                         WHERE owner_key = @OwnerKey
                         ORDER BY created_at DESC
                         """,
-                        {| OwnerKey = ownerKey |}
+                        {| OwnerKey = OwnerKey.value ownerKey |}
                     )
 
                 return rows |> Seq.map toDomain |> List.ofSeq
             }
 
-        member _.FindByHash(ownerKey: string, contentHash: string) : Task<SavedResume option> =
+        member _.FindByHash(ownerKey: OwnerKey, contentHash: string) : Task<SavedResume option> =
             task {
                 use connection = new NpgsqlConnection(connectionString)
                 do! connection.OpenAsync()
@@ -187,7 +195,7 @@ type PostgresSavedResumeRepository(connectionString: string) =
                         WHERE owner_key = @OwnerKey AND content_hash = @ContentHash
                         LIMIT 1
                         """,
-                        {| OwnerKey = ownerKey
+                        {| OwnerKey = OwnerKey.value ownerKey
                            ContentHash = contentHash |}
                     )
 
@@ -208,7 +216,7 @@ type PostgresSavedResumeRepository(connectionString: string) =
                         VALUES (@Id, @OwnerKey, @Name, @ResumeText, @ContentHash, @CreatedAt)
                         """,
                         {| Id = string id
-                           OwnerKey = resume.OwnerKey
+                           OwnerKey = OwnerKey.value resume.OwnerKey
                            Name = resume.Name
                            ResumeText = resume.ResumeText
                            ContentHash = resume.ContentHash
@@ -218,7 +226,7 @@ type PostgresSavedResumeRepository(connectionString: string) =
                 return ()
             }
 
-        member _.Rename(id: SavedResumeId, ownerKey: string, name: string) : Task<bool> =
+        member _.Rename(id: SavedResumeId, ownerKey: OwnerKey, name: string) : Task<bool> =
             task {
                 use connection = new NpgsqlConnection(connectionString)
                 do! connection.OpenAsync()
@@ -229,14 +237,14 @@ type PostgresSavedResumeRepository(connectionString: string) =
                     connection.ExecuteAsync(
                         "UPDATE saved_resumes SET name = @Name WHERE id = @Id AND owner_key = @OwnerKey",
                         {| Id = string resumeId
-                           OwnerKey = ownerKey
+                           OwnerKey = OwnerKey.value ownerKey
                            Name = name |}
                     )
 
                 return affected > 0
             }
 
-        member _.Delete(id: SavedResumeId, ownerKey: string) : Task<bool> =
+        member _.Delete(id: SavedResumeId, ownerKey: OwnerKey) : Task<bool> =
             task {
                 use connection = new NpgsqlConnection(connectionString)
                 do! connection.OpenAsync()
@@ -247,13 +255,13 @@ type PostgresSavedResumeRepository(connectionString: string) =
                     connection.ExecuteAsync(
                         "DELETE FROM saved_resumes WHERE id = @Id AND owner_key = @OwnerKey",
                         {| Id = string resumeId
-                           OwnerKey = ownerKey |}
+                           OwnerKey = OwnerKey.value ownerKey |}
                     )
 
                 return affected > 0
             }
 
-        member _.DeleteLeastRecentlyUsed(ownerKey: string, keepCount: int) : Task<unit> =
+        member _.DeleteLeastRecentlyUsed(ownerKey: OwnerKey, keepCount: int) : Task<unit> =
             task {
                 use connection = new NpgsqlConnection(connectionString)
                 do! connection.OpenAsync()
@@ -269,7 +277,7 @@ type PostgresSavedResumeRepository(connectionString: string) =
                             OFFSET @KeepCount
                         )
                         """,
-                        {| OwnerKey = ownerKey
+                        {| OwnerKey = OwnerKey.value ownerKey
                            KeepCount = keepCount |}
                     )
 

@@ -21,26 +21,63 @@ type CoverLetterDraft =
       CompanyName: string
       Letter: string }
 
+type CoverLetterLength =
+    | Short
+    | Standard
+    | Long
+
+module CoverLetterLength =
+    let toString (length: CoverLetterLength) : string =
+        match length with
+        | Short -> "short"
+        | Standard -> "standard"
+        | Long -> "long"
+
+    let tryParse (value: string) : CoverLetterLength option =
+        match value with
+        | "short" -> Some Short
+        | "standard" -> Some Standard
+        | "long" -> Some Long
+        | _ -> None
+
+type CoverLetterTone =
+    | Professional
+    | Friendly
+    | Enthusiastic
+    | Formal
+
+module CoverLetterTone =
+    let toString (tone: CoverLetterTone) : string =
+        match tone with
+        | Professional -> "professional"
+        | Friendly -> "friendly"
+        | Enthusiastic -> "enthusiastic"
+        | Formal -> "formal"
+
+    let tryParse (value: string) : CoverLetterTone option =
+        match value with
+        | "professional" -> Some Professional
+        | "friendly" -> Some Friendly
+        | "enthusiastic" -> Some Enthusiastic
+        | "formal" -> Some Formal
+        | _ -> None
+
 type CoverLetterSettings =
-    { Length: string
-      Tone: string }
+    { Length: CoverLetterLength
+      Tone: CoverLetterTone }
 
 type UserSettings =
     { CoverLetter: CoverLetterSettings }
 
 module UserSettings =
-    let allowedLengths = [ "short"; "standard"; "long" ]
-
-    let allowedTones = [ "professional"; "friendly"; "enthusiastic"; "formal" ]
-
     let defaults: UserSettings =
         { CoverLetter =
-            { Length = "standard"
-              Tone = "professional" } }
+            { Length = Standard
+              Tone = Professional } }
 
 type UserSettingsRepository =
-    abstract member Get: ownerKey: string -> Task<UserSettings option>
-    abstract member Upsert: ownerKey: string * settings: UserSettings -> Task<unit>
+    abstract member Get: ownerKey: OwnerKey -> Task<UserSettings option>
+    abstract member Upsert: ownerKey: OwnerKey * settings: UserSettings -> Task<unit>
 
 type CoverLetterEngine =
     abstract member GenerateCoverLetter:
@@ -51,30 +88,62 @@ type CoverLetterEngine =
         cancellationToken: CancellationToken ->
             Task<Result<CoverLetterDraft, string>>
 
+type CreditKind =
+    | User
+    | Fingerprint
+    | Ip
+
+module CreditKind =
+    let toString (kind: CreditKind) : string =
+        match kind with
+        | User -> "user"
+        | Fingerprint -> "fp"
+        | Ip -> "ip"
+
+type UsagePeriod =
+    | Lifetime
+    | Monthly of yearMonth: string
+
+module UsagePeriod =
+    let toString (period: UsagePeriod) : string =
+        match period with
+        | Lifetime -> "lifetime"
+        | Monthly yearMonth -> yearMonth
+
+    let currentMonth () : UsagePeriod =
+        Monthly(DateTime.UtcNow.ToString "yyyy-MM")
+
+type OperationId = OperationId of Guid
+
+module OperationId =
+    let create () = OperationId(Guid.NewGuid())
+
+    let asString (OperationId id) = string id
+
 type CreditUsageEntry =
-    { IdentityKey: string
-      Kind: string
-      Period: string }
+    { IdentityKey: OwnerKey
+      Kind: CreditKind
+      Period: UsagePeriod }
 
 type CreditSpendResult =
-    | SpendRecorded of operationId: string
+    | SpendRecorded of OperationId
     | SpendExhausted
 
 type CreditStore =
     abstract member CountUsage:
-        identityKey: string * period: string * cancellationToken: CancellationToken -> Task<int>
+        identityKey: OwnerKey * period: UsagePeriod * cancellationToken: CancellationToken -> Task<int>
 
     abstract member TryRecordUsage:
         entries: CreditUsageEntry list * creditLimit: int * cancellationToken: CancellationToken ->
             Task<CreditSpendResult>
 
     abstract member DeleteUsageByOperation:
-        operationId: string * cancellationToken: CancellationToken -> Task<unit>
+        operationId: OperationId * cancellationToken: CancellationToken -> Task<unit>
 
 type SavedResumeRepository =
-    abstract member ListByOwner: ownerKey: string -> Task<SavedResume list>
-    abstract member FindByHash: ownerKey: string * contentHash: string -> Task<SavedResume option>
+    abstract member ListByOwner: ownerKey: OwnerKey -> Task<SavedResume list>
+    abstract member FindByHash: ownerKey: OwnerKey * contentHash: string -> Task<SavedResume option>
     abstract member Insert: resume: SavedResume -> Task<unit>
-    abstract member Rename: id: SavedResumeId * ownerKey: string * name: string -> Task<bool>
-    abstract member Delete: id: SavedResumeId * ownerKey: string -> Task<bool>
-    abstract member DeleteLeastRecentlyUsed: ownerKey: string * keepCount: int -> Task<unit>
+    abstract member Rename: id: SavedResumeId * ownerKey: OwnerKey * name: string -> Task<bool>
+    abstract member Delete: id: SavedResumeId * ownerKey: OwnerKey -> Task<bool>
+    abstract member DeleteLeastRecentlyUsed: ownerKey: OwnerKey * keepCount: int -> Task<unit>

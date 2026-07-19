@@ -1,40 +1,50 @@
 namespace DeltaResume.Application
 
-open System
 open System.Threading
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Http
+open DeltaResume.Domain
 
 type CreditStatus =
     { Remaining: int
       Total: int
-      Plan: string
+      Plan: CreditPlan
       IsAuthenticated: bool }
 
 type CreditService(store: CreditStore, options: IdentityOptions) =
 
-    [<Literal>]
-    let LifetimePeriod = "lifetime"
-
-    let currentMonthPeriod () = DateTime.UtcNow.ToString "yyyy-MM"
-
-    let guestUsageKeys (fingerprint: string option) (ipHash: string) : (string * string * string) list =
+    let guestUsageEntries (fingerprint: string option) (ipHash: string) : CreditUsageEntry list =
         [ match fingerprint with
-          | Some fp -> yield sprintf "fp:%s" fp, "fp", LifetimePeriod
+          | Some fp ->
+              { IdentityKey = OwnerKey.forFingerprint fp
+                Kind = Fingerprint
+                Period = Lifetime }
           | None -> ()
-          yield sprintf "ip:%s" ipHash, "ip", LifetimePeriod ]
+          { IdentityKey = OwnerKey.forIpHash ipHash
+            Kind = Ip
+            Period = Lifetime } ]
 
-    let usageKeys (ctx: HttpContext) (identity: RequestIdentity) : (string * string * string) list =
+    let usageEntries (ctx: HttpContext) (identity: RequestIdentity) : CreditUsageEntry list =
         match identity with
-        | AuthenticatedUser(userId, ProPlan) -> [ sprintf "user:%s" userId, "user", currentMonthPeriod () ]
+        | AuthenticatedUser(userId, ProPlan) ->
+            [ { IdentityKey = OwnerKey.forUser userId
+                Kind = User
+                Period = UsagePeriod.currentMonth () } ]
         | AuthenticatedUser(userId, _) ->
             let fingerprint, _ = Identity.guestIdentifiers options ctx
 
-            [ yield sprintf "user:%s" userId, "user", LifetimePeriod
+            [ yield
+                  { IdentityKey = OwnerKey.forUser userId
+                    Kind = User
+                    Period = Lifetime }
               match fingerprint with
-              | Some fp -> yield sprintf "fp:%s" fp, "fp", LifetimePeriod
+              | Some fp ->
+                  yield
+                      { IdentityKey = OwnerKey.forFingerprint fp
+                        Kind = Fingerprint
+                        Period = Lifetime }
               | None -> () ]
-        | GuestVisitor(fingerprint, ipHash) -> guestUsageKeys fingerprint ipHash
+        | GuestVisitor(fingerprint, ipHash) -> guestUsageEntries fingerprint ipHash
 
     let isUnlimited (identity: RequestIdentity) : bool =
         options.UnlimitedGuestCredits && Identity.plan identity <> ProPlan
@@ -55,14 +65,14 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
                 return
                     { Remaining = total
                       Total = total
-                      Plan = CreditPlan.toString plan
+                      Plan = plan
                       IsAuthenticated = isAuthenticated identity }
             else
 
             let mutable used = 0
 
-            for identityKey, _, period in usageKeys ctx identity do
-                let! count = store.CountUsage(identityKey, period, cancellationToken)
+            for entry in usageEntries ctx identity do
+                let! count = store.CountUsage(entry.IdentityKey, entry.Period, cancellationToken)
                 used <- max used count
 
             let total = CreditPlan.creditLimit plan
@@ -70,7 +80,7 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
             return
                 { Remaining = max 0 (total - used)
                   Total = total
-                  Plan = CreditPlan.toString plan
+                  Plan = plan
                   IsAuthenticated = isAuthenticated identity }
         }
 
@@ -78,17 +88,13 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
         let identity = Identity.resolve options ctx
 
         if isUnlimited identity then
-            Task.FromResult(SpendRecorded(string (Guid.NewGuid())))
+            Task.FromResult(SpendRecorded(OperationId.create ()))
         else
-            let entries =
-                identity
-                |> usageKeys ctx
-                |> List.map (fun (identityKey, kind, period) ->
-                    { IdentityKey = identityKey
-                      Kind = kind
-                      Period = period })
+            store.TryRecordUsage(
+                usageEntries ctx identity,
+                CreditPlan.creditLimit (Identity.plan identity),
+                cancellationToken
+            )
 
-            store.TryRecordUsage(entries, CreditPlan.creditLimit (Identity.plan identity), cancellationToken)
-
-    member _.Refund(operationId: string, cancellationToken: CancellationToken) : Task<unit> =
+    member _.Refund(operationId: OperationId, cancellationToken: CancellationToken) : Task<unit> =
         store.DeleteUsageByOperation(operationId, cancellationToken)

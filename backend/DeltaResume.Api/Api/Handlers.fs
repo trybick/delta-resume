@@ -82,7 +82,7 @@ module Handlers =
 
                 try
                     let! status = creditService.GetStatus(ctx, ctx.RequestAborted)
-                    return! json status next ctx
+                    return! json (Mapping.toCreditStatusDto status) next ctx
                 with
                 | :? OperationCanceledException when ctx.RequestAborted.IsCancellationRequested ->
                     return! earlyReturn ctx
@@ -117,7 +117,7 @@ module Handlers =
     let private invalidJsonResponse: HttpHandler =
         codedErrorResponse StatusCodes.Status400BadRequest "invalid_input" "Invalid request payload."
 
-    let private refundCredit (creditService: CreditService) (operationId: string) =
+    let private refundCredit (creditService: CreditService) (operationId: OperationId) =
         task {
             try
                 do! creditService.Refund(operationId, CancellationToken.None)
@@ -348,15 +348,15 @@ module Handlers =
                     | Some dto ->
                         if isNull (box dto.CoverLetter) then
                             Error "coverLetter settings are required."
-                        elif not (UserSettings.allowedLengths |> List.contains dto.CoverLetter.Length) then
-                            Error "Invalid cover letter length."
-                        elif not (UserSettings.allowedTones |> List.contains dto.CoverLetter.Tone) then
-                            Error "Invalid cover letter tone."
                         else
-                            Ok
-                                { CoverLetter =
-                                    { Length = dto.CoverLetter.Length
-                                      Tone = dto.CoverLetter.Tone } }
+                            match
+                                CoverLetterLength.tryParse dto.CoverLetter.Length,
+                                CoverLetterTone.tryParse dto.CoverLetter.Tone
+                            with
+                            | None, _ -> Error "Invalid cover letter length."
+                            | _, None -> Error "Invalid cover letter tone."
+                            | Some length, Some tone ->
+                                Ok { CoverLetter = { Length = length; Tone = tone } }
 
                 match validated with
                 | Error message ->
