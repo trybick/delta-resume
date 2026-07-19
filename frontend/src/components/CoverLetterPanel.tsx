@@ -46,6 +46,7 @@ type CoverLetterPanelProps = {
   exampleResult?: CoverLetterResult;
   onRetry: () => void;
   onUpgradeClick: () => void;
+  onShowExample?: () => void;
 };
 
 const CoverLetterPanel = ({
@@ -57,6 +58,7 @@ const CoverLetterPanel = ({
   exampleResult,
   onRetry,
   onUpgradeClick,
+  onShowExample,
 }: CoverLetterPanelProps) => {
   const { user } = useUser();
   const { has } = useAuth();
@@ -112,7 +114,13 @@ const CoverLetterPanel = ({
   }
 
   if (!onProPlan) {
-    return <LockedTeaser isProPlan={onProPlan} onUpgradeClick={onUpgradeClick} />;
+    return (
+      <LockedTeaser
+        isProPlan={onProPlan}
+        onUpgradeClick={onUpgradeClick}
+        onShowExample={onShowExample}
+      />
+    );
   }
 
   if (status === 'idle') {

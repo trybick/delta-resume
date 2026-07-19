@@ -1,5 +1,5 @@
 import { Badge, Button, Card, Center, Group, Stack, Text, Title } from '@mantine/core';
-import { IconLock } from '@tabler/icons-react';
+import { IconEye, IconLock } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { prependCoverLetterDate } from '../lib/formatCoverLetter';
 import { SAMPLE_COVER_LETTER_RESULT } from '../lib/mockTailor';
@@ -9,9 +9,10 @@ import { useProUpgradeCtaLabel } from '../hooks/useProPlan';
 type LockedTeaserProps = {
   isProPlan: boolean;
   onUpgradeClick: () => void;
+  onShowExample?: () => void;
 };
 
-const LockedTeaser = ({ isProPlan, onUpgradeClick }: LockedTeaserProps) => {
+const LockedTeaser = ({ isProPlan, onUpgradeClick, onShowExample }: LockedTeaserProps) => {
   const upgradeCtaLabel = useProUpgradeCtaLabel();
 
   return (
@@ -51,6 +52,18 @@ const LockedTeaser = ({ isProPlan, onUpgradeClick }: LockedTeaserProps) => {
               }}
             >
               {upgradeCtaLabel}
+            </Button>
+          )}
+          {onShowExample && (
+            <Button
+              variant="light"
+              leftSection={<IconEye size={16} />}
+              onClick={() => {
+                trackEvent(AnalyticsEvents.PreviewExample);
+                onShowExample();
+              }}
+            >
+              Preview an example
             </Button>
           )}
         </Stack>

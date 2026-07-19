@@ -214,6 +214,7 @@ const TailorResultsSection = ({
             exampleResult={SAMPLE_COVER_LETTER_RESULT}
             onRetry={onRetryCoverLetter}
             onUpgradeClick={onUpgradeClick}
+            onShowExample={onShowExample}
           />
         </Tabs.Panel>
       </Tabs>
