@@ -8,6 +8,7 @@ open Giraffe
 open Microsoft.AspNetCore.Authentication.JwtBearer
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
+open Microsoft.AspNetCore.ResponseCompression
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
 open Npgsql
@@ -109,6 +110,10 @@ let main args =
 
     builder.Services.AddGiraffe() |> ignore
 
+    builder.Services.AddResponseCompression(fun options ->
+        options.EnableForHttps <- true)
+    |> ignore
+
     match clerkAuthority with
     | Some authority ->
         builder.Services
@@ -182,6 +187,7 @@ let main args =
     let app = builder.Build()
 
     app.UseCors() |> ignore
+    app.UseResponseCompression() |> ignore
 
     if Option.isSome sentryDsn then
         app.UseSentryTracing() |> ignore
