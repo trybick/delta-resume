@@ -37,6 +37,7 @@ export type JobRequirement = {
   gapHint: string | null;
   draftBullet: string | null;
   insertAfterLine: number | null;
+  locked: boolean;
 };
 
 export type AddedBullet = {

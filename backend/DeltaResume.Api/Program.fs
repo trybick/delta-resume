@@ -153,6 +153,9 @@ let main args =
     builder.Services.AddSingleton<CreditStore>(fun _ -> PostgresCreditStore(connectionString) :> CreditStore)
     |> ignore
 
+    builder.Services.AddSingleton<DatabaseHealthCheck>(DatabaseHealthCheck(connectionString))
+    |> ignore
+
     let identityOptions = IdentityOptions.fromEnvironment ()
 
     builder.Services.AddSingleton<IdentityOptions>(identityOptions) |> ignore

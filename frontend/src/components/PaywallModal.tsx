@@ -47,11 +47,18 @@ const embeddedSignUpAppearance = {
 type PaywallModalProps = {
   opened: boolean;
   reason: PaywallReason;
+  freeCreditTotal: number | null;
   onClose: () => void;
   onSubscriptionChange: () => void;
 };
 
-const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: PaywallModalProps) => {
+const PaywallModal = ({
+  opened,
+  reason,
+  freeCreditTotal,
+  onClose,
+  onSubscriptionChange,
+}: PaywallModalProps) => {
   const { isSignedIn } = useUser();
   const { has } = useAuth();
   const wasSignedOutRef = useRef(false);
@@ -132,8 +139,12 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
           : reason === 'upgrade'
             ? 'Go Pro with Delta Resume'
             : reason === 'credits'
-              ? 'You\u2019ve used your 3 free tailors'
-              : null;
+              ? freeCreditTotal !== null
+                ? `You\u2019ve used your ${freeCreditTotal} free ${freeCreditTotal === 1 ? 'credit' : 'credits'}`
+                : 'You\u2019ve used your free credits'
+              : reason === 'signUp'
+                ? 'Create a free account'
+                : null;
   const signedOutDescription =
     reason === 'savedLimit'
       ? 'Create a free account and upgrade to Pro to save up to 10 resumes.'
@@ -145,7 +156,9 @@ const PaywallModal = ({ opened, reason, onClose, onSubscriptionChange }: Paywall
             ? 'Sign in to continue \u2014 it takes seconds with Google.'
             : reason === 'credits'
               ? 'Create a free account to keep tailoring. Signing in with Google takes seconds.'
-              : null;
+              : reason === 'signUp'
+                ? 'It takes seconds with Google. Upgrade anytime for cover letters, missing requirements, and more.'
+                : null;
 
   const handleSubscriptionComplete = () => {
     trackEvent(AnalyticsEvents.SubscriptionComplete, { reason });

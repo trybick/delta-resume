@@ -86,16 +86,16 @@ Structure rules:
 Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
 {"changes":[{"lineIndex":0,"kind":"bullet","tailored":"<the rewritten line>"}],"summary":"<1-2 sentences summarizing the job's priorities and the overall tailoring approach>","requirements":[{"text":"<short requirement>","importance":"must","satisfiedBy":[4],"satisfiedByChanges":[],"gapHint":null,"draftBullet":null,"insertAfterLine":null}],"structure":{"headerLines":[0,1],"sections":[{"headingLine":2,"items":[{"kind":"subheading","lines":[3]},{"kind":"bullet","lines":[4,5]}]}]}}"""
 
-    let buildUserMessage (bullets: BulletLine list) (jobDescription: string) : string =
+    let buildResumeContent (bullets: BulletLine list) : string =
         let resumeLines =
             bullets
             |> List.map (fun line -> sprintf "lineIndex %d: %s" line.LineIndex line.Text)
             |> String.concat "\n"
 
-        sprintf
-            "<resume_lines>\n%s\n</resume_lines>\n\n<job_description>\n%s\n</job_description>"
-            resumeLines
-            jobDescription
+        sprintf "<resume_lines>\n%s\n</resume_lines>" resumeLines
+
+    let buildJobDescriptionContent (jobDescription: string) : string =
+        sprintf "<job_description>\n%s\n</job_description>" jobDescription
 
     let stripCodeFences (text: string) : string =
         let trimmed = text.Trim()
@@ -319,12 +319,23 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                         {| model = model
                            max_tokens = 10240
                            temperature = 0.2
-                           system = systemPrompt
+                           system =
+                            [| {| ``type`` = "text"
+                                  text = systemPrompt
+                                  cache_control = {| ``type`` = "ephemeral" |} |} |]
                            messages =
                             [| {| role = "user"
-                                  content = buildUserMessage bullets jobDescription |}
+                                  content =
+                                    box
+                                        [| box
+                                               {| ``type`` = "text"
+                                                  text = buildResumeContent bullets
+                                                  cache_control = {| ``type`` = "ephemeral" |} |}
+                                           box
+                                               {| ``type`` = "text"
+                                                  text = buildJobDescriptionContent jobDescription |} |] |}
                                {| role = "assistant"
-                                  content = assistantPrefill |} |] |}
+                                  content = box assistantPrefill |} |] |}
 
                     use request = new HttpRequestMessage(HttpMethod.Post, "https://api.anthropic.com/v1/messages")
                     request.Headers.Add("x-api-key", apiKey)

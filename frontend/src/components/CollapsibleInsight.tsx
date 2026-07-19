@@ -40,7 +40,15 @@ const CollapsibleInsight = ({
       <Group justify="space-between" wrap="nowrap" gap="sm">
         <Group gap={6} wrap="nowrap" style={{ minWidth: 0 }}>
           {icon}
-          <Text size="xs" fw={600} c={labelColor} tt="uppercase" lts={0.6} truncate>
+          <Text
+            className="collapsible-insight-label"
+            size="xs"
+            fw={600}
+            c={labelColor}
+            tt="uppercase"
+            lts={0.6}
+            truncate
+          >
             {label}
           </Text>
         </Group>

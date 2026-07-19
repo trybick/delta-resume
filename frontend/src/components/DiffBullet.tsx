@@ -97,9 +97,9 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
         opacity: decision === 'reverted' ? 0.6 : 1,
       }}
     >
-      <Group align="center" wrap="nowrap" gap="sm">
+      <Group className="diff-bullet-row" align="center" wrap="nowrap" gap="sm">
         <Box style={{ flex: 1, minWidth: 0 }}>{renderContent()}</Box>
-        <Group gap={4} wrap="nowrap">
+        <Group className="diff-bullet-actions" gap={4} wrap="nowrap">
           <Tooltip label={decision === 'reverted' ? 'Re-apply change' : 'Revert to original'}>
             <ActionIcon
               variant={decision === 'reverted' ? 'filled' : 'light'}

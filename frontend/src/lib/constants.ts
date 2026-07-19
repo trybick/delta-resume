@@ -1,6 +1,7 @@
 import type { CreditStatus } from './types';
 
-export const NETWORK_ERROR_MESSAGE = 'Could not reach the server. Is the backend running?';
+export const NETWORK_ERROR_MESSAGE =
+  "Couldn't reach the server. Check your connection and try again.";
 
 export const SAVED_RESUME_LIMIT_FREE = 1;
 export const SAVED_RESUME_LIMIT_PRO = 10;

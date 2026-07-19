@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Box, Center, Loader } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { renderAsync } from 'docx-preview';
 
 type DocxPaneProps = {
   source: Blob | null;
@@ -31,13 +30,17 @@ const DocxPane = ({ source, isLoading, hasError }: DocxPaneProps) => {
     setIsRendering(true);
     setRenderFailed(false);
 
-    void renderAsync(source, mount, mount, {
-      inWrapper: true,
-      ignoreWidth: false,
-      ignoreHeight: false,
-      breakPages: true,
-      experimental: true,
-    })
+    void import('docx-preview')
+      .then(({ renderAsync }) => {
+        if (cancelled) return;
+        return renderAsync(source, mount, mount, {
+          inWrapper: true,
+          ignoreWidth: false,
+          ignoreHeight: false,
+          breakPages: true,
+          experimental: true,
+        });
+      })
       .then(() => {
         if (cancelled) return;
         setIsRendering(false);

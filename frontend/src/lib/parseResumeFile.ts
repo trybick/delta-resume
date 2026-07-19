@@ -1,11 +1,4 @@
-import { getDocument, GlobalWorkerOptions } from 'pdfjs-dist';
 import type { TextItem } from 'pdfjs-dist/types/src/display/api';
-import mammoth from 'mammoth';
-
-GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
 
 const TEXT_EXTENSIONS = new Set(['txt', 'md']);
 const DOCX_EXTENSIONS = new Set(['docx']);
@@ -52,6 +45,12 @@ const buildPageText = (items: TextItem[]): string => {
 };
 
 const readPdfFile = async (file: File): Promise<string> => {
+  const { getDocument, GlobalWorkerOptions } = await import('pdfjs-dist');
+  GlobalWorkerOptions.workerSrc = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+  ).toString();
+
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await getDocument({ data: arrayBuffer }).promise;
   const pages: string[] = [];
@@ -71,8 +70,9 @@ const readPdfFile = async (file: File): Promise<string> => {
 };
 
 const readDocxFile = async (file: File): Promise<string> => {
+  const mammoth = await import('mammoth');
   const arrayBuffer = await file.arrayBuffer();
-  const result = await mammoth.extractRawText({ arrayBuffer });
+  const result = await mammoth.default.extractRawText({ arrayBuffer });
   const text = result.value.trim();
   if (!text) {
     throw new ResumeParseError('Could not extract text from this DOCX file.');

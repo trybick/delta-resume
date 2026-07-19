@@ -10,6 +10,7 @@ type ChangeStatSegmentProps = {
 
 const ChangeStatSegment = ({ icon, count, label }: ChangeStatSegmentProps) => (
   <Group
+    className="change-stat-segment"
     gap={6}
     wrap="nowrap"
     px={12}
@@ -23,7 +24,7 @@ const ChangeStatSegment = ({ icon, count, label }: ChangeStatSegmentProps) => (
     <Text size="sm" fw={700} c="green.5" lh={1}>
       {count}
     </Text>
-    <Text size="sm" fw={500} c="dimmed" lh={1}>
+    <Text className="change-stat-label" size="sm" fw={500} c="dimmed" lh={1}>
       {label}
     </Text>
   </Group>
@@ -37,6 +38,7 @@ type ChangeStatsPillProps = {
 
 const ChangeStatsPill = ({ bulletCount, skillCount, paragraphCount }: ChangeStatsPillProps) => (
   <Group
+    className="change-stats-pill"
     gap={0}
     align="stretch"
     wrap="nowrap"
@@ -48,6 +50,7 @@ const ChangeStatsPill = ({ bulletCount, skillCount, paragraphCount }: ChangeStat
     }}
   >
     <Group
+      className="change-stats-updated"
       gap={6}
       wrap="nowrap"
       px={12}

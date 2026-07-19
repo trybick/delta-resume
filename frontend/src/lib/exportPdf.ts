@@ -1,6 +1,3 @@
-import { renderAsync } from 'docx-preview';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
 import * as Sentry from '@sentry/react';
 import { notifications } from '@mantine/notifications';
 import { convertDocxToPdfRemote } from './api';
@@ -31,6 +28,12 @@ const createHiddenContainer = (): HTMLDivElement => {
 };
 
 export const convertDocxToPdf = async (docxBlob: Blob): Promise<Blob> => {
+  const [{ renderAsync }, { default: html2canvas }, { jsPDF }] = await Promise.all([
+    import('docx-preview'),
+    import('html2canvas'),
+    import('jspdf'),
+  ]);
+
   const container = createHiddenContainer();
   try {
     await renderAsync(docxBlob, container, container, {
@@ -45,7 +48,7 @@ export const convertDocxToPdf = async (docxBlob: Blob): Promise<Blob> => {
     const pages = Array.from(container.querySelectorAll<HTMLElement>('.docx'));
     if (pages.length === 0) throw new Error('could not render document pages');
 
-    let pdf: jsPDF | null = null;
+    let pdf: InstanceType<typeof jsPDF> | null = null;
     for (const page of pages) {
       const canvas = await html2canvas(page, {
         scale: RENDER_SCALE,

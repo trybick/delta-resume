@@ -85,12 +85,13 @@ const App = () => {
 
   const isGuest = isSignedIn === false;
   const isProPlan = checkIsProPlan(credits);
+  const freeCreditTotal = credits !== null && credits.plan !== 'pro' ? credits.total : null;
   const freeTrialLabel = !isGuest
     ? null
     : credits === null
       ? 'Free to try · no account needed'
       : credits.remaining > 0
-        ? `${credits.remaining} free ${credits.remaining === 1 ? 'run' : 'runs'} · no account needed`
+        ? `${credits.remaining} free ${credits.remaining === 1 ? 'credit' : 'credits'} · no account needed`
         : null;
   const planLoaded = credits !== null;
   const lowCredits =
@@ -260,15 +261,18 @@ const App = () => {
         </Grid>
       </Container>
 
-      {status === 'idle' && runCount === 0 && (
-        <LandingStrip onUpgradeClick={() => openPaywall('upgrade')} />
-      )}
+      <LandingStrip
+        collapsible={runCount > 0}
+        freeCreditTotal={freeCreditTotal}
+        onUpgradeClick={() => openPaywall('upgrade')}
+      />
 
       <AppFooter />
 
       <PaywallModal
         opened={paywallReason !== null}
         reason={paywallReason ?? 'credits'}
+        freeCreditTotal={freeCreditTotal}
         onClose={closePaywall}
         onSubscriptionChange={loadCredits}
       />

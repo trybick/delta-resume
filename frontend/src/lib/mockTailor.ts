@@ -57,6 +57,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     gapHint: null,
     draftBullet: null,
     insertAfterLine: null,
+    locked: false,
   },
   {
     text: 'Building consumer-facing web products',
@@ -66,6 +67,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     gapHint: null,
     draftBullet: null,
     insertAfterLine: null,
+    locked: false,
   },
   {
     text: 'Performance and conversion optimization',
@@ -75,6 +77,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     gapHint: null,
     draftBullet: null,
     insertAfterLine: null,
+    locked: false,
   },
   {
     text: 'REST API design and integration',
@@ -84,6 +87,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     gapHint: null,
     draftBullet: null,
     insertAfterLine: null,
+    locked: false,
   },
   {
     text: 'GraphQL APIs',
@@ -94,6 +98,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     draftBullet:
       '- Designed and shipped GraphQL APIs for [product or service], serving [number] of clients',
     insertAfterLine: 28,
+    locked: false,
   },
   {
     text: 'Next.js',
@@ -103,6 +108,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     gapHint: null,
     draftBullet: null,
     insertAfterLine: null,
+    locked: false,
   },
   {
     text: 'AWS cloud infrastructure',
@@ -112,6 +118,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     gapHint: null,
     draftBullet: null,
     insertAfterLine: null,
+    locked: false,
   },
   {
     text: 'Mentoring junior engineers',
@@ -121,6 +128,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     gapHint: null,
     draftBullet: null,
     insertAfterLine: null,
+    locked: false,
   },
   {
     text: 'Accessibility (WCAG) standards',
@@ -131,6 +139,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     draftBullet:
       '- Brought [flow or product] up to WCAG [2.1 AA] accessibility standards, validating with [screen readers and audits]',
     insertAfterLine: 29,
+    locked: false,
   },
   {
     text: 'Design systems and component libraries',
@@ -141,6 +150,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     draftBullet:
       '- Built and maintained a design system of [number] reusable React components adopted by [teams or products]',
     insertAfterLine: 20,
+    locked: false,
   },
 ];
 

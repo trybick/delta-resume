@@ -14,6 +14,10 @@ body {
   background-color: var(--mantine-color-default-hover);
 }
 
+.change-stats-pill {
+  max-width: 100%;
+}
+
 .tailoring-loader-topbar {
   position: absolute;
   top: 0;
@@ -77,5 +81,83 @@ body {
   .tailoring-loader-sparkle,
   .tailoring-loader-message {
     animation: none;
+  }
+}
+
+@media (max-width: 36em) {
+  .example-banner {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .example-banner-copy {
+    flex: none !important;
+  }
+
+  .example-banner-back {
+    align-self: flex-start;
+  }
+
+  .results-tabs .mantine-Tabs-list {
+    flex-wrap: nowrap;
+  }
+
+  .results-tabs .mantine-Tabs-tab {
+    flex: 1 1 0;
+    font-size: var(--mantine-font-size-sm);
+    justify-content: center;
+    min-width: 0;
+    padding-inline: 4px;
+  }
+
+  .change-stats-pill {
+    flex-shrink: 1 !important;
+  }
+
+  .change-stats-updated {
+    padding-inline: 10px !important;
+  }
+
+  .change-stat-segment {
+    padding-inline: 8px !important;
+  }
+
+  .change-stat-label,
+  .example-result-badge,
+  .requirements-coverage-detail {
+    display: none;
+  }
+
+  .diff-bullet-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .diff-bullet-actions {
+    align-self: flex-end;
+  }
+
+  .gap-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .gap-row-title {
+    align-self: center;
+  }
+
+  .gap-row-action {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .requirements-coverage-badge {
+    max-width: 100%;
+  }
+
+  .collapsible-insight-label {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
   }
 }

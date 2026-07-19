@@ -8,6 +8,7 @@ import {
   IconLock,
   IconMail,
 } from '@tabler/icons-react';
+import { useMediaQuery } from '@mantine/hooks';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { proAccent } from '../lib/proAccent';
 import ResultsPanel from './ResultsPanel';
@@ -73,6 +74,7 @@ const TailorResultsSection = ({
   onGapsUpgradeClick,
   onNudgeClick,
 }: TailorResultsSectionProps) => {
+  const isNarrowMobile = useMediaQuery('(max-width: 36em)');
   const resumeTabIndicator = showingExample ? null : status === 'loading' ? (
     <Loader size={12} />
   ) : status === 'done' ? (
@@ -80,12 +82,7 @@ const TailorResultsSection = ({
   ) : null;
 
   const coverLetterTabIndicator = !planLoaded ? null : !isProPlan ? (
-    <Badge
-      size="xs"
-      variant="gradient"
-      gradient={{ ...proAccent.gradient, deg: 45 }}
-      h={16}
-    >
+    <Badge size="xs" variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }} h={16}>
       Pro
     </Badge>
   ) : showingExample ? null : coverLetterStatus === 'loading' ? (
@@ -116,6 +113,7 @@ const TailorResultsSection = ({
       )}
       {showingExample && (
         <Group
+          className="example-banner"
           justify="space-between"
           align="center"
           wrap="nowrap"
@@ -126,7 +124,12 @@ const TailorResultsSection = ({
             backgroundColor: 'var(--mantine-color-cyan-light)',
           }}
         >
-          <Group gap="xs" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+          <Group
+            className="example-banner-copy"
+            gap="xs"
+            wrap="nowrap"
+            style={{ flex: 1, minWidth: 0 }}
+          >
             <IconEye size={16} color="var(--mantine-color-cyan-4)" style={{ flexShrink: 0 }} />
             <Text size="sm">
               This is an example. Explore the resume changes and cover letter, then run your own
@@ -134,6 +137,7 @@ const TailorResultsSection = ({
             </Text>
           </Group>
           <Button
+            className="example-banner-back"
             size="xs"
             variant="subtle"
             color="cyan"
@@ -149,6 +153,7 @@ const TailorResultsSection = ({
         </Group>
       )}
       <Tabs
+        className="results-tabs"
         value={activeTab}
         onChange={(tab) => {
           if (tab === 'resume') {
@@ -162,14 +167,20 @@ const TailorResultsSection = ({
         <Tabs.List>
           <Tabs.Tab
             value="resume"
-            leftSection={<IconFileText size={16} />}
+            leftSection={isNarrowMobile ? undefined : <IconFileText size={16} />}
             rightSection={resumeTabIndicator && <Center h={16}>{resumeTabIndicator}</Center>}
           >
             Resume changes
           </Tabs.Tab>
           <Tabs.Tab
             value="coverLetter"
-            leftSection={planLoaded && !isProPlan ? <IconLock size={16} /> : <IconMail size={16} />}
+            leftSection={
+              isNarrowMobile ? undefined : planLoaded && !isProPlan ? (
+                <IconLock size={16} />
+              ) : (
+                <IconMail size={16} />
+              )
+            }
             rightSection={
               coverLetterTabIndicator && <Center h={16}>{coverLetterTabIndicator}</Center>
             }

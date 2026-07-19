@@ -1,13 +1,4 @@
-import {
-  Badge,
-  Box,
-  Group,
-  Skeleton,
-  Stack,
-  Text,
-  Title,
-  Tooltip,
-} from '@mantine/core';
+import { Badge, Box, Group, Skeleton, Stack, Text, Title, Tooltip } from '@mantine/core';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { IconCoins, IconCrown, IconLogin2 } from '@tabler/icons-react';
 import ClerkAuthButton from './ClerkAuthButton';
@@ -44,7 +35,7 @@ const AppHeader = ({
     <Box
       component="header"
       py="sm"
-      px="xl"
+      px={{ base: 'md', sm: 'xl' }}
       style={{
         borderBottom: '1px solid var(--mantine-color-dark-4)',
         backgroundColor: 'color-mix(in srgb, var(--mantine-color-dark-7) 82%, transparent)',
@@ -53,9 +44,9 @@ const AppHeader = ({
       }}
     >
       <Group justify="space-between">
-        <Group gap="md" align="center">
+        <Group gap="sm" align="center" wrap="nowrap" style={{ minWidth: 0 }}>
           <DeltaLogo size={38} />
-          <Stack gap={2}>
+          <Stack gap={2} style={{ minWidth: 0 }}>
             <Title
               order={3}
               lh={1.2}
@@ -73,7 +64,7 @@ const AppHeader = ({
             </Text>
           </Stack>
         </Group>
-        <Group gap="sm">
+        <Group gap="xs">
           {planLoaded && isProPlan && (
             <Badge
               size="lg"

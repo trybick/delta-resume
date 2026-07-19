@@ -15,7 +15,6 @@ type UseCoverLetterResult = {
   errorMessage: string | null;
   runCoverLetter: (resumeText: string, jobDescription: string) => Promise<void>;
   retryCoverLetter: () => void;
-  resetCoverLetter: () => void;
 };
 
 export const useCoverLetter = (): UseCoverLetterResult => {
@@ -73,15 +72,5 @@ export const useCoverLetter = (): UseCoverLetterResult => {
     void runCoverLetter(inputs.resumeText, inputs.jobDescription);
   };
 
-  const resetCoverLetter = () => {
-    requestIdRef.current += 1;
-    abortControllerRef.current?.abort();
-    abortControllerRef.current = null;
-    lastInputsRef.current = null;
-    setStatus('idle');
-    setResult(null);
-    setErrorMessage(null);
-  };
-
-  return { status, result, errorMessage, runCoverLetter, retryCoverLetter, resetCoverLetter };
+  return { status, result, errorMessage, runCoverLetter, retryCoverLetter };
 };

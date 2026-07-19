@@ -18,15 +18,19 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
 
     let currentMonthPeriod () = DateTime.UtcNow.ToString "yyyy-MM"
 
-    let usageKeys (identity: RequestIdentity) : (string * string * string) list =
+    let guestUsageKeys (fingerprint: string option) (ipHash: string) : (string * string * string) list =
+        [ match fingerprint with
+          | Some fp -> yield sprintf "fp:%s" fp, "fp", LifetimePeriod
+          | None -> ()
+          yield sprintf "ip:%s" ipHash, "ip", LifetimePeriod ]
+
+    let usageKeys (ctx: HttpContext) (identity: RequestIdentity) : (string * string * string) list =
         match identity with
         | AuthenticatedUser(userId, ProPlan) -> [ sprintf "user:%s" userId, "user", currentMonthPeriod () ]
-        | AuthenticatedUser(userId, _) -> [ sprintf "user:%s" userId, "user", LifetimePeriod ]
-        | GuestVisitor(fingerprint, ipHash) ->
-            [ match fingerprint with
-              | Some fp -> yield sprintf "fp:%s" fp, "fp", LifetimePeriod
-              | None -> ()
-              yield sprintf "ip:%s" ipHash, "ip", LifetimePeriod ]
+        | AuthenticatedUser(userId, _) ->
+            let fingerprint, ipHash = Identity.guestIdentifiers options ctx
+            (sprintf "user:%s" userId, "user", LifetimePeriod) :: guestUsageKeys fingerprint ipHash
+        | GuestVisitor(fingerprint, ipHash) -> guestUsageKeys fingerprint ipHash
 
     let isUnlimited (identity: RequestIdentity) : bool =
         options.UnlimitedGuestCredits && Identity.plan identity <> ProPlan
@@ -53,7 +57,7 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
 
             let mutable used = 0
 
-            for identityKey, _, period in usageKeys identity do
+            for identityKey, _, period in usageKeys ctx identity do
                 let! count = store.CountUsage(identityKey, period, cancellationToken)
                 used <- max used count
 
@@ -74,7 +78,7 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
         else
             let entries =
                 identity
-                |> usageKeys
+                |> usageKeys ctx
                 |> List.map (fun (identityKey, kind, period) ->
                     { IdentityKey = identityKey
                       Kind = kind

@@ -19,4 +19,4 @@ Then open the printed local URL (defaults to http://localhost:5200).
 
 ## Notes
 
-- `.txt` and `.md` uploads are read directly in the browser. PDF/DOCX uploads are accepted but load sample resume text for now; real parsing is deferred.
+- Uploads are parsed in the browser: `.txt` / `.md` as text, `.pdf` via pdf.js, `.docx` via mammoth. Legacy `.doc` is not supported.

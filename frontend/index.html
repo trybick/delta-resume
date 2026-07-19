@@ -3,26 +3,46 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0c2a3a" />
+    <link rel="canonical" href="https://deltaresume.com/" />
     <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
+      rel="preload"
+      as="style"
       href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
-      rel="stylesheet"
+      onload="this.onload=null;this.rel='stylesheet'"
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <title>Delta Resume — Tailor your resume to any job description</title>
     <meta
       name="description"
-      content="Upload your resume, paste a job description, and review AI-suggested rewrites as inline diffs. Keep or revert every change. Free to try, no account needed, and tailoring runs are never stored."
+      content="Upload your resume, paste a job description, and review AI-suggested rewrites as inline diffs. Keep or revert every change. Free to try — cover letters too."
     />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Delta Resume" />
+    <meta property="og:url" content="https://deltaresume.com/" />
     <meta property="og:title" content="Delta Resume — Tailor your resume to any job description" />
     <meta
       property="og:description"
       content="AI resume tailoring with inline diffs you control. Free to try, no account needed."
     />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:image" content="https://deltaresume.com/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Delta Resume — tailor your resume to any job description with AI-suggested inline diffs"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
       content="Delta Resume — Tailor your resume to any job description"
@@ -31,6 +51,23 @@
       name="twitter:description"
       content="AI resume tailoring with inline diffs you control. Free to try, no account needed."
     />
+    <meta name="twitter:image" content="https://deltaresume.com/og.png" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Delta Resume",
+        "url": "https://deltaresume.com/",
+        "description": "Upload your resume, paste a job description, and review AI-suggested rewrites as inline diffs. Keep or revert every change. Cover letters too.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Web",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

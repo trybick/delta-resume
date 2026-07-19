@@ -65,7 +65,8 @@ type JobRequirementDto =
       SatisfiedByChanges: int list
       GapHint: string option
       DraftBullet: string option
-      InsertAfterLine: int option }
+      InsertAfterLine: int option
+      Locked: bool }
 
 type TailorResponseDto =
     { RunId: Guid
@@ -106,16 +107,53 @@ module Mapping =
           SatisfiedByChanges = requirement.SatisfiedByChanges
           GapHint = requirement.GapHint
           DraftBullet = requirement.DraftBullet
-          InsertAfterLine = requirement.InsertAfterLine }
+          InsertAfterLine = requirement.InsertAfterLine
+          Locked = false }
 
-    let toResponseDto (run: TailorRun) : TailorResponseDto =
+    let private toLockedRequirementDto (requirement: JobRequirement) : JobRequirementDto =
+        { Text = ""
+          Importance = RequirementImportance.toString requirement.Importance
+          SatisfiedBy = []
+          SatisfiedByChanges = []
+          GapHint = None
+          DraftBullet = None
+          InsertAfterLine = None
+          Locked = true }
+
+    // Free/guest plans only get the first uncovered requirement in full; the rest
+    // are stripped server-side so gap details never leave the API for non-Pro users.
+    let private toGatedRequirementDtos (run: TailorRun) : JobRequirementDto list =
+        let changeLines =
+            run.Changes |> List.map (fun change -> change.LineIndex) |> Set.ofList
+
+        let isCovered (requirement: JobRequirement) =
+            not (List.isEmpty requirement.SatisfiedBy)
+            || requirement.SatisfiedByChanges |> List.exists changeLines.Contains
+
+        run.Requirements
+        |> List.mapFold
+            (fun uncoveredSeen requirement ->
+                if isCovered requirement then
+                    toRequirementDto requirement, uncoveredSeen
+                elif uncoveredSeen = 0 then
+                    toRequirementDto requirement, 1
+                else
+                    toLockedRequirementDto requirement, uncoveredSeen + 1)
+            0
+        |> fst
+
+    let toResponseDto (isProPlan: bool) (run: TailorRun) : TailorResponseDto =
         let (RunId runId) = run.Id
 
         { RunId = runId
           ResumeText = run.ResumeText
           Summary = run.Summary
           Changes = run.Changes |> List.map toChangeDto
-          Requirements = run.Requirements |> List.map toRequirementDto
+          Requirements =
+            if isProPlan then
+                run.Requirements |> List.map toRequirementDto
+            else
+                toGatedRequirementDtos run
           Structure = run.Structure |> Option.map toStructureDto }
 
     let toUserSettingsDto (settings: UserSettings) : UserSettingsDto =

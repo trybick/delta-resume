@@ -5,6 +5,7 @@ import {
   Box,
   Button,
   Card,
+  Collapse,
   Container,
   Divider,
   Group,
@@ -19,6 +20,8 @@ import {
 } from '@mantine/core';
 import {
   IconCheck,
+  IconChevronDown,
+  IconChevronUp,
   IconClipboardText,
   IconDatabaseOff,
   IconFileText,
@@ -38,6 +41,8 @@ import { proAccent } from '../lib/proAccent';
 import { useProPlan } from '../hooks/useProPlan';
 
 type LandingStripProps = {
+  collapsible: boolean;
+  freeCreditTotal: number | null;
   onUpgradeClick: () => void;
 };
 
@@ -93,17 +98,22 @@ const PRIVACY_POINTS: PrivacyPoint[] = [
   },
 ];
 
-const FREE_PLAN_FEATURES = [
-  '3 free tailor runs \u2014 no account needed',
+const getFreePlanFeatures = (freeCreditTotal: number | null): string[] => [
+  freeCreditTotal !== null
+    ? `${freeCreditTotal} free ${freeCreditTotal === 1 ? 'credit' : 'credits'} \u2014 no account needed`
+    : 'Free credits \u2014 no account needed',
   'Inline diff review of every change',
   'Copy your tailored resume',
   `${SAVED_RESUME_LIMIT_FREE} saved resume with a free account`,
 ];
 
-const LandingStrip = ({ onUpgradeClick }: LandingStripProps) => {
+const LandingStrip = ({ collapsible, freeCreditTotal, onUpgradeClick }: LandingStripProps) => {
   const [openDocument, setOpenDocument] = useState<LegalDocument | null>(null);
+  const [expanded, setExpanded] = useState(false);
   const { monthlyPrice, annualMonthlyPrice } = useProPlan();
   const proPrice = annualMonthlyPrice ?? monthlyPrice;
+  const showContent = !collapsible || expanded;
+  const freePlanFeatures = getFreePlanFeatures(freeCreditTotal);
 
   const handleOpenPrivacyPolicy = () => {
     trackEvent(AnalyticsEvents.LandingPrivacyPolicy);
@@ -115,179 +125,201 @@ const LandingStrip = ({ onUpgradeClick }: LandingStripProps) => {
     onUpgradeClick();
   };
 
+  const handleToggleExpanded = () => {
+    trackEvent(AnalyticsEvents.LandingStripToggle, { expanded: !expanded });
+    setExpanded(!expanded);
+  };
+
   return (
     <Box component="section" pb="xl">
       <Container size="lg">
-        <Stack gap={56} py="xl">
+        <Stack gap={0} pt="xl">
           <Divider />
-
-          <Stack gap="xl" align="center">
-            <Stack gap={4} align="center">
-              <Title order={2} ta="center">
-                How it works
-              </Title>
-              <Text size="sm" c="dimmed" ta="center" maw={520}>
-                Tailor your resume to any job description in under a minute, and stay in control
-                of every word.
-              </Text>
+          {collapsible && (
+            <Group justify="center" pt="lg">
+              <Button
+                variant="subtle"
+                color="gray"
+                onClick={handleToggleExpanded}
+                rightSection={
+                  expanded ? <IconChevronUp size={16} /> : <IconChevronDown size={16} />
+                }
+              >
+                How it works &amp; pricing
+              </Button>
+            </Group>
+          )}
+        </Stack>
+        <Collapse expanded={showContent}>
+          <Stack gap={56} py="xl">
+            <Stack gap="xl" align="center">
+              <Stack gap={4} align="center">
+                <Title order={2} ta="center">
+                  How it works
+                </Title>
+                <Text size="sm" c="dimmed" ta="center" maw={520}>
+                  Tailor your resume to any job description in under a minute, and stay in control
+                  of every word.
+                </Text>
+              </Stack>
+              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
+                {HOW_IT_WORKS_STEPS.map((step, index) => {
+                  const StepIcon = step.icon;
+                  return (
+                    <Card key={step.title} withBorder padding="lg" radius="md">
+                      <Stack gap="sm">
+                        <Group gap="sm">
+                          <ThemeIcon size={36} radius="md" variant="light">
+                            <StepIcon size={19} />
+                          </ThemeIcon>
+                          <Badge size="sm" variant="light" color="gray">
+                            Step {index + 1}
+                          </Badge>
+                        </Group>
+                        <Text fw={600}>{step.title}</Text>
+                        <Text size="sm" c="dimmed" lh={1.5}>
+                          {step.description}
+                        </Text>
+                      </Stack>
+                    </Card>
+                  );
+                })}
+              </SimpleGrid>
+              <Stack gap={6} align="center" w="100%">
+                <DiffMockExample />
+                <Text size="xs" c="dimmed" ta="center">
+                  Every rewrite is shown as an inline diff — keep it or revert it with one click.
+                </Text>
+              </Stack>
             </Stack>
-            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
-              {HOW_IT_WORKS_STEPS.map((step, index) => {
-                const StepIcon = step.icon;
-                return (
-                  <Card key={step.title} withBorder padding="lg" radius="md">
-                    <Stack gap="sm">
-                      <Group gap="sm">
-                        <ThemeIcon size={36} radius="md" variant="light">
-                          <StepIcon size={19} />
-                        </ThemeIcon>
-                        <Badge size="sm" variant="light" color="gray">
-                          Step {index + 1}
-                        </Badge>
-                      </Group>
-                      <Text fw={600}>{step.title}</Text>
-                      <Text size="sm" c="dimmed" lh={1.5}>
-                        {step.description}
+
+            <Divider />
+
+            <Stack gap="xl" align="center">
+              <Stack gap={4} align="center">
+                <Title order={2} ta="center">
+                  Your resume stays yours
+                </Title>
+                <Text size="sm" c="dimmed" ta="center" maw={520}>
+                  We built Delta Resume so you don&apos;t have to trust a stranger with your work
+                  history.
+                </Text>
+              </Stack>
+              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
+                {PRIVACY_POINTS.map((point) => {
+                  const PointIcon = point.icon;
+                  return (
+                    <Stack key={point.title} gap="sm" align="center">
+                      <ThemeIcon size={40} radius="md" variant="light" color="teal">
+                        <PointIcon size={21} />
+                      </ThemeIcon>
+                      <Text fw={600} ta="center">
+                        {point.title}
+                      </Text>
+                      <Text size="sm" c="dimmed" ta="center" lh={1.5}>
+                        {point.description}
                       </Text>
                     </Stack>
-                  </Card>
-                );
-              })}
-            </SimpleGrid>
-            <Stack gap={6} align="center" w="100%">
-              <DiffMockExample />
-              <Text size="xs" c="dimmed" ta="center">
-                Every rewrite is shown as an inline diff — keep it or revert it with one click.
-              </Text>
+                  );
+                })}
+              </SimpleGrid>
+              <Anchor component="button" type="button" size="sm" onClick={handleOpenPrivacyPolicy}>
+                Read the full privacy policy
+              </Anchor>
             </Stack>
-          </Stack>
 
-          <Divider />
+            <Divider />
 
-          <Stack gap="xl" align="center">
-            <Stack gap={4} align="center">
-              <Title order={2} ta="center">
-                Your resume stays yours
-              </Title>
-              <Text size="sm" c="dimmed" ta="center" maw={520}>
-                We built Delta Resume so you don&apos;t have to trust a stranger with your work
-                history.
-              </Text>
-            </Stack>
-            <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
-              {PRIVACY_POINTS.map((point) => {
-                const PointIcon = point.icon;
-                return (
-                  <Stack key={point.title} gap="sm" align="center">
-                    <ThemeIcon size={40} radius="md" variant="light" color="teal">
-                      <PointIcon size={21} />
-                    </ThemeIcon>
-                    <Text fw={600} ta="center">
-                      {point.title}
-                    </Text>
-                    <Text size="sm" c="dimmed" ta="center" lh={1.5}>
-                      {point.description}
-                    </Text>
-                  </Stack>
-                );
-              })}
-            </SimpleGrid>
-            <Anchor component="button" type="button" size="sm" onClick={handleOpenPrivacyPolicy}>
-              Read the full privacy policy
-            </Anchor>
-          </Stack>
-
-          <Divider />
-
-          <Stack gap="xl" align="center">
-            <Stack gap={4} align="center">
-              <Title order={2} ta="center">
-                Simple pricing
-              </Title>
-              <Text size="sm" c="dimmed" ta="center" maw={520}>
-                Try it free, no account needed. Upgrade when you&apos;re applying in volume.
-              </Text>
-            </Stack>
-            <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" w="100%" maw={760}>
-              <Card withBorder padding="lg" radius="lg">
-                <Stack gap="md" h="100%">
-                  <Stack gap={4}>
-                    <Text fw={700} size="xl">
-                      Free
-                    </Text>
-                    <Group gap={6} align="baseline">
-                      <Text fw={700} size="1.75rem" lh={1}>
-                        $0
+            <Stack gap="xl" align="center">
+              <Stack gap={4} align="center">
+                <Title order={2} ta="center">
+                  Simple pricing
+                </Title>
+                <Text size="sm" c="dimmed" ta="center" maw={520}>
+                  Try it free, no account needed. Upgrade when you&apos;re applying in volume.
+                </Text>
+              </Stack>
+              <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" w="100%" maw={760}>
+                <Card withBorder padding="lg" radius="lg">
+                  <Stack gap="md" h="100%">
+                    <Stack gap={4}>
+                      <Text fw={700} size="xl">
+                        Free
                       </Text>
-                    </Group>
+                      <Group gap={6} align="baseline">
+                        <Text fw={700} size="1.75rem" lh={1}>
+                          $0
+                        </Text>
+                      </Group>
+                    </Stack>
+                    <List
+                      spacing="xs"
+                      size="sm"
+                      icon={
+                        <ThemeIcon size={20} radius="xl" variant="light" color="teal">
+                          <IconCheck size={12} />
+                        </ThemeIcon>
+                      }
+                    >
+                      {freePlanFeatures.map((feature) => (
+                        <List.Item key={feature}>{feature}</List.Item>
+                      ))}
+                    </List>
                   </Stack>
-                  <List
-                    spacing="xs"
-                    size="sm"
-                    icon={
-                      <ThemeIcon size={20} radius="xl" variant="light" color="teal">
-                        <IconCheck size={12} />
-                      </ThemeIcon>
-                    }
-                  >
-                    {FREE_PLAN_FEATURES.map((feature) => (
-                      <List.Item key={feature}>{feature}</List.Item>
-                    ))}
-                  </List>
-                </Stack>
-              </Card>
-              <Paper
-                p="lg"
-                radius="lg"
-                style={{
-                  border: '1px solid var(--mantine-color-cyan-9)',
-                  background:
-                    'linear-gradient(160deg, rgba(34, 184, 207, 0.08) 0%, rgba(34, 139, 230, 0.04) 60%, transparent 100%)',
-                }}
-              >
-                <Stack gap="md" h="100%">
-                  <Stack gap={4}>
-                    <Text
-                      fw={700}
-                      size="xl"
+                </Card>
+                <Paper
+                  p="lg"
+                  radius="lg"
+                  style={{
+                    border: '1px solid var(--mantine-color-cyan-9)',
+                    background:
+                      'linear-gradient(160deg, rgba(34, 184, 207, 0.08) 0%, rgba(34, 139, 230, 0.04) 60%, transparent 100%)',
+                  }}
+                >
+                  <Stack gap="md" h="100%">
+                    <Stack gap={4}>
+                      <Text
+                        fw={700}
+                        size="xl"
+                        variant="gradient"
+                        gradient={{ ...proAccent.gradient, deg: 45 }}
+                      >
+                        Pro
+                      </Text>
+                      <Group gap={6} align="baseline">
+                        {proPrice ? (
+                          <Text fw={700} size="1.75rem" lh={1}>
+                            {proPrice}
+                          </Text>
+                        ) : (
+                          <Skeleton width={64} height={28} />
+                        )}
+                        <Text size="sm" c="dimmed">
+                          / month
+                        </Text>
+                      </Group>
+                    </Stack>
+                    <ProFeatureList />
+                    <Button
+                      mt="auto"
+                      size="md"
+                      fullWidth
                       variant="gradient"
                       gradient={{ ...proAccent.gradient, deg: 45 }}
+                      leftSection={<IconSparkles size={18} />}
+                      onClick={handleUpgradeClick}
                     >
-                      Pro
-                    </Text>
-                    <Group gap={6} align="baseline">
-                      {proPrice ? (
-                        <Text fw={700} size="1.75rem" lh={1}>
-                          {proPrice}
-                        </Text>
-                      ) : (
-                        <Skeleton width={64} height={28} />
-                      )}
-                      <Text size="sm" c="dimmed">
-                        / month
-                      </Text>
-                    </Group>
+                      Upgrade to Pro
+                    </Button>
                   </Stack>
-                  <ProFeatureList />
-                  <Button
-                    mt="auto"
-                    size="md"
-                    fullWidth
-                    variant="gradient"
-                    gradient={{ ...proAccent.gradient, deg: 45 }}
-                    leftSection={<IconSparkles size={18} />}
-                    onClick={handleUpgradeClick}
-                  >
-                    Upgrade to Pro
-                  </Button>
-                </Stack>
-              </Paper>
-            </SimpleGrid>
-            <Text size="xs" c="dimmed" ta="center">
-              Cancel anytime. Pro credits renew every month.
-            </Text>
+                </Paper>
+              </SimpleGrid>
+              <Text size="xs" c="dimmed" ta="center">
+                Cancel anytime. Pro credits renew every month.
+              </Text>
+            </Stack>
           </Stack>
-        </Stack>
+        </Collapse>
       </Container>
       <LegalModal document={openDocument} onClose={() => setOpenDocument(null)} />
     </Box>

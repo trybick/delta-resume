@@ -29,6 +29,7 @@ import {
 } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { hasDraftBullet } from '../lib/hasDraftBullet';
+import { LOCKED_GAP_PLACEHOLDERS } from '../lib/lockedGapPlaceholders';
 import { proAccent } from '../lib/proAccent';
 import { appTheme } from '../lib/theme';
 import type {
@@ -293,8 +294,8 @@ const ResultsPanel = ({
     unresolvedGapCount > 0
       ? `${unresolvedGapCount} requirement${unresolvedGapCount === 1 ? '' : 's'} your resume doesn’t show`
       : 'Requirement gaps addressed';
-  const visibleGaps = isProPlan || isExample ? gaps : gaps.slice(0, 1);
-  const lockedGaps = isProPlan || isExample ? [] : gaps.slice(1);
+  const visibleGaps = gaps.filter((requirement) => !requirement.locked);
+  const lockedGaps = gaps.filter((requirement) => requirement.locked);
 
   const handleGapsUpgradeClick = () => {
     trackEvent(AnalyticsEvents.GapsUpgradeClick);
@@ -383,10 +384,10 @@ const ResultsPanel = ({
   const creditWord = nudgeRemaining === 1 ? 'credit' : 'credits';
 
   return (
-    <Card withBorder shadow="xs" padding="lg">
+    <Card className="results-card" withBorder shadow="xs" p={{ base: 'sm', sm: 'lg' }}>
       <Stack gap="md">
         <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
-          <Stack gap="xs" style={{ flexShrink: 0 }}>
+          <Stack gap="xs" style={{ flexShrink: 0, minWidth: 0, maxWidth: '100%' }}>
             <Group gap="sm" align="center" wrap="nowrap">
               <ChangeStatsPill
                 bulletCount={bulletChangeCount}
@@ -394,7 +395,12 @@ const ResultsPanel = ({
                 paragraphCount={paragraphChangeCount}
               />
               {isExample && (
-                <Badge color="cyan" variant="light" style={{ flexShrink: 0 }}>
+                <Badge
+                  className="example-result-badge"
+                  color="cyan"
+                  variant="light"
+                  style={{ flexShrink: 0 }}
+                >
                   Example
                 </Badge>
               )}
@@ -402,6 +408,7 @@ const ResultsPanel = ({
             {requirements.length > 0 && (
               <Tooltip label="How many of the job's key requirements your resume demonstrates, counting the changes you keep applied.">
                 <Badge
+                  className="requirements-coverage-badge"
                   size="md"
                   color="green"
                   variant="light"
@@ -409,7 +416,12 @@ const ResultsPanel = ({
                   style={{ width: 'fit-content' }}
                 >
                   Covers {coveredCount} of {requirements.length} requirements
-                  {coveredByChangesCount > 0 ? ` (+${coveredByChangesCount} from changes)` : ''}
+                  {coveredByChangesCount > 0 && (
+                    <span className="requirements-coverage-detail">
+                      {' '}
+                      (+{coveredByChangesCount} from changes)
+                    </span>
+                  )}
                 </Badge>
               </Tooltip>
             )}
@@ -571,8 +583,13 @@ const ResultsPanel = ({
               {lockedGaps.length > 0 && (
                 <Box style={{ position: 'relative' }}>
                   <Stack gap="sm" style={{ filter: 'blur(5px)', userSelect: 'none' }} aria-hidden>
-                    {lockedGaps.map((requirement) => (
-                      <GapRow key={requirement.text} requirement={requirement} />
+                    {lockedGaps.map((_, index) => (
+                      <GapRow
+                        key={index}
+                        requirement={
+                          LOCKED_GAP_PLACEHOLDERS[index % LOCKED_GAP_PLACEHOLDERS.length]
+                        }
+                      />
                     ))}
                   </Stack>
                   <Center
@@ -589,10 +606,7 @@ const ResultsPanel = ({
                         <Text size="sm" fw={600}>
                           See all {gaps.length} missing requirements with Pro
                         </Text>
-                        <Badge
-                          variant="gradient"
-                          gradient={{ ...proAccent.gradient, deg: 45 }}
-                        >
+                        <Badge variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }}>
                           Pro
                         </Badge>
                       </Group>

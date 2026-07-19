@@ -1,8 +1,8 @@
 import {
   IconCoins,
-  IconFileTypeDocx,
   IconFolders,
   IconMail,
+  IconPencilPlus,
   IconTargetArrow,
 } from '@tabler/icons-react';
 import { SAVED_RESUME_LIMIT_PRO } from './constants';
@@ -16,13 +16,14 @@ export type ProFeature = {
 export const PRO_FEATURES: ProFeature[] = [
   {
     icon: IconCoins,
-    title: '200 credits / month',
-    description: 'Tailor your resume up to 200 times every month',
+    title: '100 credits / month',
+    description: 'Tailor your resume up to 100 times, refreshed every month',
   },
   {
     icon: IconMail,
     title: 'Automatic cover letters',
-    description: 'Every tailor run writes a matching cover letter',
+    description:
+      'Every tailor run writes a matching cover letter, in your choice of length and tone',
   },
   {
     icon: IconTargetArrow,
@@ -31,14 +32,15 @@ export const PRO_FEATURES: ProFeature[] = [
       'See every requirement this job asks for that your resume doesn\u2019t show yet, plus where a bullet would fit',
   },
   {
+    icon: IconPencilPlus,
+    title: 'Fill the gaps in one click',
+    description:
+      'Get a ready-to-edit bullet for each missing requirement, inserted right where it belongs',
+  },
+  {
     icon: IconFolders,
     title: `${SAVED_RESUME_LIMIT_PRO} saved resumes`,
     description: 'Keep multiple versions ready for different roles',
-  },
-  {
-    icon: IconFileTypeDocx,
-    title: 'DOCX export',
-    description: 'Download your tailored resume with formatting intact',
   },
 ];
 

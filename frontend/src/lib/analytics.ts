@@ -73,6 +73,7 @@ export const AnalyticsEvents = {
 
   LandingUpgradeClick: 'landing_upgrade_click',
   LandingPrivacyPolicy: 'landing_privacy_policy',
+  LandingStripToggle: 'landing_strip_toggle',
 
   PaywallClose: 'paywall_close',
   BillingPeriodChange: 'billing_period_change',

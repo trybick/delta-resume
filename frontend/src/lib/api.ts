@@ -123,6 +123,7 @@ export const postTailor = async (
       gapHint: requirement.gapHint ?? null,
       draftBullet: requirement.draftBullet ?? null,
       insertAfterLine: requirement.insertAfterLine ?? null,
+      locked: requirement.locked ?? false,
     })),
   };
 };

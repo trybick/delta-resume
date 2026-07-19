@@ -16,7 +16,7 @@ const GapRow = ({ requirement, addedBullet, onAdd, onUndo }: GapRowProps) => {
 
   return (
     <Stack gap={2}>
-      <Group gap="xs" wrap="nowrap" align="center">
+      <Group className="gap-row" gap="xs" wrap="nowrap" align="center">
         <Badge
           size="xs"
           variant="light"
@@ -25,11 +25,11 @@ const GapRow = ({ requirement, addedBullet, onAdd, onUndo }: GapRowProps) => {
         >
           {requirement.importance === 'must' ? 'Must-have' : 'Nice-to-have'}
         </Badge>
-        <Text size="sm" fw={500} style={{ flex: 1, minWidth: 0 }}>
+        <Text className="gap-row-title" size="sm" fw={500} style={{ flex: 1, minWidth: 0 }}>
           {requirement.text}
         </Text>
         {addedBullet && onUndo && (
-          <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
+          <Group className="gap-row-action" gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
             <IconCircleCheck size={14} color="var(--mantine-color-green-5)" />
             <Text size="xs" fw={600} c="green.5">
               Added
@@ -46,6 +46,7 @@ const GapRow = ({ requirement, addedBullet, onAdd, onUndo }: GapRowProps) => {
         )}
         {canAdd && (
           <Button
+            className="gap-row-action"
             size="compact-xs"
             variant="light"
             leftSection={<IconPlus size={12} />}

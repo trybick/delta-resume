@@ -55,6 +55,19 @@ module Schema =
         )
         |> ignore
 
+type DatabaseHealthCheck(connectionString: string) =
+
+    member _.Check(cancellationToken: Threading.CancellationToken) : Task<unit> =
+        task {
+            use connection = new NpgsqlConnection(connectionString)
+            do! connection.OpenAsync(cancellationToken)
+            use command = new NpgsqlCommand("SELECT 1", connection)
+            let! result = command.ExecuteScalarAsync(cancellationToken)
+
+            if Convert.ToInt32(result) <> 1 then
+                invalidOp "Database health check returned an unexpected result."
+        }
+
 type PostgresUserSettingsRepository(connectionString: string) =
 
     let serialize (settings: UserSettings) : string =

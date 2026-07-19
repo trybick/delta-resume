@@ -22,7 +22,7 @@ module CreditPlan =
         match plan with
         | GuestPlan
         | FreePlan -> 3
-        | ProPlan -> 200
+        | ProPlan -> 100
 
     let savedResumeLimit (plan: CreditPlan) : int =
         match plan with
@@ -108,6 +108,12 @@ module Identity =
 
         if planClaim.Contains "pro" then ProPlan else FreePlan
 
+    let guestIdentifiers (options: IdentityOptions) (ctx: HttpContext) : string option * string =
+        let fingerprint =
+            ctx.Request.Headers[FingerprintHeader].ToString() |> sanitizeFingerprint
+
+        fingerprint, hashWithSalt options.IpHashSalt (resolveClientIp options ctx)
+
     let resolve (options: IdentityOptions) (ctx: HttpContext) : RequestIdentity =
         let user = ctx.User
 
@@ -124,10 +130,8 @@ module Identity =
         match userId with
         | Some id -> AuthenticatedUser(id, resolveUserPlan user)
         | None ->
-            let fingerprint =
-                ctx.Request.Headers[FingerprintHeader].ToString() |> sanitizeFingerprint
-
-            GuestVisitor(fingerprint, hashWithSalt options.IpHashSalt (resolveClientIp options ctx))
+            let fingerprint, ipHash = guestIdentifiers options ctx
+            GuestVisitor(fingerprint, ipHash)
 
     let plan (identity: RequestIdentity) : CreditPlan =
         match identity with

@@ -75,6 +75,6 @@ npm run dev
 Authentication and billing are handled by [Clerk](https://clerk.com) (Clerk Billing uses Stripe under the hood). Credit enforcement is server-side:
 
 - Guests get 3 lifetime credits, tracked against both a browser fingerprint (FingerprintJS, sent as `X-Guest-Fingerprint`) and a salted hash of their IP; the higher of the two usage counts applies, so clearing one alone does not reset credits.
-- Free accounts get 3 lifetime credits keyed to their Clerk user id.
-- Pro subscribers ($19/month, or $12/month billed annually) get 200 credits per calendar month.
+- Free accounts get 3 lifetime credits shared across their Clerk user id, browser fingerprint, and salted IP hash, so guest usage carries over after sign-in.
+- Pro subscribers ($19/month, or $12/month billed annually) get 100 credits per calendar month.
 - One credit is spent when a valid tailoring request is accepted for AI processing, and refunded if the AI call fails or the request is cancelled before completing. When credits run out the API returns `402 credits_exhausted` and the UI opens a paywall: sign-up (Google prominent) for guests, the Clerk `PricingTable` in-app checkout for signed-in users.

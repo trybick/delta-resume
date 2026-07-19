@@ -5,11 +5,14 @@ open System.IO
 open System.Threading
 open Giraffe
 open Microsoft.AspNetCore.Http
+open Sentry
 open DeltaResume.Application
 open DeltaResume.Domain
 open DeltaResume.Infrastructure
 
 module Handlers =
+
+    let private tailoringFailureMessage = "Tailoring failed, you weren't charged."
 
     let private errorResponse (statusCode: int) (message: string) : HttpHandler =
         setStatusCode statusCode >=> json { Message = message }
@@ -33,10 +36,26 @@ module Handlers =
         match error with
         | InvalidInput message ->
             codedErrorResponse StatusCodes.Status400BadRequest "invalid_input" message
-        | EngineFailure message -> errorResponse StatusCodes.Status502BadGateway message
+        | EngineFailure _ -> errorResponse StatusCodes.Status502BadGateway tailoringFailureMessage
         | NotFound message -> errorResponse StatusCodes.Status404NotFound message
 
-    let health: HttpHandler = json {| Status = "ok" |}
+    let health: HttpHandler =
+        fun next ctx ->
+            task {
+                let databaseHealthCheck = ctx.GetService<DatabaseHealthCheck>()
+
+                try
+                    do! databaseHealthCheck.Check(ctx.RequestAborted)
+                    return! json {| Status = "ok" |} next ctx
+                with ex ->
+                    SentrySdk.CaptureException(ex) |> ignore
+
+                    return!
+                        (setStatusCode StatusCodes.Status503ServiceUnavailable
+                         >=> json {| Status = "unhealthy" |})
+                            next
+                            ctx
+            }
 
     let credits: HttpHandler =
         fun next ctx ->
@@ -47,6 +66,9 @@ module Handlers =
             }
 
     let private creditsExhaustedResponse (status: CreditStatus) : HttpHandler =
+        let freeCreditTotal = CreditLimit.value status.Total
+        let freeCreditWord = if freeCreditTotal = 1 then "credit" else "credits"
+
         setStatusCode StatusCodes.Status402PaymentRequired
         >=> json
                 {| Code = "credits_exhausted"
@@ -55,7 +77,7 @@ module Handlers =
                     if status.IsAuthenticated then
                         "You've used all your credits. Subscribe to Pro to keep tailoring."
                     else
-                        "You've used your 3 free credits. Sign up to continue." |}
+                        $"You've used your {freeCreditTotal} free {freeCreditWord}. Sign up to upgrade and continue." |}
 
     let private tryBindJson<'T> (ctx: HttpContext) =
         task {
@@ -68,6 +90,14 @@ module Handlers =
 
     let private invalidJsonResponse: HttpHandler =
         codedErrorResponse StatusCodes.Status400BadRequest "invalid_input" "Invalid request payload."
+
+    let private refundCredit (creditService: CreditService) (operationId: string) =
+        task {
+            try
+                do! creditService.Refund(operationId, CancellationToken.None)
+            with ex ->
+                SentrySdk.CaptureException(ex) |> ignore
+        }
 
     let tailor: HttpHandler =
         fun next ctx ->
@@ -101,13 +131,22 @@ module Handlers =
                                     with ex ->
                                         eprintfn "Failed to auto-save resume: %s" ex.Message
 
-                                    return! json (Mapping.toResponseDto run) next ctx
+                                    let identityOptions = ctx.GetService<IdentityOptions>()
+                                    let identity = Identity.resolve identityOptions ctx
+                                    let isProPlan = Identity.plan identity = ProPlan
+
+                                    return! json (Mapping.toResponseDto isProPlan run) next ctx
                                 | Error error ->
-                                    do! creditService.Refund(operationId, CancellationToken.None)
+                                    do! refundCredit creditService operationId
                                     return! tailorErrorToResponse error next ctx
-                            with :? OperationCanceledException when ctx.RequestAborted.IsCancellationRequested ->
-                                do! creditService.Refund(operationId, CancellationToken.None)
+                            with
+                            | :? OperationCanceledException when ctx.RequestAborted.IsCancellationRequested ->
+                                do! refundCredit creditService operationId
                                 return! earlyReturn ctx
+                            | ex ->
+                                SentrySdk.CaptureException(ex) |> ignore
+                                do! refundCredit creditService operationId
+                                return! errorResponse StatusCodes.Status500InternalServerError tailoringFailureMessage next ctx
             }
 
     let coverLetter: HttpHandler =

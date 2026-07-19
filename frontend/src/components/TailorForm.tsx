@@ -159,7 +159,9 @@ const TailorForm = ({
           <Text size="xs" c="dimmed" ta="center">
             {credits?.isAuthenticated
               ? 'You are out of credits. Subscribe to Pro to keep tailoring.'
-              : 'You have used your 3 free credits. Sign up to continue.'}
+              : credits !== null
+                ? `You have used your ${credits.total} free ${credits.total === 1 ? 'credit' : 'credits'}. Sign up to upgrade and continue.`
+                : 'You have used your free credits. Sign up to upgrade and continue.'}
           </Text>
         )}
         {credits !== null &&
