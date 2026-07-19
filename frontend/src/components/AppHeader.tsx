@@ -48,7 +48,8 @@ const AppHeader = ({
           <DeltaLogo size={38} />
           <Stack gap={2} style={{ minWidth: 0 }}>
             <Title
-              order={3}
+              order={1}
+              fz="h3"
               lh={1.2}
               style={{ fontFamily: spaceGroteskStack, letterSpacing: '-0.02em' }}
             >
