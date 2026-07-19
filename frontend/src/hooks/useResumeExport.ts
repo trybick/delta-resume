@@ -10,7 +10,8 @@ import {
   normalizeResumeTextForComparison,
   patchOriginalDocx,
 } from '../lib/exportDocx';
-import { convertDocxToPdfWithFallback, downloadPdf } from '../lib/exportPdf';
+import { buildExportFilename, extractCandidateNameFromResume } from '../lib/exportFilename';
+import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
 import type {
   AddedBullet,
   BulletChange,
@@ -68,6 +69,12 @@ export const useResumeExport = ({
     originalDocx !== null &&
     normalizeResumeTextForComparison(originalDocx.parsedText) ===
       normalizeResumeTextForComparison(result.resumeText);
+
+  const resumeFilename = (format: 'docx' | 'pdf'): string => {
+    const merged = buildMergedResume();
+    const candidateName = extractCandidateNameFromResume(merged.lines, merged.structure);
+    return buildExportFilename([candidateName, 'resume'], 'tailored-resume', format);
+  };
 
   const buildCleanDocx = (): Promise<Blob> => {
     const merged = buildMergedResume();
@@ -130,8 +137,9 @@ export const useResumeExport = ({
     setIsExporting(true);
     try {
       const docxBlob = variant === 'keep' ? await buildPatchedDocx() : await buildCleanDocx();
+      const filename = resumeFilename(format);
       if (format === 'docx') {
-        downloadDocx(docxBlob, 'tailored-resume.docx');
+        downloadDocx(docxBlob, filename);
         trackEvent(AnalyticsEvents.ExportSuccess, {
           source: 'resume',
           variant,
@@ -139,8 +147,8 @@ export const useResumeExport = ({
         });
         return true;
       }
-      const pdfBlob = await convertDocxToPdfWithFallback(docxBlob);
-      downloadPdf(pdfBlob, 'tailored-resume.pdf');
+      const pdfBlob = await convertDocxToPdf(docxBlob);
+      downloadPdf(pdfBlob, filename);
       trackEvent(AnalyticsEvents.ExportSuccess, {
         source: 'resume',
         variant,
@@ -153,11 +161,11 @@ export const useResumeExport = ({
         variant,
         format,
       });
-      if (format === 'pdf') {
+      if (format === 'docx') {
         notifications.show({
           color: 'red',
-          title: 'PDF export failed',
-          message: 'Could not generate a PDF. Try downloading the .docx instead.',
+          title: 'Export failed',
+          message: 'Could not generate the Word file. Please try again.',
         });
       }
       return false;

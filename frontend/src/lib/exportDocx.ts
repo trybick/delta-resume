@@ -13,6 +13,18 @@ const FONT = 'Calibri';
 const BODY_SIZE = 22;
 const NAME_SIZE = 36;
 const HEADING_SIZE = 24;
+const RESUME_MARGIN = 720;
+
+const resumeSectionProperties = {
+  page: {
+    margin: {
+      top: RESUME_MARGIN,
+      bottom: RESUME_MARGIN,
+      left: RESUME_MARGIN,
+      right: RESUME_MARGIN,
+    },
+  },
+};
 
 export type DocxReplacement = {
   original: string;
@@ -120,6 +132,21 @@ export const isHeadingLine = (line: string): boolean => {
   return /[A-Z]/.test(trimmed) && trimmed === trimmed.toUpperCase();
 };
 
+type RunOptions = {
+  font: string;
+  size: number;
+  bold?: boolean;
+};
+
+const textRuns = (texts: string[], options: RunOptions): TextRun[] => {
+  const runs: TextRun[] = [];
+  texts.forEach((text, index) => {
+    if (index > 0) runs.push(new TextRun({ break: 1 }));
+    runs.push(new TextRun({ text, ...options }));
+  });
+  return runs;
+};
+
 const buildParagraph = (line: string, index: number, previousBlank: boolean): Paragraph | null => {
   const trimmed = line.trim();
   if (trimmed.length === 0) return null;
@@ -136,6 +163,7 @@ const buildParagraph = (line: string, index: number, previousBlank: boolean): Pa
     return new Paragraph({
       bullet: { level: 0 },
       spacing: { after: 40 },
+      widowControl: true,
       children: [
         new TextRun({ text: stripBulletMarker(line).trim(), font: FONT, size: BODY_SIZE }),
       ],
@@ -146,12 +174,15 @@ const buildParagraph = (line: string, index: number, previousBlank: boolean): Pa
     return new Paragraph({
       spacing: { before: 220, after: 80 },
       border: { bottom: { style: BorderStyle.SINGLE, size: 4, space: 2 } },
+      keepNext: true,
+      keepLines: true,
       children: [new TextRun({ text: trimmed, font: FONT, size: HEADING_SIZE, bold: true })],
     });
   }
 
   return new Paragraph({
     spacing: { before: previousBlank ? 120 : 0, after: 40 },
+    widowControl: true,
     children: [new TextRun({ text: trimmed, font: FONT, size: BODY_SIZE })],
   });
 };
@@ -174,17 +205,16 @@ export const buildTemplateDocx = async (resumeText: string): Promise<Blob> => {
   });
 
   const document = new Document({
-    sections: [{ children: paragraphs }],
+    sections: [{ properties: resumeSectionProperties, children: paragraphs }],
   });
 
   return Packer.toBlob(document);
 };
 
-const structuredText = (lines: string[], lineIndexes: number[]): string =>
+const structuredLines = (lines: string[], lineIndexes: number[]): string[] =>
   lineIndexes
     .map((lineIndex) => stripBulletMarker(lines[lineIndex] ?? '').trim())
-    .filter((text) => text.length > 0)
-    .join(' ');
+    .filter((text) => text.length > 0);
 
 export const buildStructuredDocx = async (
   lines: string[],
@@ -193,49 +223,47 @@ export const buildStructuredDocx = async (
   const paragraphs: Paragraph[] = [];
 
   structure.headerLines.forEach((lineIndex, headerIndex) => {
-    const text = structuredText(lines, [lineIndex]);
-    if (!text) return;
+    const texts = structuredLines(lines, [lineIndex]);
+    if (texts.length === 0) return;
     paragraphs.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
         spacing: { after: headerIndex === 0 ? 60 : 20 },
-        children: [
-          new TextRun({
-            text,
-            font: FONT,
-            size: headerIndex === 0 ? NAME_SIZE : BODY_SIZE,
-            bold: headerIndex === 0,
-          }),
-        ],
+        children: textRuns(texts, {
+          font: FONT,
+          size: headerIndex === 0 ? NAME_SIZE : BODY_SIZE,
+          bold: headerIndex === 0,
+        }),
       }),
     );
   });
 
   structure.sections.forEach((section) => {
     if (section.headingLine !== null) {
-      const headingText = structuredText(lines, [section.headingLine]);
-      if (headingText) {
+      const headingTexts = structuredLines(lines, [section.headingLine]);
+      if (headingTexts.length > 0) {
         paragraphs.push(
           new Paragraph({
             spacing: { before: 220, after: 80 },
             border: { bottom: { style: BorderStyle.SINGLE, size: 4, space: 2 } },
-            children: [
-              new TextRun({ text: headingText, font: FONT, size: HEADING_SIZE, bold: true }),
-            ],
+            keepNext: true,
+            keepLines: true,
+            children: textRuns(headingTexts, { font: FONT, size: HEADING_SIZE, bold: true }),
           }),
         );
       }
     }
 
     section.items.forEach((item) => {
-      const text = structuredText(lines, item.lines);
-      if (!text) return;
+      const texts = structuredLines(lines, item.lines);
+      if (texts.length === 0) return;
       if (item.kind === 'bullet') {
         paragraphs.push(
           new Paragraph({
             bullet: { level: 0 },
             spacing: { after: 40 },
-            children: [new TextRun({ text, font: FONT, size: BODY_SIZE })],
+            widowControl: true,
+            children: textRuns(texts, { font: FONT, size: BODY_SIZE }),
           }),
         );
         return;
@@ -244,7 +272,9 @@ export const buildStructuredDocx = async (
         paragraphs.push(
           new Paragraph({
             spacing: { before: 120, after: 40 },
-            children: [new TextRun({ text, font: FONT, size: BODY_SIZE, bold: true })],
+            keepNext: true,
+            keepLines: true,
+            children: textRuns(texts, { font: FONT, size: BODY_SIZE, bold: true }),
           }),
         );
         return;
@@ -252,14 +282,15 @@ export const buildStructuredDocx = async (
       paragraphs.push(
         new Paragraph({
           spacing: { after: 80 },
-          children: [new TextRun({ text, font: FONT, size: BODY_SIZE })],
+          widowControl: true,
+          children: textRuns(texts, { font: FONT, size: BODY_SIZE }),
         }),
       );
     });
   });
 
   const document = new Document({
-    sections: [{ children: paragraphs }],
+    sections: [{ properties: resumeSectionProperties, children: paragraphs }],
   });
 
   return Packer.toBlob(document);

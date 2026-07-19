@@ -25,7 +25,8 @@ import { notifications } from '@mantine/notifications';
 import { AnalyticsEvents, createDebouncedTracker, trackEvent } from '../lib/analytics';
 import type { CoverLetterResult, CoverLetterStatus } from '../lib/types';
 import { buildCoverLetterDocx, downloadDocx } from '../lib/exportDocx';
-import { convertDocxToPdfWithFallback, downloadPdf } from '../lib/exportPdf';
+import { buildExportFilename } from '../lib/exportFilename';
+import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
 import {
   formatCoverLetterText,
   formatCoverLetterSignature,
@@ -197,37 +198,37 @@ const CoverLetterPanel = ({
     setIsExporting(true);
     try {
       const docxBlob = await buildCoverLetterBlob();
+      const filename = buildExportFilename(
+        [candidateName, result.companyName, 'cover-letter'],
+        'cover-letter',
+        format,
+      );
       if (format === 'docx') {
-        downloadDocx(docxBlob, 'cover-letter.docx');
+        downloadDocx(docxBlob, filename);
         trackEvent(AnalyticsEvents.ExportSuccess, {
           source: 'cover_letter',
           format,
         });
         return;
       }
-      try {
-        const pdfBlob = await convertDocxToPdfWithFallback(docxBlob);
-        downloadPdf(pdfBlob, 'cover-letter.pdf');
-        trackEvent(AnalyticsEvents.ExportSuccess, {
-          source: 'cover_letter',
-          format,
-        });
-      } catch {
-        trackEvent(AnalyticsEvents.ExportFailure, {
-          source: 'cover_letter',
-          format,
-        });
-        notifications.show({
-          color: 'red',
-          title: 'PDF export failed',
-          message: 'Could not generate a PDF. Try downloading the .docx instead.',
-        });
-      }
+      const pdfBlob = await convertDocxToPdf(docxBlob);
+      downloadPdf(pdfBlob, filename);
+      trackEvent(AnalyticsEvents.ExportSuccess, {
+        source: 'cover_letter',
+        format,
+      });
     } catch {
       trackEvent(AnalyticsEvents.ExportFailure, {
         source: 'cover_letter',
         format,
       });
+      if (format === 'docx') {
+        notifications.show({
+          color: 'red',
+          title: 'Export failed',
+          message: 'Could not generate the Word file. Please try again.',
+        });
+      }
     } finally {
       setIsExporting(false);
     }
