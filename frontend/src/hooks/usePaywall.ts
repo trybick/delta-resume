@@ -33,7 +33,9 @@ export const usePaywall = ({
   isSignedIn,
   hasCreditsRemaining,
 }: UsePaywallOptions): UsePaywallResult => {
-  const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(null);
+  const [paywallReason, setPaywallReason] = useState<PaywallReason | null>(
+    readPendingPaywallReason,
+  );
 
   const openPaywall = useCallback(
     (reason: PaywallReason) => {
@@ -57,18 +59,16 @@ export const usePaywall = ({
   }, []);
 
   useEffect(() => {
-    if (isSignedIn === undefined) return;
-
-    if (!isSignedIn) {
-      sessionStorage.removeItem(PENDING_PAYWALL_KEY);
-      return;
-    }
+    if (!isSignedIn) return;
 
     const pendingReason = readPendingPaywallReason();
     if (!pendingReason) return;
     sessionStorage.removeItem(PENDING_PAYWALL_KEY);
 
-    if (pendingReason === 'signUp') return;
+    if (pendingReason === 'signUp') {
+      setPaywallReason((current) => (current === 'signUp' ? null : current));
+      return;
+    }
 
     let shouldTrack = false;
     setPaywallReason((current) => {

@@ -28,8 +28,12 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
         match identity with
         | AuthenticatedUser(userId, ProPlan) -> [ sprintf "user:%s" userId, "user", currentMonthPeriod () ]
         | AuthenticatedUser(userId, _) ->
-            let fingerprint, ipHash = Identity.guestIdentifiers options ctx
-            (sprintf "user:%s" userId, "user", LifetimePeriod) :: guestUsageKeys fingerprint ipHash
+            let fingerprint, _ = Identity.guestIdentifiers options ctx
+
+            [ yield sprintf "user:%s" userId, "user", LifetimePeriod
+              match fingerprint with
+              | Some fp -> yield sprintf "fp:%s" fp, "fp", LifetimePeriod
+              | None -> () ]
         | GuestVisitor(fingerprint, ipHash) -> guestUsageKeys fingerprint ipHash
 
     let isUnlimited (identity: RequestIdentity) : bool =

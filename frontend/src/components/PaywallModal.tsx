@@ -155,7 +155,7 @@ const PaywallModal = ({
           : reason === 'upgrade'
             ? 'Sign in to continue \u2014 it takes seconds with Google.'
             : reason === 'credits'
-              ? 'Create a free account to keep tailoring. Signing in with Google takes seconds.'
+              ? 'Create a free account, then upgrade to Pro to keep tailoring. Signing in with Google takes seconds.'
               : reason === 'signUp'
                 ? 'It takes seconds with Google. Upgrade anytime for cover letters, missing requirements, and more.'
                 : null;
