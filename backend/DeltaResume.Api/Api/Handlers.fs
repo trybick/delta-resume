@@ -32,6 +32,21 @@ module Handlers =
     let private requireSignedIn: HttpHandler -> HttpHandler =
         requireSignedInWithMessage "Sign in to manage saved resumes."
 
+    let private requireFingerprintOrAuth (innerHandler: HttpHandler) : HttpHandler =
+        fun next ctx ->
+            let identityOptions = ctx.GetService<IdentityOptions>()
+
+            match Identity.resolve identityOptions ctx with
+            | AuthenticatedUser _ -> innerHandler next ctx
+            | GuestVisitor(Some _, _) -> innerHandler next ctx
+            | GuestVisitor(None, _) ->
+                codedErrorResponse
+                    StatusCodes.Status401Unauthorized
+                    "identity_required"
+                    "A guest fingerprint or signed-in session is required."
+                    next
+                    ctx
+
     let private tailorErrorToResponse (error: TailorError) : HttpHandler =
         match error with
         | InvalidInput message ->
@@ -258,8 +273,9 @@ module Handlers =
     // PDF-only: converts a client-built .docx to a real text-based PDF via LibreOffice.
     // Client-side screenshot PDFs have no text layer (ATS-unreadable), so export posts
     // the .docx here instead. Docx download stays fully client-side and never hits this.
+    // Requires guest fingerprint or Clerk auth so anonymous scrapers cannot spawn soffice.
     let convertPdf: HttpHandler =
-        fun next ctx ->
+        requireFingerprintOrAuth (fun next ctx ->
             task {
                 use bodyStream = new MemoryStream()
                 do! ctx.Request.Body.CopyToAsync(bodyStream, ctx.RequestAborted)
@@ -305,7 +321,7 @@ module Handlers =
                                 ctx
                     | Error (ConversionFailed message) ->
                         return! codedErrorResponse StatusCodes.Status502BadGateway "pdf_conversion_failed" message next ctx
-            }
+            })
 
     let getSettings: HttpHandler =
         requireSignedInWithMessage "Sign in to manage your settings." (fun next ctx ->
