@@ -1,4 +1,4 @@
-import { Badge, Box, Group, Skeleton, Stack, Text, Title, Tooltip } from '@mantine/core';
+import { Badge, Box, Button, Group, Skeleton, Stack, Text, Title, Tooltip } from '@mantine/core';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { IconCoins, IconCrown, IconLogin2 } from '@tabler/icons-react';
 import ClerkAuthButton from './ClerkAuthButton';
@@ -10,6 +10,7 @@ import { appTheme, spaceGroteskStack } from '../lib/theme';
 
 type AppHeaderProps = {
   creditsLabel: string | null;
+  creditsRemaining: number | null;
   outOfCredits: boolean;
   lowCredits: boolean;
   isProPlan: boolean;
@@ -22,6 +23,7 @@ type AppHeaderProps = {
 
 const AppHeader = ({
   creditsLabel,
+  creditsRemaining,
   outOfCredits,
   lowCredits,
   isProPlan,
@@ -31,11 +33,24 @@ const AppHeader = ({
   onUpgradeClick,
   onRetryCredits,
 }: AppHeaderProps) => {
+  const handleRetryCreditsClick = () => {
+    trackEvent(AnalyticsEvents.RetryCredits, { source: 'header' });
+    onRetryCredits();
+  };
+
+  const handleUpgradeClick = () => {
+    trackEvent(AnalyticsEvents.UpgradeToProHeader);
+    onUpgradeClick();
+  };
+
+  const mobileUpgradeLabel =
+    creditsRemaining === null ? 'Get Pro' : `${creditsRemaining} left · Get Pro`;
+
   return (
     <Box
       component="header"
       py="sm"
-      px={{ base: 'md', sm: 'xl' }}
+      px={{ base: 'sm', sm: 'xl' }}
       style={{
         borderBottom: '1px solid var(--mantine-color-dark-4)',
         backgroundColor: 'color-mix(in srgb, var(--mantine-color-dark-7) 82%, transparent)',
@@ -43,15 +58,26 @@ const AppHeader = ({
         WebkitBackdropFilter: 'blur(12px)',
       }}
     >
-      <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
-        <Group gap="sm" align="center" wrap="nowrap" style={{ minWidth: 0, flex: '1 1 auto' }}>
-          <DeltaLogo size={38} />
+      <Group justify="space-between" wrap="nowrap" gap="sm">
+        <Group gap={{ base: 8, sm: 'sm' }} align="center" wrap="nowrap" style={{ minWidth: 0 }}>
+          <Box visibleFrom="sm" lh={0}>
+            <DeltaLogo size={38} />
+          </Box>
+          <Box hiddenFrom="sm" lh={0}>
+            <DeltaLogo size={30} />
+          </Box>
           <Stack gap={2} style={{ minWidth: 0 }}>
             <Title
               order={1}
-              fz="h3"
+              fz={{ base: 'clamp(0.95rem, 4.8vw, 1.125rem)', sm: 'h3' }}
               lh={1.2}
-              style={{ fontFamily: spaceGroteskStack, letterSpacing: '-0.02em' }}
+              style={{
+                fontFamily: spaceGroteskStack,
+                letterSpacing: '-0.02em',
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+              }}
             >
               <Text span inherit variant="gradient" gradient={{ ...appTheme.gradient, deg: 45 }}>
                 Delta
@@ -60,12 +86,12 @@ const AppHeader = ({
                 Resume
               </Text>
             </Title>
-            <Text size="xs" c="dimmed" lh={1.4}>
+            <Text size="xs" c="dimmed" lh={1.4} visibleFrom="sm">
               Tailor your resume to any job in seconds
             </Text>
           </Stack>
         </Group>
-        <Group gap="xs" justify="flex-end" wrap="nowrap" style={{ flexShrink: 0 }}>
+        <Group gap="xs" justify="flex-end" align="center" visibleFrom="sm">
           {planLoaded && isProPlan && (
             <Badge
               size="lg"
@@ -95,10 +121,7 @@ const AppHeader = ({
               variant="light"
               color="red"
               style={{ cursor: 'pointer' }}
-              onClick={() => {
-                trackEvent(AnalyticsEvents.RetryCredits, { source: 'header' });
-                onRetryCredits();
-              }}
+              onClick={handleRetryCreditsClick}
             >
               Credits unavailable · Retry
             </Badge>
@@ -118,9 +141,73 @@ const AppHeader = ({
             </SignInButton>
           </SignedOut>
           <SignedIn>
-            <span onClick={() => trackEvent(AnalyticsEvents.UserButtonOpen)}>
+            <Box
+              component="span"
+              display="inline-flex"
+              style={{ alignItems: 'center', lineHeight: 0 }}
+              onClick={() => trackEvent(AnalyticsEvents.UserButtonOpen)}
+            >
               <UserButton />
-            </span>
+            </Box>
+          </SignedIn>
+        </Group>
+        <Group gap="xs" justify="flex-end" wrap="nowrap" align="center" hiddenFrom="sm">
+          {!planLoaded && isLoadingCredits && <Skeleton width={110} height={30} radius="xl" />}
+          {!creditsLabel && creditsError && !isLoadingCredits && (
+            <Badge
+              size="lg"
+              variant="light"
+              color="red"
+              style={{ cursor: 'pointer' }}
+              onClick={handleRetryCreditsClick}
+            >
+              Retry credits
+            </Badge>
+          )}
+          {planLoaded && isProPlan && (
+            <Badge
+              size="lg"
+              variant="gradient"
+              gradient={{ ...proAccent.gradient, deg: 45 }}
+              leftSection={<IconCrown size={14} />}
+            >
+              {creditsRemaining === null ? 'Pro' : `Pro · ${creditsRemaining}`}
+            </Badge>
+          )}
+          {planLoaded && !isProPlan && (
+            <Button
+              size="xs"
+              variant="gradient"
+              gradient={{ ...proAccent.gradient, deg: 45 }}
+              styles={{ label: { whiteSpace: 'nowrap' } }}
+              onClick={handleUpgradeClick}
+            >
+              {mobileUpgradeLabel}
+            </Button>
+          )}
+          <SignedOut>
+            <SignInButton mode="modal">
+              <ClerkAuthButton
+                size="xs"
+                variant="light"
+                px={8}
+                aria-label="Sign in"
+                style={{ border: '1px solid rgba(34, 184, 207, 0.35)' }}
+                onClick={() => trackEvent(AnalyticsEvents.SignIn)}
+              >
+                <IconLogin2 size={16} />
+              </ClerkAuthButton>
+            </SignInButton>
+          </SignedOut>
+          <SignedIn>
+            <Box
+              component="span"
+              display="inline-flex"
+              style={{ alignItems: 'center', lineHeight: 0 }}
+              onClick={() => trackEvent(AnalyticsEvents.UserButtonOpen)}
+            >
+              <UserButton />
+            </Box>
           </SignedIn>
         </Group>
       </Group>

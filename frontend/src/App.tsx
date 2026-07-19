@@ -176,6 +176,7 @@ const App = () => {
     <Box mih="100vh" style={{ display: 'flex', flexDirection: 'column' }}>
       <AppHeader
         creditsLabel={creditsLabel}
+        creditsRemaining={credits === null ? null : credits.remaining}
         outOfCredits={outOfCredits}
         lowCredits={lowCredits}
         isProPlan={isProPlan}
