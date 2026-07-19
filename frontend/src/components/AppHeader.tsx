@@ -59,7 +59,7 @@ const AppHeader = ({
       }}
     >
       <Group justify="space-between" wrap="nowrap" gap="sm">
-        <Group gap={{ base: 8, sm: 'sm' }} align="center" wrap="nowrap" style={{ minWidth: 0 }}>
+        <Group gap="sm" align="center" wrap="nowrap" style={{ minWidth: 0 }}>
           <Box visibleFrom="sm" lh={0}>
             <DeltaLogo size={38} />
           </Box>

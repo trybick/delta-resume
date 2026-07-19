@@ -25,7 +25,6 @@ const formatFileSize = (bytes: number): string => {
 type ResumeUploadPanelProps = {
   resumeText: string;
   attachedFile: AttachedFile | null;
-  isSignedIn: boolean;
   onFileAttach: (file: AttachedFile, text: string, sourceFile: File) => void;
   onClear: () => void;
 };
@@ -33,7 +32,6 @@ type ResumeUploadPanelProps = {
 const ResumeUploadPanel = ({
   resumeText,
   attachedFile,
-  isSignedIn,
   onFileAttach,
   onClear,
 }: ResumeUploadPanelProps) => {

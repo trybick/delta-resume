@@ -77,7 +77,6 @@ const ResumeInput = ({
             <ResumeUploadPanel
               resumeText={resumeText}
               attachedFile={attachedFile}
-              isSignedIn={isSignedIn}
               onFileAttach={onFileAttach}
               onClear={onClear}
             />
