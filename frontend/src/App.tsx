@@ -22,7 +22,7 @@ import { subscribeToRateLimit } from './lib/rateLimitNotice';
 import { formatDefaultResumeName } from './lib/formatDefaultResumeName';
 
 const App = () => {
-  const { isSignedIn, getToken } = useAuth();
+  const { isSignedIn, isLoaded, getToken } = useAuth();
   const theme = useMantineTheme();
   const isStackedLayout = useMediaQuery(`(max-width: ${theme.breakpoints.md})`);
   const [jobDescription, setJobDescription] = useState('');
@@ -118,9 +118,10 @@ const App = () => {
   useEffect(() => subscribeToRateLimit(setRateLimitMessage), []);
 
   useEffect(() => {
+    if (!isLoaded) return;
     void loadCredits();
     void loadSavedResumes();
-  }, [isSignedIn, loadCredits, loadSavedResumes]);
+  }, [isLoaded, isSignedIn, loadCredits, loadSavedResumes]);
 
   useEffect(() => {
     if (status !== 'done' || !isStackedLayout) return;
