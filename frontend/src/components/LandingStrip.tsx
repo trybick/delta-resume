@@ -110,7 +110,7 @@ const getFreePlanFeatures = (freeCreditTotal: number | null): string[] => [
 const LandingStrip = ({ collapsible, freeCreditTotal, onUpgradeClick }: LandingStripProps) => {
   const [openDocument, setOpenDocument] = useState<LegalDocument | null>(null);
   const [expanded, setExpanded] = useState(false);
-  const { monthlyPrice, annualMonthlyPrice } = useProPlan();
+  const { monthlyPrice, annualMonthlyPrice, isLoading: isLoadingProPrice } = useProPlan();
   const proPrice = annualMonthlyPrice ?? monthlyPrice;
   const showContent = !collapsible || expanded;
   const freePlanFeatures = getFreePlanFeatures(freeCreditTotal);
@@ -291,12 +291,14 @@ const LandingStrip = ({ collapsible, freeCreditTotal, onUpgradeClick }: LandingS
                           <Text fw={700} size="1.75rem" lh={1}>
                             {proPrice}
                           </Text>
-                        ) : (
+                        ) : isLoadingProPrice ? (
                           <Skeleton width={64} height={28} />
+                        ) : null}
+                        {(proPrice || isLoadingProPrice) && (
+                          <Text size="sm" c="dimmed">
+                            / month
+                          </Text>
                         )}
-                        <Text size="sm" c="dimmed">
-                          / month
-                        </Text>
                       </Group>
                     </Stack>
                     <ProFeatureList />

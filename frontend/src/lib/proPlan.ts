@@ -49,4 +49,5 @@ export type ProPriceInfo = {
   annualMonthlyPrice: string | null;
   annualSavingsPercent: number | null;
   planId: string | null;
+  isLoading: boolean;
 };

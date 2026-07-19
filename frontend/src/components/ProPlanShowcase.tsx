@@ -28,7 +28,13 @@ type ProPlanShowcaseProps = {
 const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShowcaseProps) => {
   const { isSignedIn } = useUser();
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>('annual');
-  const { monthlyPrice, annualMonthlyPrice, annualSavingsPercent, planId } = useProPlan();
+  const {
+    monthlyPrice,
+    annualMonthlyPrice,
+    annualSavingsPercent,
+    planId,
+    isLoading: isLoadingProPrice,
+  } = useProPlan();
 
   const displayedPrice = billingPeriod === 'annual' ? annualMonthlyPrice : monthlyPrice;
   const showAnnualSavings = billingPeriod === 'annual' && annualSavingsPercent != null;
@@ -81,12 +87,14 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
                 <Text fw={700} size="1.75rem" lh={1}>
                   {displayedPrice}
                 </Text>
-              ) : (
+              ) : isLoadingProPrice ? (
                 <Skeleton width={64} height={28} />
+              ) : null}
+              {(displayedPrice || isLoadingProPrice) && (
+                <Text size="sm" c="dimmed">
+                  / month
+                </Text>
               )}
-              <Text size="sm" c="dimmed">
-                / month
-              </Text>
             </Group>
             <Text
               size="xs"
@@ -143,7 +151,7 @@ const ProPlanShowcase = ({ onCheckoutOpen, onSubscriptionComplete }: ProPlanShow
             </CheckoutButton>
           </SignedIn>
         ) : (
-          <Skeleton visible={!planId}>{subscribeButton}</Skeleton>
+          <Skeleton visible={isLoadingProPrice && !planId}>{subscribeButton}</Skeleton>
         )}
 
         <Text size="xs" c="dimmed" ta="center">

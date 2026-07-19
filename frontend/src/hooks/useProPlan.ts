@@ -1,3 +1,4 @@
+import { useClerk } from '@clerk/clerk-react';
 import { usePlans } from '@clerk/clerk-react/experimental';
 import type { ProPriceInfo } from '../lib/proPlan';
 
@@ -13,8 +14,13 @@ const getAnnualSavingsPercent = (
 };
 
 export const useProPlan = (): ProPriceInfo => {
-  const { data: plans } = usePlans({ for: 'user', pageSize: 20 });
+  const { loaded: isClerkLoaded } = useClerk();
+  const { data: plans, isLoading: isLoadingPlans, isError } = usePlans({
+    for: 'user',
+    pageSize: 20,
+  });
   const proPlan = plans?.find((plan) => plan.slug === 'pro');
+  const isLoading = !proPlan && !isError && (!isClerkLoaded || isLoadingPlans);
 
   if (!proPlan) {
     return {
@@ -22,6 +28,7 @@ export const useProPlan = (): ProPriceInfo => {
       annualMonthlyPrice: null,
       annualSavingsPercent: null,
       planId: null,
+      isLoading,
     };
   }
 
@@ -35,6 +42,7 @@ export const useProPlan = (): ProPriceInfo => {
       proPlan.annualMonthlyFee?.amount,
     ),
     planId: proPlan.id,
+    isLoading: false,
   };
 };
 

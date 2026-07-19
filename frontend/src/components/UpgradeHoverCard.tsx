@@ -18,7 +18,7 @@ type UpgradeHoverCardProps = {
 };
 
 const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
-  const { annualMonthlyPrice, monthlyPrice } = useProPlan();
+  const { annualMonthlyPrice, monthlyPrice, isLoading: isLoadingProPrice } = useProPlan();
   const displayedPrice = annualMonthlyPrice ?? monthlyPrice;
 
   return (
@@ -71,9 +71,9 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
                   / month
                 </Text>
               </Group>
-            ) : (
+            ) : isLoadingProPrice ? (
               <Skeleton width={56} height={18} />
-            )}
+            ) : null}
           </Group>
           <Divider color="dark.4" />
           <ProFeatureList />
