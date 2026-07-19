@@ -262,6 +262,12 @@ module Handlers =
                             | Error message ->
                                 eprintfn "Cover letter generation failed: %s" message
 
+                                SentrySdk.CaptureMessage(
+                                    sprintf "Cover letter generation failed: %s" message,
+                                    SentryLevel.Error
+                                )
+                                |> ignore
+
                                 return!
                                     errorResponse
                                         StatusCodes.Status502BadGateway

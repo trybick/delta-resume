@@ -11,7 +11,7 @@ import {
   patchOriginalDocx,
 } from '../lib/exportDocx';
 import { buildExportFilename, extractCandidateNameFromResume } from '../lib/exportFilename';
-import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
+import { PdfConversionError, convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
 import type {
   AddedBullet,
   BulletChange,
@@ -155,17 +155,17 @@ export const useResumeExport = ({
         format,
       });
       return true;
-    } catch {
+    } catch (error) {
       trackEvent(AnalyticsEvents.ExportFailure, {
         source: 'resume',
         variant,
         format,
       });
-      if (format === 'docx') {
+      if (!(error instanceof PdfConversionError)) {
         notifications.show({
           color: 'red',
           title: 'Export failed',
-          message: 'Could not generate the Word file. Please try again.',
+          message: 'Could not generate the file. Please try again.',
         });
       }
       return false;

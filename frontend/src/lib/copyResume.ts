@@ -6,33 +6,33 @@ const escapeHtml = (text: string): string =>
 
 const BASE_STYLE = 'font-family: Calibri, Arial, sans-serif; font-size: 11pt;';
 
-const nameHtml = (text: string): string =>
-  `<p style="text-align: center; font-size: 16pt; font-weight: bold; margin: 0 0 4pt 0;">${text}</p>`;
+const escapeLines = (texts: string[]): string => texts.map(escapeHtml).join('<br>');
 
-const headerLineHtml = (text: string): string =>
-  `<p style="text-align: center; margin: 0 0 2pt 0;">${text}</p>`;
+const nameHtml = (texts: string[]): string =>
+  `<p style="text-align: center; font-size: 16pt; font-weight: bold; margin: 0 0 4pt 0;">${escapeLines(texts)}</p>`;
 
-const headingHtml = (text: string): string =>
-  `<p style="font-size: 12pt; font-weight: bold; border-bottom: 1px solid #999; margin: 10pt 0 4pt 0;">${text}</p>`;
+const headerLineHtml = (texts: string[]): string =>
+  `<p style="text-align: center; margin: 0 0 2pt 0;">${escapeLines(texts)}</p>`;
 
-const subheadingHtml = (text: string): string =>
-  `<p style="font-weight: bold; margin: 6pt 0 2pt 0;">${text}</p>`;
+const headingHtml = (texts: string[]): string =>
+  `<p style="font-size: 12pt; font-weight: bold; border-bottom: 1px solid #999; margin: 10pt 0 4pt 0;">${escapeLines(texts)}</p>`;
 
-const paragraphHtml = (text: string): string =>
-  `<p style="margin: 0 0 4pt 0;">${text}</p>`;
+const subheadingHtml = (texts: string[]): string =>
+  `<p style="font-weight: bold; margin: 6pt 0 2pt 0;">${escapeLines(texts)}</p>`;
 
-const listItemHtml = (text: string): string =>
-  `<li style="margin: 0 0 2pt 0;">${text}</li>`;
+const paragraphHtml = (texts: string[]): string =>
+  `<p style="margin: 0 0 4pt 0;">${escapeLines(texts)}</p>`;
+
+const listItemHtml = (texts: string[]): string =>
+  `<li style="margin: 0 0 2pt 0;">${escapeLines(texts)}</li>`;
 
 const wrapList = (items: string[]): string =>
   `<ul style="margin: 0 0 6pt 0;">${items.join('')}</ul>`;
 
-const structuredHtml = (lines: string[], lineIndexes: number[]): string =>
+const structuredLines = (lines: string[], lineIndexes: number[]): string[] =>
   lineIndexes
     .map((lineIndex) => stripBulletMarker(lines[lineIndex] ?? '').trim())
-    .filter((text) => text.length > 0)
-    .map(escapeHtml)
-    .join('<br>');
+    .filter((text) => text.length > 0);
 
 export const buildStructuredResumeHtml = (lines: string[], structure: ResumeStructure): string => {
   const blocks: string[] = [];
@@ -45,28 +45,28 @@ export const buildStructuredResumeHtml = (lines: string[], structure: ResumeStru
   };
 
   structure.headerLines.forEach((lineIndex, headerIndex) => {
-    const text = structuredHtml(lines, [lineIndex]);
-    if (!text) return;
-    blocks.push(headerIndex === 0 ? nameHtml(text) : headerLineHtml(text));
+    const texts = structuredLines(lines, [lineIndex]);
+    if (texts.length === 0) return;
+    blocks.push(headerIndex === 0 ? nameHtml(texts) : headerLineHtml(texts));
   });
 
   structure.sections.forEach((section) => {
     if (section.headingLine !== null) {
-      const headingText = structuredHtml(lines, [section.headingLine]);
-      if (headingText) {
+      const headingTexts = structuredLines(lines, [section.headingLine]);
+      if (headingTexts.length > 0) {
         flushList();
-        blocks.push(headingHtml(headingText));
+        blocks.push(headingHtml(headingTexts));
       }
     }
     section.items.forEach((item) => {
-      const text = structuredHtml(lines, item.lines);
-      if (!text) return;
+      const texts = structuredLines(lines, item.lines);
+      if (texts.length === 0) return;
       if (item.kind === 'bullet') {
-        listItems.push(listItemHtml(text));
+        listItems.push(listItemHtml(texts));
         return;
       }
       flushList();
-      blocks.push(item.kind === 'subheading' ? subheadingHtml(text) : paragraphHtml(text));
+      blocks.push(item.kind === 'subheading' ? subheadingHtml(texts) : paragraphHtml(texts));
     });
     flushList();
   });
@@ -91,26 +91,26 @@ export const buildResumeHtml = (resumeText: string): string => {
     if (trimmed.length === 0) return;
 
     if (contentIndex === 0) {
-      blocks.push(nameHtml(escapeHtml(trimmed)));
+      blocks.push(nameHtml([trimmed]));
       contentIndex += 1;
       return;
     }
 
     if (isBulletLine(line)) {
-      listItems.push(listItemHtml(escapeHtml(stripBulletMarker(line).trim())));
+      listItems.push(listItemHtml([stripBulletMarker(line).trim()]));
       contentIndex += 1;
       return;
     }
 
     if (isHeadingLine(line)) {
       flushList();
-      blocks.push(headingHtml(escapeHtml(trimmed)));
+      blocks.push(headingHtml([trimmed]));
       contentIndex += 1;
       return;
     }
 
     flushList();
-    blocks.push(paragraphHtml(escapeHtml(trimmed)));
+    blocks.push(paragraphHtml([trimmed]));
     contentIndex += 1;
   });
 

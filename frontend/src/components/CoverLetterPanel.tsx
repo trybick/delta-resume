@@ -26,7 +26,7 @@ import { AnalyticsEvents, createDebouncedTracker, trackEvent } from '../lib/anal
 import type { CoverLetterResult, CoverLetterStatus } from '../lib/types';
 import { buildCoverLetterDocx, downloadDocx } from '../lib/exportDocx';
 import { buildExportFilename } from '../lib/exportFilename';
-import { convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
+import { PdfConversionError, convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
 import {
   formatCoverLetterText,
   formatCoverLetterSignature,
@@ -217,16 +217,16 @@ const CoverLetterPanel = ({
         source: 'cover_letter',
         format,
       });
-    } catch {
+    } catch (error) {
       trackEvent(AnalyticsEvents.ExportFailure, {
         source: 'cover_letter',
         format,
       });
-      if (format === 'docx') {
+      if (!(error instanceof PdfConversionError)) {
         notifications.show({
           color: 'red',
           title: 'Export failed',
-          message: 'Could not generate the Word file. Please try again.',
+          message: 'Could not generate the file. Please try again.',
         });
       }
     } finally {

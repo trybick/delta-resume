@@ -1,9 +1,17 @@
 import * as Sentry from '@sentry/react';
 import { notifications } from '@mantine/notifications';
-import { convertDocxToPdfRemote } from './api';
+import { ApiError, convertDocxToPdfRemote } from './api';
 import { AnalyticsEvents, trackEvent } from './analytics';
 
 const PDF_MIME = 'application/pdf';
+
+export class PdfConversionError extends Error {
+  constructor(cause: unknown) {
+    super('PDF conversion failed');
+    this.name = 'PdfConversionError';
+    this.cause = cause;
+  }
+}
 
 export const convertDocxToPdf = async (docxBlob: Blob): Promise<Blob> => {
   try {
@@ -11,13 +19,16 @@ export const convertDocxToPdf = async (docxBlob: Blob): Promise<Blob> => {
   } catch (error) {
     Sentry.captureException(error, { tags: { feature: 'pdf_conversion' } });
     trackEvent(AnalyticsEvents.PdfUnavailable);
+    const isIdentityRequired = error instanceof ApiError && error.status === 401;
     notifications.show({
       color: 'yellow',
       title: 'PDF unavailable',
-      message: 'PDF service is busy — download DOCX instead.',
+      message: isIdentityRequired
+        ? 'We could not verify your browser. Sign in to export a PDF, or download DOCX instead.'
+        : 'PDF service is busy — download DOCX instead.',
       autoClose: 8000,
     });
-    throw error;
+    throw new PdfConversionError(error);
   }
 };
 
