@@ -57,16 +57,27 @@ module Handlers =
                             ctx
             }
 
+    let private persistenceFailureResponse: HttpHandler =
+        errorResponse StatusCodes.Status500InternalServerError "Something went wrong. Please try again."
+
     let credits: HttpHandler =
         fun next ctx ->
             task {
                 let creditService = ctx.GetService<CreditService>()
-                let! status = creditService.GetStatus(ctx, ctx.RequestAborted)
-                return! json status next ctx
+
+                try
+                    let! status = creditService.GetStatus(ctx, ctx.RequestAborted)
+                    return! json status next ctx
+                with
+                | :? OperationCanceledException when ctx.RequestAborted.IsCancellationRequested ->
+                    return! earlyReturn ctx
+                | ex ->
+                    SentrySdk.CaptureException(ex) |> ignore
+                    return! persistenceFailureResponse next ctx
             }
 
     let private creditsExhaustedResponse (status: CreditStatus) : HttpHandler =
-        let freeCreditTotal = CreditLimit.value status.Total
+        let freeCreditTotal = status.Total
         let freeCreditWord = if freeCreditTotal = 1 then "credit" else "credits"
 
         setStatusCode StatusCodes.Status402PaymentRequired
@@ -112,13 +123,38 @@ module Handlers =
                     | Error error -> return! tailorErrorToResponse error next ctx
                     | Ok() ->
                         let creditService = ctx.GetService<CreditService>()
-                        let! spendResult = creditService.TrySpend(ctx, ctx.RequestAborted)
+
+                        let! spendResult =
+                            task {
+                                try
+                                    let! result = creditService.TrySpend(ctx, ctx.RequestAborted)
+                                    return Ok result
+                                with
+                                | :? OperationCanceledException when ctx.RequestAborted.IsCancellationRequested ->
+                                    return Error None
+                                | ex ->
+                                    SentrySdk.CaptureException(ex) |> ignore
+                                    return Error(Some persistenceFailureResponse)
+                            }
 
                         match spendResult with
-                        | SpendExhausted ->
-                            let! creditStatus = creditService.GetStatus(ctx, ctx.RequestAborted)
-                            return! creditsExhaustedResponse creditStatus next ctx
-                        | SpendRecorded operationId ->
+                        | Error None -> return! earlyReturn ctx
+                        | Error(Some failureResponse) -> return! failureResponse next ctx
+                        | Ok SpendExhausted ->
+                            let! creditStatus =
+                                task {
+                                    try
+                                        let! status = creditService.GetStatus(ctx, ctx.RequestAborted)
+                                        return Some status
+                                    with ex ->
+                                        SentrySdk.CaptureException(ex) |> ignore
+                                        return None
+                                }
+
+                            match creditStatus with
+                            | Some status -> return! creditsExhaustedResponse status next ctx
+                            | None -> return! persistenceFailureResponse next ctx
+                        | Ok(SpendRecorded operationId) ->
                             try
                                 let! result =
                                     service.TailorResume(request.ResumeText, request.JobDescription, ctx.RequestAborted)
@@ -208,7 +244,15 @@ module Handlers =
                                       Letter = draft.Letter }
 
                                 return! json response next ctx
-                            | Error message -> return! errorResponse StatusCodes.Status502BadGateway message next ctx
+                            | Error message ->
+                                eprintfn "Cover letter generation failed: %s" message
+
+                                return!
+                                    errorResponse
+                                        StatusCodes.Status502BadGateway
+                                        "Something went wrong while writing your cover letter."
+                                        next
+                                        ctx
             }
 
     // PDF-only: converts a client-built .docx to a real text-based PDF via LibreOffice.
