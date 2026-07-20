@@ -137,11 +137,23 @@ const buildSegments = (
   changesByLine: Map<number, BulletChange>,
   addedByAnchor: Map<number, AddedBullet[]>,
 ): ResumeSegment[] => {
+  const consumedByChange = new Set<number>();
+  changesByLine.forEach((change) => {
+    change.lineIndexes
+      .filter((lineIndex) => lineIndex !== change.lineIndex)
+      .forEach((lineIndex) => consumedByChange.add(lineIndex));
+  });
   const segments: ResumeSegment[] = [];
   lines.forEach((line, lineIndex) => {
     const change = changesByLine.get(lineIndex);
     if (change) {
       segments.push({ kind: 'change', change });
+    } else if (consumedByChange.has(lineIndex)) {
+      const addedAfterConsumed = addedByAnchor.get(lineIndex);
+      if (addedAfterConsumed) {
+        addedAfterConsumed.forEach((bullet) => segments.push({ kind: 'added', bullet }));
+      }
+      return;
     } else {
       const previousSegment = segments[segments.length - 1];
       if (previousSegment && previousSegment.kind === 'context') {

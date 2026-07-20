@@ -29,7 +29,7 @@ type TailoringService(engine: TailoringEngine) =
             match engineResult with
             | Error message -> return Error(EngineFailure message)
             | Ok proposal ->
-                let changes = Bullets.toChanges bullets proposal.Changes
+                let changes = Bullets.toChanges bullets proposal.Structure proposal.Changes
 
                 let run =
                     { Id = RunId(Guid.NewGuid())

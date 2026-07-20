@@ -118,6 +118,13 @@ export const postTailor = async (
   const data = (await response.json()) as TailorResponse;
   return {
     ...data,
+    changes: (data.changes ?? []).map((change) => ({
+      ...change,
+      lineIndexes:
+        change.lineIndexes && change.lineIndexes.length > 0
+          ? change.lineIndexes
+          : [change.lineIndex],
+    })),
     requirements: (data.requirements ?? []).map((requirement) => ({
       ...requirement,
       gapHint: requirement.gapHint ?? null,

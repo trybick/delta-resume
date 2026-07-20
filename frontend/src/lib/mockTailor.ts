@@ -179,6 +179,7 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
     {
       id: 'sample-change-1',
       lineIndex: 20,
+      lineIndexes: [20],
       original: '- Worked on the checkout flow for the main e-commerce product',
       tailored:
         '- Rebuilt the checkout flow in React and TypeScript, lifting conversion 12% for the main e-commerce product',
@@ -187,6 +188,7 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
     {
       id: 'sample-change-2',
       lineIndex: 21,
+      lineIndexes: [21],
       original: '- Built internal dashboards for tracking team metrics',
       tailored:
         '- Built real-time internal dashboards with React and PostgreSQL, cutting weekly reporting time by 6 hours',
@@ -195,6 +197,7 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
     {
       id: 'sample-change-3',
       lineIndex: 22,
+      lineIndexes: [22],
       original: '- Helped migrate legacy services to a modern cloud platform',
       tailored:
         '- Led migration of 14 legacy services to AWS with Docker, reducing infrastructure costs by 30%',
@@ -203,6 +206,7 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
     {
       id: 'sample-change-4',
       lineIndex: 28,
+      lineIndexes: [28],
       original: '- Made improvements to the public REST API',
       tailored:
         '- Redesigned the public REST API in Node.js, improving p95 latency by 40% for 200+ integration partners',
@@ -211,6 +215,7 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
     {
       id: 'sample-change-5',
       lineIndex: 7,
+      lineIndexes: [7],
       original: 'Frontend: React, Next.js, Redux, HTML/CSS, Vite',
       tailored: 'Frontend: React, Next.js, Redux, HTML/CSS, Vite, React Native',
       kind: 'skill',

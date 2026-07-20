@@ -42,6 +42,7 @@ type SavedResumeDto =
 type BulletChangeDto =
     { Id: Guid
       LineIndex: int
+      LineIndexes: int list
       Original: string
       Tailored: string
       Kind: string }
@@ -96,6 +97,7 @@ module Mapping =
 
         { Id = id
           LineIndex = change.LineIndex
+          LineIndexes = change.LineIndexes
           Original = change.Original
           Tailored = change.Tailored
           Kind = LineKind.toString change.Kind }

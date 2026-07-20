@@ -59,10 +59,21 @@ export const useResumeExport = ({
 
   const buildMergedLines = (): string[] => {
     if (!result) return [];
+    const consumedByChange = new Map<number, BulletChange>();
+    changesByLine.forEach((change) => {
+      change.lineIndexes
+        .filter((lineIndex) => lineIndex !== change.lineIndex)
+        .forEach((lineIndex) => consumedByChange.set(lineIndex, change));
+    });
     return result.resumeText.split('\n').map((line, lineIndex) => {
       const change = changesByLine.get(lineIndex);
-      if (!change) return line;
-      return decisions[change.id] === 'reverted' ? change.original : change.tailored;
+      if (change) {
+        if (decisions[change.id] !== 'reverted') return change.tailored;
+        return change.lineIndexes.length > 1 ? line : change.original;
+      }
+      const consumingChange = consumedByChange.get(lineIndex);
+      if (!consumingChange) return line;
+      return decisions[consumingChange.id] === 'reverted' ? line : '';
     });
   };
 

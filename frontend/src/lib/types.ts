@@ -5,6 +5,7 @@ export type ChangeKind = 'bullet' | 'skill' | 'paragraph';
 export type BulletChange = {
   id: string;
   lineIndex: number;
+  lineIndexes: number[];
   original: string;
   tailored: string;
   kind: ChangeKind;

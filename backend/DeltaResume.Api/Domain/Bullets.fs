@@ -57,7 +57,25 @@ module Bullets =
     [<Literal>]
     let MaxParagraphChanges = 1
 
-    let toChanges (bullets: BulletLine list) (proposals: ProposedChange list) : BulletChange list =
+    /// A paragraph change targets one lineIndex, but text extraction often hard-wraps
+    /// a single paragraph across several physical lines. The structure (when present)
+    /// groups those lines into one paragraph item, so a paragraph rewrite must consume
+    /// every line of that item or the UI is left showing the paragraph's tail as
+    /// untouched original text.
+    let private paragraphLinesFor (structure: ResumeStructure option) (lineIndex: int) : int list option =
+        structure
+        |> Option.bind (fun resumeStructure ->
+            resumeStructure.Sections
+            |> List.collect (fun section -> section.Items)
+            |> List.tryFind (fun item ->
+                item.Kind = ResumeItemKind.Paragraph && List.contains lineIndex item.Lines)
+            |> Option.map (fun item -> List.sort item.Lines))
+
+    let toChanges
+        (bullets: BulletLine list)
+        (structure: ResumeStructure option)
+        (proposals: ProposedChange list)
+        : BulletChange list =
         let bulletsByIndex =
             bullets
             |> List.map (fun bullet -> bullet.LineIndex, bullet.Text)
@@ -82,10 +100,25 @@ module Bullets =
 
         cappedBullets @ skillProposals @ cappedParagraphs
         |> List.map (fun proposal ->
-            let original = bulletsByIndex[proposal.LineIndex]
+            let lineIndexes =
+                if proposal.Kind = Paragraph then
+                    paragraphLinesFor structure proposal.LineIndex
+                    |> Option.defaultValue [ proposal.LineIndex ]
+                else
+                    [ proposal.LineIndex ]
+
+            let original =
+                match lineIndexes with
+                | [ single ] -> bulletsByIndex[single]
+                | _ ->
+                    lineIndexes
+                    |> List.choose (fun lineIndex -> Map.tryFind lineIndex bulletsByIndex)
+                    |> List.map _.Trim()
+                    |> String.concat " "
 
             { Id = ChangeId(Guid.NewGuid())
-              LineIndex = proposal.LineIndex
+              LineIndex = List.min lineIndexes
+              LineIndexes = lineIndexes
               Original = original
               Tailored = normalizeTailored original proposal.Tailored
               Kind = proposal.Kind })

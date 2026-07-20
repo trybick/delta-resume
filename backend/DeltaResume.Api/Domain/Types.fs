@@ -100,6 +100,9 @@ module ResumeStructure =
 type BulletChange =
     { Id: ChangeId
       LineIndex: int
+      /// Every resume line consumed by this change, in order. A single line for
+      /// bullet/skill changes; the whole hard-wrapped paragraph for paragraph changes.
+      LineIndexes: int list
       Original: string
       Tailored: string
       Kind: LineKind }
