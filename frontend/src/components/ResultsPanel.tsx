@@ -17,6 +17,7 @@ import {
 } from '@mantine/core';
 import {
   IconChevronDown,
+  IconCoins,
   IconCopy,
   IconDownload,
   IconEye,
@@ -379,9 +380,26 @@ const ResultsPanel = ({
   const segments = buildSegments(lines, changesByLine, addedByAnchor);
   const showGuestNudge = !isExample && isGuest && credits !== null;
   const showFreeUpgradeNudge =
-    !isExample && !isGuest && !isProPlan && lowCredits && credits !== null;
+    !isExample &&
+    !isGuest &&
+    !isProPlan &&
+    credits !== null &&
+    (lowCredits || credits.remaining <= 0);
   const nudgeRemaining = credits?.remaining ?? 0;
   const creditWord = nudgeRemaining === 1 ? 'credit' : 'credits';
+  const isOutOfCredits = nudgeRemaining <= 0;
+  const nudgeCountLabel = isOutOfCredits
+    ? isGuest
+      ? 'Out of free credits.'
+      : 'Out of credits.'
+    : isGuest
+      ? `${nudgeRemaining} free ${creditWord} left.`
+      : `${nudgeRemaining} ${creditWord} left.`;
+  const nudgeActionLabel = isGuest
+    ? isOutOfCredits
+      ? 'Sign up to keep tailoring and save your resumes'
+      : 'Sign up to save your resumes automatically'
+    : 'Upgrade to Pro';
 
   return (
     <Card className="results-card" withBorder shadow="xs" p={{ base: 'sm', sm: 'lg' }}>
@@ -425,21 +443,38 @@ const ResultsPanel = ({
                 </Badge>
               </Tooltip>
             )}
-            {showGuestNudge && (
-              <Text size="xs" c="dimmed">
-                {nudgeRemaining} free {creditWord} left —{' '}
-                <Anchor size="xs" component="button" type="button" onClick={onNudgeClick}>
-                  sign up to save your resumes automatically
-                </Anchor>
-              </Text>
-            )}
-            {showFreeUpgradeNudge && (
-              <Text size="xs" c="dimmed">
-                {nudgeRemaining} {creditWord} left —{' '}
-                <Anchor size="xs" component="button" type="button" onClick={onNudgeClick}>
-                  upgrade to Pro
-                </Anchor>
-              </Text>
+            {(showGuestNudge || showFreeUpgradeNudge) && (
+              <Group
+                gap={6}
+                wrap="nowrap"
+                px={10}
+                py={4}
+                style={{
+                  width: 'fit-content',
+                  maxWidth: '100%',
+                  borderRadius: 999,
+                  backgroundColor: isOutOfCredits
+                    ? 'var(--mantine-color-orange-light)'
+                    : 'var(--mantine-color-default-hover)',
+                }}
+              >
+                <IconCoins
+                  size={13}
+                  stroke={1.8}
+                  color={
+                    isOutOfCredits
+                      ? 'var(--mantine-color-orange-5)'
+                      : 'var(--mantine-color-dimmed)'
+                  }
+                  style={{ flexShrink: 0 }}
+                />
+                <Text size="xs" c="dimmed" lh={1.4}>
+                  {nudgeCountLabel}{' '}
+                  <Anchor size="xs" fw={600} component="button" type="button" onClick={onNudgeClick}>
+                    {nudgeActionLabel}
+                  </Anchor>
+                </Text>
+              </Group>
             )}
           </Stack>
           <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0, marginLeft: 'auto' }}>
