@@ -8,10 +8,10 @@ export type ProAccent = {
 };
 
 export const proAccent: ProAccent = {
-  gradient: { from: 'teal.4', to: 'green.8' },
-  badgeColor: 'teal',
-  insightLabelColor: 'teal.4',
-  insightIconColor: 'var(--mantine-color-teal-4)',
-  insightBorderColor: 'var(--mantine-color-teal-6)',
-  insightBackground: 'rgba(18, 184, 134, 0.07)',
+  gradient: { from: 'yellow.7', to: 'orange.9' },
+  badgeColor: 'orange',
+  insightLabelColor: 'orange.5',
+  insightIconColor: 'var(--mantine-color-orange-5)',
+  insightBorderColor: 'var(--mantine-color-orange-6)',
+  insightBackground: 'rgba(232, 145, 45, 0.07)',
 };
