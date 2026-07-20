@@ -6,6 +6,8 @@ import {
   LevelFormat,
   Packer,
   Paragraph,
+  Tab,
+  TabStopType,
   TextRun,
 } from 'docx';
 import { formatCoverLetterDate, formatCoverLetterSubject } from './formatCoverLetter';
@@ -23,7 +25,20 @@ const BULLET_MARKER_SIZE = 18;
 const NAME_SIZE = 36;
 const HEADING_SIZE = 24;
 const RESUME_MARGIN = 720;
+const RESUME_PAGE_WIDTH = 12240;
+const RESUME_CONTENT_WIDTH = RESUME_PAGE_WIDTH - RESUME_MARGIN * 2;
 const RESUME_BULLET_REF = 'resume-bullets';
+const MONTH_PATTERN =
+  '(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\\.?';
+const SEASON_PATTERN = '(?:Spring|Summer|Fall|Autumn|Winter)';
+const DATE_QUALIFIER_PATTERN =
+  '(?:(?:Expected|Anticipated|Graduating)(?:\\s+(?:Graduation|Completion))?\\s*:?\\s*)?';
+const CALENDAR_DATE_PATTERN = `(?:(?:${MONTH_PATTERN}|${SEASON_PATTERN})\\s+)?(?:19|20)\\d{2}`;
+const DATE_WITH_QUALIFIER_PATTERN = `${DATE_QUALIFIER_PATTERN}${CALENDAR_DATE_PATTERN}(?:\\s*\\((?:Expected|Anticipated)\\))?`;
+const TRAILING_DATE_PATTERN = new RegExp(
+  `^(.+?)\\s+(${DATE_WITH_QUALIFIER_PATTERN}(?:\\s*(?:[-–—]|to)\\s*(?:${DATE_WITH_QUALIFIER_PATTERN}|Present|Current|Now|Ongoing))?)$`,
+  'i',
+);
 
 const resumeNumbering = {
   config: [
@@ -117,7 +132,10 @@ const resolveInsertText = (rawText: string, template: Element): string => {
   const stripped = stripBulletMarker(rawText).trim();
   if (hasNumbering(template)) return stripped;
   const templateLine = paragraphText(template);
-  const prefix = templateLine.slice(0, templateLine.length - stripBulletMarker(templateLine).length);
+  const prefix = templateLine.slice(
+    0,
+    templateLine.length - stripBulletMarker(templateLine).length,
+  );
   if (prefix.length > 0) return `${prefix}${stripped}`;
   if (isBulletLine(rawText)) return rawText.trim();
   return `- ${stripped}`;
@@ -259,6 +277,20 @@ type RunOptions = {
   bold?: boolean;
 };
 
+type SplitDateLine = {
+  left: string;
+  right: string;
+};
+
+const splitTrailingDate = (text: string): SplitDateLine | null => {
+  const match = text.match(TRAILING_DATE_PATTERN);
+  if (!match) return null;
+  const left = match[1].trim();
+  const right = match[2].trim();
+  if (!left || !right) return null;
+  return { left, right };
+};
+
 const textRuns = (texts: string[], options: RunOptions): TextRun[] => {
   const runs: TextRun[] = [];
   texts.forEach((text, index) => {
@@ -267,6 +299,27 @@ const textRuns = (texts: string[], options: RunOptions): TextRun[] => {
   });
   return runs;
 };
+
+const dateAlignedTextRuns = (texts: string[], options: RunOptions): TextRun[] => {
+  const runs: TextRun[] = [];
+  texts.forEach((text, index) => {
+    if (index > 0) runs.push(new TextRun({ break: 1 }));
+    const splitDateLine = splitTrailingDate(text);
+    if (!splitDateLine) {
+      runs.push(new TextRun({ text, ...options }));
+      return;
+    }
+    runs.push(
+      new TextRun({ text: splitDateLine.left, ...options }),
+      new TextRun({ children: [new Tab(), splitDateLine.right], ...options }),
+    );
+  });
+  return runs;
+};
+
+const rightDateTabStop = {
+  tabStops: [{ type: TabStopType.RIGHT, position: RESUME_CONTENT_WIDTH }],
+} as const;
 
 const buildParagraph = (line: string, index: number, previousBlank: boolean): Paragraph | null => {
   const trimmed = line.trim();
@@ -302,9 +355,10 @@ const buildParagraph = (line: string, index: number, previousBlank: boolean): Pa
   }
 
   return new Paragraph({
+    ...rightDateTabStop,
     spacing: { before: previousBlank ? 120 : 0, after: 40 },
     widowControl: true,
-    children: [new TextRun({ text: trimmed, font: FONT, size: BODY_SIZE })],
+    children: dateAlignedTextRuns([trimmed], { font: FONT, size: BODY_SIZE }),
   });
 };
 
@@ -393,19 +447,25 @@ export const buildStructuredDocx = async (
       if (item.kind === 'subheading') {
         paragraphs.push(
           new Paragraph({
+            ...rightDateTabStop,
             spacing: { before: 120, after: 40 },
             keepNext: true,
             keepLines: true,
-            children: textRuns(texts, { font: FONT, size: BODY_SIZE, bold: true }),
+            children: dateAlignedTextRuns(texts, {
+              font: FONT,
+              size: BODY_SIZE,
+              bold: true,
+            }),
           }),
         );
         return;
       }
       paragraphs.push(
         new Paragraph({
+          ...rightDateTabStop,
           spacing: { after: 80 },
           widowControl: true,
-          children: textRuns(texts, { font: FONT, size: BODY_SIZE }),
+          children: dateAlignedTextRuns(texts, { font: FONT, size: BODY_SIZE }),
         }),
       );
     });
