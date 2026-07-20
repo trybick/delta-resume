@@ -40,6 +40,7 @@ import type {
   CreditStatus,
   JobRequirement,
   OriginalDocx,
+  ResumeStructure,
   TailorResult,
   TailorStatus,
 } from '../lib/types';
@@ -132,10 +133,24 @@ type ResumeSegment =
   | { kind: 'added'; bullet: AddedBullet }
   | { kind: 'context'; startIndex: number; lines: string[] };
 
+const buildMultiLineGroups = (structure: ResumeStructure | null | undefined): Map<number, number> => {
+  const groups = new Map<number, number>();
+  if (!structure) return groups;
+  structure.sections.forEach((section) => {
+    section.items.forEach((item) => {
+      if (item.lines.length < 2) return;
+      const groupKey = Math.min(...item.lines);
+      item.lines.forEach((lineIndex) => groups.set(lineIndex, groupKey));
+    });
+  });
+  return groups;
+};
+
 const buildSegments = (
   lines: string[],
   changesByLine: Map<number, BulletChange>,
   addedByAnchor: Map<number, AddedBullet[]>,
+  multiLineGroups: Map<number, number>,
 ): ResumeSegment[] => {
   const consumedByChange = new Set<number>();
   changesByLine.forEach((change) => {
@@ -144,6 +159,7 @@ const buildSegments = (
       .forEach((lineIndex) => consumedByChange.add(lineIndex));
   });
   const segments: ResumeSegment[] = [];
+  let lastContextLineIndex: number | null = null;
   lines.forEach((line, lineIndex) => {
     const change = changesByLine.get(lineIndex);
     if (change) {
@@ -156,11 +172,23 @@ const buildSegments = (
       return;
     } else {
       const previousSegment = segments[segments.length - 1];
+      const groupKey = multiLineGroups.get(lineIndex);
       if (previousSegment && previousSegment.kind === 'context') {
-        previousSegment.lines.push(line);
+        const joinsPreviousLine =
+          groupKey !== undefined &&
+          lastContextLineIndex !== null &&
+          multiLineGroups.get(lastContextLineIndex) === groupKey;
+        if (joinsPreviousLine) {
+          const lastPosition = previousSegment.lines.length - 1;
+          previousSegment.lines[lastPosition] =
+            `${previousSegment.lines[lastPosition].trimEnd()} ${line.trim()}`;
+        } else {
+          previousSegment.lines.push(line);
+        }
       } else {
         segments.push({ kind: 'context', startIndex: lineIndex, lines: [line] });
       }
+      lastContextLineIndex = lineIndex;
     }
     const addedBullets = addedByAnchor.get(lineIndex);
     if (addedBullets) {
@@ -171,11 +199,11 @@ const buildSegments = (
 };
 
 const hasMustHaveGaps = (result: TailorResult): boolean => {
-  const changesByLine = new Map(result.changes.map((change) => [change.lineIndex, change]));
+  const changedLines = new Set(result.changes.flatMap((change) => change.lineIndexes));
   return result.requirements.some((requirement) => {
     const covered =
       requirement.satisfiedBy.length > 0 ||
-      requirement.satisfiedByChanges.some((lineIndex) => changesByLine.has(lineIndex));
+      requirement.satisfiedByChanges.some((lineIndex) => changedLines.has(lineIndex));
     return !covered && requirement.importance === 'must';
   });
 };
@@ -216,6 +244,15 @@ const ResultsPanel = ({
   const changesByLine = useMemo(() => {
     if (!result) return new Map<number, BulletChange>();
     return new Map(result.changes.map((change) => [change.lineIndex, change]));
+  }, [result]);
+
+  const changesByAnyLine = useMemo(() => {
+    const map = new Map<number, BulletChange>();
+    if (!result) return map;
+    result.changes.forEach((change) => {
+      change.lineIndexes.forEach((lineIndex) => map.set(lineIndex, change));
+    });
+    return map;
   }, [result]);
 
   const handleDecisionChange = (id: string, decision: ChangeDecision) => {
@@ -294,7 +331,7 @@ const ResultsPanel = ({
   const isRequirementCovered = (requirement: JobRequirement): boolean =>
     requirement.satisfiedBy.length > 0 ||
     requirement.satisfiedByChanges.some((lineIndex) => {
-      const change = changesByLine.get(lineIndex);
+      const change = changesByAnyLine.get(lineIndex);
       return change !== undefined && decisions[change.id] !== 'reverted';
     });
 
@@ -395,7 +432,8 @@ const ResultsPanel = ({
     (change) => change.kind === 'paragraph',
   ).length;
   const lines = result.resumeText.split('\n');
-  const segments = buildSegments(lines, changesByLine, addedByAnchor);
+  const multiLineGroups = buildMultiLineGroups(result.structure);
+  const segments = buildSegments(lines, changesByLine, addedByAnchor, multiLineGroups);
   const showGuestNudge = !isExample && isGuest && credits !== null;
   const showFreeUpgradeNudge =
     !isExample &&

@@ -37,6 +37,8 @@ Rules for bullet changes:
 - Rewrite only the bullets most relevant to the job description. Your response must contain AT MOST 4 bullet changes; if more than 4 bullets seem relevant, pick only the 4 where a rewrite adds the most value. List bullet changes in order of relevance, most relevant first.
 - Do not rewrite a bullet that already matches the job description well.
 - Never invent metrics, technologies, or responsibilities. Never add keywords the original bullet does not support.
+- Length is a hard constraint: each rewritten bullet must stay within about 20% of the original bullet's word count. Prefer swapping or tightening words over adding new clauses, and never stack multiple new qualifiers onto one bullet. If you cannot improve fit without growing the bullet past that limit, skip the change.
+- If a bullet's text was hard-wrapped across multiple lines in <resume_lines>, treat all of those lines as ONE bullet: use the FIRST line's lineIndex for the change, write "tailored" as the complete rewritten bullet on a single line, and put every one of those lines in one "bullet" item in "structure". Never anchor a change to a continuation line, and never rewrite only part of a hard-wrapped bullet.
 - If a line starts with a bullet marker, preserve that exact marker and leading indentation; if it does not, keep it as plain text with the same indentation.
 
 Rules for skill changes:

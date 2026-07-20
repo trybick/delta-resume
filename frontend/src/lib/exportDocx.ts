@@ -171,12 +171,12 @@ export const patchOriginalDocx = async (
     throw new Error('could not parse document.xml');
   }
 
-  const replacementMap = new Map(
-    replacements.map((replacement) => [
-      normalizeLine(replacement.original),
-      stripBulletMarker(replacement.tailored).trim(),
-    ]),
-  );
+  const replacementMap = new Map<string, string>();
+  replacements.forEach((replacement) => {
+    const key = normalizeLine(replacement.original);
+    if (key.length === 0) return;
+    replacementMap.set(key, stripBulletMarker(replacement.tailored).trim());
+  });
 
   const insertionsByAnchor = new Map<string, string[]>();
   insertions.forEach((insertion) => {
@@ -202,6 +202,11 @@ export const patchOriginalDocx = async (
     const normalized = normalizeLine(currentText);
     const tailored = replacementMap.get(normalized);
     if (tailored !== undefined) {
+      if (tailored.length === 0) {
+        paragraph.parentNode?.removeChild(paragraph);
+        patchedCount += 1;
+        return;
+      }
       setParagraphText(paragraph, tailored);
       patchedCount += 1;
     }

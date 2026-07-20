@@ -135,7 +135,7 @@ export const copyResumeRichText = async (
   lines: string[],
   structure: ResumeStructure | null | undefined,
 ): Promise<void> => {
-  const plainText = lines.join('\n');
+  const plainText = lines.join('\n').replace(/\n{3,}/g, '\n\n');
   const html = structure ? buildStructuredResumeHtml(lines, structure) : buildResumeHtml(plainText);
   await writeToClipboard(html, plainText);
 };

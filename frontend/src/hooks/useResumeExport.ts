@@ -124,9 +124,24 @@ export const useResumeExport = ({
 
   const buildPatchedDocx = async (): Promise<Blob> => {
     if (!result || !originalDocx) return buildCleanDocx();
+    const resumeLines = result.resumeText.split('\n');
     const replacements = result.changes
       .filter((change) => decisions[change.id] !== 'reverted')
-      .map((change) => ({ original: change.original, tailored: change.tailored }));
+      .flatMap((change) => {
+        if (change.lineIndexes.length <= 1) {
+          return [{ original: change.original, tailored: change.tailored }];
+        }
+        const [firstLineIndex, ...continuationIndexes] = [...change.lineIndexes].sort(
+          (a, b) => a - b,
+        );
+        return [
+          { original: resumeLines[firstLineIndex] ?? change.original, tailored: change.tailored },
+          ...continuationIndexes.map((lineIndex) => ({
+            original: resumeLines[lineIndex] ?? '',
+            tailored: '',
+          })),
+        ];
+      });
     const insertions = buildKeepInsertions();
     try {
       return await patchOriginalDocx(originalDocx.file, replacements, insertions);

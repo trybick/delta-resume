@@ -57,19 +57,95 @@ module Bullets =
     [<Literal>]
     let MaxParagraphChanges = 1
 
-    /// A paragraph change targets one lineIndex, but text extraction often hard-wraps
-    /// a single paragraph across several physical lines. The structure (when present)
-    /// groups those lines into one paragraph item, so a paragraph rewrite must consume
-    /// every line of that item or the UI is left showing the paragraph's tail as
-    /// untouched original text.
-    let private paragraphLinesFor (structure: ResumeStructure option) (lineIndex: int) : int list option =
+    let private sectionNames =
+        set
+            [ "summary"
+              "profile"
+              "objective"
+              "about"
+              "about me"
+              "skills"
+              "technical skills"
+              "core competencies"
+              "experience"
+              "work experience"
+              "professional experience"
+              "employment history"
+              "education"
+              "projects"
+              "certifications"
+              "certificates"
+              "awards"
+              "publications"
+              "volunteering"
+              "volunteer experience"
+              "languages"
+              "interests" ]
+
+    let private isHeadingLike (line: string) : bool =
+        let trimmed = line.Trim()
+
+        if trimmed.Length = 0 || trimmed.Length > 48 || isBulletLine trimmed then
+            false
+        else
+            let withoutColon = trimmed.TrimEnd ':'
+
+            sectionNames.Contains(withoutColon.ToLowerInvariant())
+            || (trimmed |> Seq.exists Char.IsUpper
+                && trimmed = trimmed.ToUpperInvariant()
+                && not (trimmed.Contains ",")
+                && withoutColon.Split([| ' ' |], StringSplitOptions.RemoveEmptyEntries).Length <= 3)
+
+    let private itemContaining (structure: ResumeStructure option) (lineIndex: int) : ResumeItem option =
         structure
         |> Option.bind (fun resumeStructure ->
             resumeStructure.Sections
             |> List.collect (fun section -> section.Items)
-            |> List.tryFind (fun item ->
-                item.Kind = ResumeItemKind.Paragraph && List.contains lineIndex item.Lines)
-            |> Option.map (fun item -> List.sort item.Lines))
+            |> List.tryFind (fun item -> List.contains lineIndex item.Lines))
+
+    /// Walks from the anchor in one direction, consuming physically adjacent lines
+    /// (a missing index means a blank line, which ends the block) that read like
+    /// wrapped continuations rather than new bullets or section headings.
+    let private wrappedContinuationsFrom (bulletsByIndex: Map<int, string>) (anchor: int) (step: int) : int list =
+        anchor
+        |> List.unfold (fun index ->
+            let next = index + step
+
+            match Map.tryFind next bulletsByIndex with
+            | Some text when not (isBulletLine text) && not (isHeadingLike text) -> Some(next, next)
+            | _ -> None)
+
+    /// Text extraction often hard-wraps one visual bullet or paragraph across several
+    /// physical lines. A change must consume every line of the block it rewrites, or
+    /// the resume is left showing the block's tail as untouched original text. The
+    /// model's structure is the primary source for that grouping; paragraphs also get
+    /// a contiguity fallback because the summary rewrite is the change most often
+    /// affected and the model cannot be trusted to group or anchor it correctly.
+    let private lineIndexesFor
+        (structure: ResumeStructure option)
+        (bulletsByIndex: Map<int, string>)
+        (proposal: ProposedChange)
+        : int list =
+        match proposal.Kind with
+        | Skill -> [ proposal.LineIndex ]
+        | Bullet ->
+            match itemContaining structure proposal.LineIndex with
+            | Some item when item.Kind = ResumeItemKind.Bullet -> List.sort item.Lines
+            | Some _ -> [ proposal.LineIndex ]
+            | None ->
+                proposal.LineIndex :: wrappedContinuationsFrom bulletsByIndex proposal.LineIndex 1
+                |> List.sort
+        | Paragraph ->
+            let structureLines =
+                itemContaining structure proposal.LineIndex
+                |> Option.map (fun item -> item.Lines)
+                |> Option.defaultValue []
+
+            let contiguousLines =
+                wrappedContinuationsFrom bulletsByIndex proposal.LineIndex -1
+                @ (proposal.LineIndex :: wrappedContinuationsFrom bulletsByIndex proposal.LineIndex 1)
+
+            structureLines @ contiguousLines |> List.distinct |> List.sort
 
     let toChanges
         (bullets: BulletLine list)
@@ -98,28 +174,33 @@ module Bullets =
             |> List.filter (fun proposal -> proposal.Kind = Paragraph)
             |> List.truncate MaxParagraphChanges
 
-        cappedBullets @ skillProposals @ cappedParagraphs
-        |> List.map (fun proposal ->
-            let lineIndexes =
-                if proposal.Kind = Paragraph then
-                    paragraphLinesFor structure proposal.LineIndex
-                    |> Option.defaultValue [ proposal.LineIndex ]
-                else
-                    [ proposal.LineIndex ]
+        let _, changes =
+            cappedBullets @ skillProposals @ cappedParagraphs
+            |> List.fold
+                (fun (consumed: Set<int>, changes) proposal ->
+                    let lineIndexes = lineIndexesFor structure bulletsByIndex proposal
 
-            let original =
-                match lineIndexes with
-                | [ single ] -> bulletsByIndex[single]
-                | _ ->
-                    lineIndexes
-                    |> List.choose (fun lineIndex -> Map.tryFind lineIndex bulletsByIndex)
-                    |> List.map _.Trim()
-                    |> String.concat " "
+                    if lineIndexes |> List.exists consumed.Contains then
+                        consumed, changes
+                    else
+                        let original =
+                            match lineIndexes with
+                            | [ single ] -> bulletsByIndex[single]
+                            | _ ->
+                                lineIndexes
+                                |> List.choose (fun lineIndex -> Map.tryFind lineIndex bulletsByIndex)
+                                |> List.map _.Trim()
+                                |> String.concat " "
 
-            { Id = ChangeId(Guid.NewGuid())
-              LineIndex = List.min lineIndexes
-              LineIndexes = lineIndexes
-              Original = original
-              Tailored = normalizeTailored original proposal.Tailored
-              Kind = proposal.Kind })
-        |> List.sortBy (fun change -> change.LineIndex)
+                        let change =
+                            { Id = ChangeId(Guid.NewGuid())
+                              LineIndex = List.min lineIndexes
+                              LineIndexes = lineIndexes
+                              Original = original
+                              Tailored = normalizeTailored original proposal.Tailored
+                              Kind = proposal.Kind }
+
+                        Set.union consumed (Set.ofList lineIndexes), change :: changes)
+                (Set.empty, [])
+
+        changes |> List.sortBy (fun change -> change.LineIndex)

@@ -138,7 +138,9 @@ module Mapping =
     // are stripped server-side so gap details never leave the API for non-Pro users.
     let private toGatedRequirementDtos (run: TailorRun) : JobRequirementDto list =
         let changeLines =
-            run.Changes |> List.map (fun change -> change.LineIndex) |> Set.ofList
+            run.Changes
+            |> List.collect (fun change -> change.LineIndexes)
+            |> Set.ofList
 
         let isCovered (requirement: JobRequirement) =
             not (List.isEmpty requirement.SatisfiedBy)
