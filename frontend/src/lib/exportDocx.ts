@@ -1,5 +1,13 @@
 import JSZip from 'jszip';
-import { AlignmentType, BorderStyle, Document, Packer, Paragraph, TextRun } from 'docx';
+import {
+  AlignmentType,
+  BorderStyle,
+  Document,
+  LevelFormat,
+  Packer,
+  Paragraph,
+  TextRun,
+} from 'docx';
 import { formatCoverLetterDate, formatCoverLetterSubject } from './formatCoverLetter';
 import type { ResumeStructure } from './types';
 
@@ -11,9 +19,35 @@ const BULLET_MARKER = /^[\s\u00A0]*(?:[-–—•‣◦▪▫·∙●○*+>][\s\
 
 const FONT = 'Calibri';
 const BODY_SIZE = 22;
+const BULLET_MARKER_SIZE = 18;
 const NAME_SIZE = 36;
 const HEADING_SIZE = 24;
 const RESUME_MARGIN = 720;
+const RESUME_BULLET_REF = 'resume-bullets';
+
+const resumeNumbering = {
+  config: [
+    {
+      reference: RESUME_BULLET_REF,
+      levels: [
+        {
+          level: 0,
+          format: LevelFormat.BULLET,
+          text: '\u2022',
+          alignment: AlignmentType.LEFT,
+          style: {
+            run: { font: FONT, size: BULLET_MARKER_SIZE },
+            paragraph: { indent: { left: 720, hanging: 360 } },
+          },
+        },
+      ],
+    },
+  ],
+};
+
+const bulletParagraphOptions = {
+  numbering: { reference: RESUME_BULLET_REF, level: 0 },
+} as const;
 
 const resumeSectionProperties = {
   page: {
@@ -31,6 +65,11 @@ export type DocxReplacement = {
   tailored: string;
 };
 
+export type DocxInsertion = {
+  afterOriginal: string;
+  text: string;
+};
+
 const normalizeLine = (line: string): string =>
   line.replace(BULLET_MARKER, '').replace(/\s+/g, ' ').trim().toLowerCase();
 
@@ -44,9 +83,65 @@ export const normalizeResumeTextForComparison = (text: string): string =>
 
 export const stripBulletMarker = (line: string): string => line.replace(BULLET_MARKER, '');
 
+export const isBulletLine = (line: string): boolean => {
+  const trimmed = line.trim();
+  const stripped = stripBulletMarker(line).trim();
+  return stripped !== trimmed && stripped.length > 0;
+};
+
+const paragraphText = (paragraph: Element): string =>
+  Array.from(paragraph.getElementsByTagNameNS(WORD_NS, 't'))
+    .map((node) => node.textContent ?? '')
+    .join('');
+
+const hasNumbering = (paragraph: Element): boolean =>
+  paragraph.getElementsByTagNameNS(WORD_NS, 'numPr').length > 0;
+
+const setParagraphText = (paragraph: Element, text: string): void => {
+  const textNodes = Array.from(paragraph.getElementsByTagNameNS(WORD_NS, 't'));
+  if (textNodes.length === 0) return;
+  const dominantIndex = textNodes.reduce(
+    (bestIndex, node, index) =>
+      (node.textContent ?? '').length > (textNodes[bestIndex].textContent ?? '').length
+        ? index
+        : bestIndex,
+    0,
+  );
+  textNodes.forEach((node, index) => {
+    node.textContent = index === dominantIndex ? text : '';
+    if (index === dominantIndex) node.setAttributeNS(XML_NS, 'xml:space', 'preserve');
+  });
+};
+
+const resolveInsertText = (rawText: string, template: Element): string => {
+  const stripped = stripBulletMarker(rawText).trim();
+  if (hasNumbering(template)) return stripped;
+  const templateLine = paragraphText(template);
+  const prefix = templateLine.slice(0, templateLine.length - stripBulletMarker(templateLine).length);
+  if (prefix.length > 0) return `${prefix}${stripped}`;
+  if (isBulletLine(rawText)) return rawText.trim();
+  return `- ${stripped}`;
+};
+
+const findBulletTemplate = (paragraphs: Element[], anchorIndex: number): Element => {
+  for (let offset = 0; offset < paragraphs.length; offset += 1) {
+    const candidates = [anchorIndex - offset, anchorIndex + offset].filter(
+      (index) => index >= 0 && index < paragraphs.length,
+    );
+    for (const index of candidates) {
+      const candidate = paragraphs[index];
+      if (hasNumbering(candidate) || isBulletLine(paragraphText(candidate))) {
+        return candidate;
+      }
+    }
+  }
+  return paragraphs[anchorIndex];
+};
+
 export const patchOriginalDocx = async (
   file: File,
   replacements: DocxReplacement[],
+  insertions: DocxInsertion[] = [],
 ): Promise<Blob> => {
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
   const documentEntry = zip.file('word/document.xml');
@@ -65,29 +160,57 @@ export const patchOriginalDocx = async (
     ]),
   );
 
-  let patchedCount = 0;
-  const paragraphs = parsed.getElementsByTagNameNS(WORD_NS, 'p');
-  for (const paragraph of Array.from(paragraphs)) {
-    const textNodes = Array.from(paragraph.getElementsByTagNameNS(WORD_NS, 't'));
-    if (textNodes.length === 0) continue;
-    const paragraphText = textNodes.map((node) => node.textContent ?? '').join('');
-    const tailored = replacementMap.get(normalizeLine(paragraphText));
-    if (tailored === undefined) continue;
-    const dominantIndex = textNodes.reduce(
-      (bestIndex, node, index) =>
-        (node.textContent ?? '').length > (textNodes[bestIndex].textContent ?? '').length
-          ? index
-          : bestIndex,
-      0,
-    );
-    textNodes.forEach((node, index) => {
-      node.textContent = index === dominantIndex ? tailored : '';
-      if (index === dominantIndex) node.setAttributeNS(XML_NS, 'xml:space', 'preserve');
-    });
-    patchedCount += 1;
-  }
+  const insertionsByAnchor = new Map<string, string[]>();
+  insertions.forEach((insertion) => {
+    const key = normalizeLine(insertion.afterOriginal);
+    if (key.length === 0) return;
+    const group = insertionsByAnchor.get(key);
+    if (group) {
+      group.push(insertion.text);
+      return;
+    }
+    insertionsByAnchor.set(key, [insertion.text]);
+  });
 
-  if (patchedCount === 0) throw new Error('no matching paragraphs found');
+  let patchedCount = 0;
+  let insertedCount = 0;
+  const paragraphs = Array.from(parsed.getElementsByTagNameNS(WORD_NS, 'p'));
+  const usedAnchors = new Set<string>();
+
+  paragraphs.forEach((paragraph, paragraphIndex) => {
+    const textNodes = Array.from(paragraph.getElementsByTagNameNS(WORD_NS, 't'));
+    if (textNodes.length === 0) return;
+    const currentText = paragraphText(paragraph);
+    const normalized = normalizeLine(currentText);
+    const tailored = replacementMap.get(normalized);
+    if (tailored !== undefined) {
+      setParagraphText(paragraph, tailored);
+      patchedCount += 1;
+    }
+
+    const textsToInsert = insertionsByAnchor.get(normalized);
+    if (!textsToInsert || usedAnchors.has(normalized)) return;
+    usedAnchors.add(normalized);
+
+    const template = findBulletTemplate(paragraphs, paragraphIndex);
+    let insertAfter: ChildNode = paragraph;
+    textsToInsert.forEach((text) => {
+      const clone = template.cloneNode(true) as Element;
+      setParagraphText(clone, resolveInsertText(text, template));
+      const parent = paragraph.parentNode;
+      if (!parent) return;
+      parent.insertBefore(clone, insertAfter.nextSibling);
+      insertAfter = clone;
+      insertedCount += 1;
+    });
+  });
+
+  if (replacementMap.size > 0 && patchedCount === 0) {
+    throw new Error('no matching paragraphs found');
+  }
+  if (replacementMap.size === 0 && insertions.length > 0 && insertedCount === 0) {
+    throw new Error('no matching paragraphs found');
+  }
 
   zip.file('word/document.xml', new XMLSerializer().serializeToString(parsed));
   return zip.generateAsync({ type: 'blob', mimeType: DOCX_MIME });
@@ -117,12 +240,6 @@ const SECTION_NAMES = new Set([
   'languages',
   'interests',
 ]);
-
-export const isBulletLine = (line: string): boolean => {
-  const trimmed = line.trim();
-  const stripped = stripBulletMarker(line).trim();
-  return stripped !== trimmed && stripped.length > 0;
-};
 
 export const isHeadingLine = (line: string): boolean => {
   const trimmed = line.trim();
@@ -165,7 +282,7 @@ const buildParagraph = (line: string, index: number, previousBlank: boolean): Pa
 
   if (isBulletLine(line)) {
     return new Paragraph({
-      bullet: { level: 0 },
+      ...bulletParagraphOptions,
       spacing: { after: 40 },
       widowControl: true,
       children: [
@@ -209,6 +326,7 @@ export const buildTemplateDocx = async (resumeText: string): Promise<Blob> => {
   });
 
   const document = new Document({
+    numbering: resumeNumbering,
     sections: [{ properties: resumeSectionProperties, children: paragraphs }],
   });
 
@@ -264,7 +382,7 @@ export const buildStructuredDocx = async (
       if (item.kind === 'bullet') {
         paragraphs.push(
           new Paragraph({
-            bullet: { level: 0 },
+            ...bulletParagraphOptions,
             spacing: { after: 40 },
             widowControl: true,
             children: textRuns(texts, { font: FONT, size: BODY_SIZE }),
@@ -294,6 +412,7 @@ export const buildStructuredDocx = async (
   });
 
   const document = new Document({
+    numbering: resumeNumbering,
     sections: [{ properties: resumeSectionProperties, children: paragraphs }],
   });
 

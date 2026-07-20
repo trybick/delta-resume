@@ -48,7 +48,6 @@ export const AnalyticsEvents = {
   ResumePreviewOpen: 'resume_preview_open',
   ResumePreviewClose: 'resume_preview_close',
   ResumePreviewVariantChange: 'resume_preview_variant_change',
-  ResumePreviewViewChange: 'resume_preview_view_change',
   ResumeCopy: 'resume_copy',
   ResumeExport: 'resume_export',
   ShowHiddenLines: 'show_hidden_lines',

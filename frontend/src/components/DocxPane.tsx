@@ -62,6 +62,7 @@ const DocxPane = ({ source, isLoading, hasError }: DocxPaneProps) => {
 
   return (
     <Box
+      className="docx-pane"
       style={{
         position: 'relative',
         flex: 1,

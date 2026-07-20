@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { notifications } from '@mantine/notifications';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { copyResumeRichText } from '../lib/copyResume';
-import { applyAddedBullets } from '../lib/insertions';
+import { applyAddedBullets, formatAddedBulletLine } from '../lib/insertions';
 import {
   buildStructuredDocx,
   buildTemplateDocx,
   downloadDocx,
   normalizeResumeTextForComparison,
   patchOriginalDocx,
+  type DocxInsertion,
 } from '../lib/exportDocx';
 import { buildExportFilename, extractCandidateNameFromResume } from '../lib/exportFilename';
 import { PdfConversionError, convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
@@ -83,13 +84,32 @@ export const useResumeExport = ({
       : buildTemplateDocx(merged.lines.join('\n'));
   };
 
+  const buildKeepInsertions = (): DocxInsertion[] => {
+    if (!result || activeAddedBullets.length === 0) return [];
+    const resumeLines = result.resumeText.split('\n');
+    return activeAddedBullets
+      .filter((bullet) => bullet.text.trim().length > 0)
+      .map((bullet) => {
+        const afterLineIndex = Math.max(
+          0,
+          Math.min(bullet.afterLineIndex, Math.max(resumeLines.length - 1, 0)),
+        );
+        const afterOriginal = resumeLines[afterLineIndex] ?? '';
+        return {
+          afterOriginal,
+          text: formatAddedBulletLine(bullet.text, afterOriginal),
+        };
+      });
+  };
+
   const buildPatchedDocx = async (): Promise<Blob> => {
     if (!result || !originalDocx) return buildCleanDocx();
     const replacements = result.changes
       .filter((change) => decisions[change.id] !== 'reverted')
       .map((change) => ({ original: change.original, tailored: change.tailored }));
+    const insertions = buildKeepInsertions();
     try {
-      return await patchOriginalDocx(originalDocx.file, replacements);
+      return await patchOriginalDocx(originalDocx.file, replacements, insertions);
     } catch {
       notifications.show({
         color: 'orange',
@@ -126,14 +146,6 @@ export const useResumeExport = ({
   const handleExport = async (variant: 'keep' | 'clean', format: 'docx' | 'pdf') => {
     if (!result || isExample || isExporting) return false;
     trackEvent(AnalyticsEvents.ResumeExport, { variant, format });
-    if (variant === 'keep' && activeAddedBullets.length > 0) {
-      notifications.show({
-        color: 'orange',
-        title: 'Added bullets not included',
-        message:
-          'New bullets can\u2019t be inserted into your original file. Use the clean template or copy to clipboard to include them.',
-      });
-    }
     setIsExporting(true);
     try {
       const docxBlob = variant === 'keep' ? await buildPatchedDocx() : await buildCleanDocx();

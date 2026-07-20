@@ -20,8 +20,6 @@ import DocxPane from './DocxPane';
 
 export type PreviewVariant = 'keep' | 'clean';
 
-type PreviewView = 'after' | 'before';
-
 type ExportFormat = 'docx' | 'pdf';
 
 type DocumentPreviewModalProps = {
@@ -42,7 +40,6 @@ const DocumentPreviewModal = ({
   onExport,
 }: DocumentPreviewModalProps) => {
   const isMobile = useMediaQuery('(max-width: 48em)');
-  const [view, setView] = useState<PreviewView>('after');
   const [variant, setVariant] = useState<PreviewVariant>(canPatchOriginal ? 'keep' : 'clean');
   const [afterBlob, setAfterBlob] = useState<Blob | null>(null);
   const [isBuilding, setIsBuilding] = useState(false);
@@ -54,7 +51,6 @@ const DocumentPreviewModal = ({
   buildDocxRef.current = buildDocx;
 
   const effectiveVariant: PreviewVariant = canPatchOriginal ? variant : 'clean';
-  const effectiveView: PreviewView = originalFile === null ? 'after' : view;
 
   useEffect(() => {
     return () => {
@@ -107,17 +103,6 @@ const DocumentPreviewModal = ({
     setVariant(next);
   };
 
-  const handleViewChange = (value: string) => {
-    const next = value as PreviewView;
-    trackEvent(AnalyticsEvents.ResumePreviewViewChange, { view: next });
-    setView(next);
-  };
-
-  const viewOptions = [
-    { value: 'after', label: 'Tailored' },
-    { value: 'before', label: 'Original' },
-  ];
-
   return (
     <Modal
       opened={opened}
@@ -132,27 +117,17 @@ const DocumentPreviewModal = ({
           <Text size="sm" c="dimmed">
             This is exactly what your downloaded file will look like.
           </Text>
-          <Group gap="sm" wrap="nowrap">
-            {canPatchOriginal && (
-              <SegmentedControl
-                size="xs"
-                value={variant}
-                onChange={handleVariantChange}
-                data={[
-                  { value: 'keep', label: 'Keep my formatting' },
-                  { value: 'clean', label: 'Clean template' },
-                ]}
-              />
-            )}
-            {originalFile !== null && (
-              <SegmentedControl
-                size="xs"
-                value={effectiveView}
-                onChange={handleViewChange}
-                data={viewOptions}
-              />
-            )}
-          </Group>
+          {canPatchOriginal && (
+            <SegmentedControl
+              size="xs"
+              value={variant}
+              onChange={handleVariantChange}
+              data={[
+                { value: 'keep', label: 'Keep my formatting' },
+                { value: 'clean', label: 'Clean template' },
+              ]}
+            />
+          )}
         </Group>
 
         {originalFile === null && (
@@ -162,17 +137,12 @@ const DocumentPreviewModal = ({
             icon={<IconInfoCircle size={18} />}
             py={8}
           >
-            Upload your resume as a .docx to compare with the original and keep your formatting on
-            export.
+            Upload your resume as a .docx to keep your formatting on export.
           </Alert>
         )}
 
         <Stack gap={4} h="65vh">
-          {effectiveView === 'before' && originalFile !== null ? (
-            <DocxPane source={originalFile} isLoading={false} hasError={false} />
-          ) : (
-            <DocxPane source={afterBlob} isLoading={isBuilding} hasError={buildFailed} />
-          )}
+          <DocxPane source={afterBlob} isLoading={isBuilding} hasError={buildFailed} />
         </Stack>
 
         <Group justify="flex-end" align="center" wrap="wrap" gap="sm">
