@@ -65,6 +65,8 @@ type ResultsPanelProps = {
   lowCredits?: boolean;
   credits?: CreditStatus | null;
   originalDocx?: OriginalDocx | null;
+  jobTitle?: string;
+  companyName?: string;
   onShowExample?: () => void;
   onUpgradeClick: () => void;
   onNudgeClick?: () => void;
@@ -175,6 +177,8 @@ const ResultsPanel = ({
   lowCredits = false,
   credits = null,
   originalDocx = null,
+  jobTitle,
+  companyName,
   onShowExample,
   onUpgradeClick,
   onNudgeClick,
@@ -266,6 +270,8 @@ const ResultsPanel = ({
     result,
     isExample,
     originalDocx,
+    jobTitle,
+    companyName,
     decisions,
     changesByLine,
     activeAddedBullets,
@@ -462,15 +468,19 @@ const ResultsPanel = ({
                   size={13}
                   stroke={1.8}
                   color={
-                    isOutOfCredits
-                      ? 'var(--mantine-color-orange-5)'
-                      : 'var(--mantine-color-dimmed)'
+                    isOutOfCredits ? 'var(--mantine-color-orange-5)' : 'var(--mantine-color-dimmed)'
                   }
                   style={{ flexShrink: 0 }}
                 />
                 <Text size="xs" c="dimmed" lh={1.4}>
                   {nudgeCountLabel}{' '}
-                  <Anchor size="xs" fw={600} component="button" type="button" onClick={onNudgeClick}>
+                  <Anchor
+                    size="xs"
+                    fw={600}
+                    component="button"
+                    type="button"
+                    onClick={onNudgeClick}
+                  >
                     {nudgeActionLabel}
                   </Anchor>
                 </Text>

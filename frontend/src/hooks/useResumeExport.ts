@@ -26,6 +26,8 @@ type UseResumeExportOptions = {
   result: TailorResult | null;
   isExample: boolean;
   originalDocx: OriginalDocx | null;
+  jobTitle?: string;
+  companyName?: string;
   decisions: Record<string, ChangeDecision>;
   changesByLine: Map<number, BulletChange>;
   activeAddedBullets: AddedBullet[];
@@ -46,6 +48,8 @@ export const useResumeExport = ({
   result,
   isExample,
   originalDocx,
+  jobTitle,
+  companyName,
   decisions,
   changesByLine,
   activeAddedBullets,
@@ -74,7 +78,12 @@ export const useResumeExport = ({
   const resumeFilename = (format: 'docx' | 'pdf'): string => {
     const merged = buildMergedResume();
     const candidateName = extractCandidateNameFromResume(merged.lines, merged.structure);
-    return buildExportFilename([candidateName, 'resume'], 'tailored-resume', format);
+    const exportDate = new Date().toLocaleDateString('en-CA');
+    return buildExportFilename(
+      [candidateName, companyName, jobTitle, 'tailored-resume', exportDate],
+      `tailored-resume-${exportDate}`,
+      format,
+    );
   };
 
   const buildCleanDocx = (): Promise<Blob> => {
