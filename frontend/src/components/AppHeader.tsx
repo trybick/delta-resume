@@ -11,6 +11,7 @@ import { appTheme, spaceGroteskStack } from '../lib/theme';
 type AppHeaderProps = {
   creditsLabel: string | null;
   creditsRemaining: number | null;
+  creditsResetsAt: string | null;
   outOfCredits: boolean;
   lowCredits: boolean;
   isProPlan: boolean;
@@ -21,9 +22,18 @@ type AppHeaderProps = {
   onRetryCredits: () => void;
 };
 
+const formatCreditsResetAt = (resetsAt: string): string =>
+  new Date(resetsAt).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  });
+
 const AppHeader = ({
   creditsLabel,
   creditsRemaining,
+  creditsResetsAt,
   outOfCredits,
   lowCredits,
   isProPlan,
@@ -45,6 +55,29 @@ const AppHeader = ({
 
   const mobileUpgradeLabel =
     creditsRemaining === null ? 'Get Pro' : `${creditsRemaining} left · Get Pro`;
+
+  const proCreditsLabel =
+    creditsRemaining === null
+      ? 'Pro'
+      : `Pro · ${creditsRemaining} ${creditsRemaining === 1 ? 'credit' : 'credits'}`;
+
+  const proCreditsTooltip =
+    creditsResetsAt === null
+      ? 'One tailor uses one credit.'
+      : `One tailor uses one credit. Resets ${formatCreditsResetAt(creditsResetsAt)}.`;
+
+  const proCreditsBadge = (
+    <Tooltip label={proCreditsTooltip}>
+      <Badge
+        size="lg"
+        variant="gradient"
+        gradient={{ ...proAccent.gradient, deg: 45 }}
+        leftSection={<IconCrown size={14} />}
+      >
+        {proCreditsLabel}
+      </Badge>
+    </Tooltip>
+  );
 
   return (
     <Box
@@ -92,16 +125,7 @@ const AppHeader = ({
           </Stack>
         </Group>
         <Group gap="xs" justify="flex-end" align="center" visibleFrom="sm">
-          {planLoaded && isProPlan && (
-            <Badge
-              size="lg"
-              variant="gradient"
-              gradient={{ ...proAccent.gradient, deg: 45 }}
-              leftSection={<IconCrown size={14} />}
-            >
-              Pro
-            </Badge>
-          )}
+          {planLoaded && isProPlan && proCreditsBadge}
           {creditsLabel && (
             <Tooltip label={`${creditsLabel} remaining. One credit is used when tailoring starts.`}>
               <Badge
@@ -114,8 +138,10 @@ const AppHeader = ({
               </Badge>
             </Tooltip>
           )}
-          {!creditsLabel && isLoadingCredits && <Skeleton width={110} height={26} radius="xl" />}
-          {!creditsLabel && creditsError && !isLoadingCredits && (
+          {!creditsLabel && !isProPlan && isLoadingCredits && (
+            <Skeleton width={110} height={26} radius="xl" />
+          )}
+          {!creditsLabel && !isProPlan && creditsError && !isLoadingCredits && (
             <Badge
               size="lg"
               variant="light"
@@ -153,7 +179,7 @@ const AppHeader = ({
         </Group>
         <Group gap="xs" justify="flex-end" wrap="nowrap" align="center" hiddenFrom="sm">
           {!planLoaded && isLoadingCredits && <Skeleton width={110} height={30} radius="xl" />}
-          {!creditsLabel && creditsError && !isLoadingCredits && (
+          {!creditsLabel && !isProPlan && creditsError && !isLoadingCredits && (
             <Badge
               size="lg"
               variant="light"
@@ -164,16 +190,7 @@ const AppHeader = ({
               Retry credits
             </Badge>
           )}
-          {planLoaded && isProPlan && (
-            <Badge
-              size="lg"
-              variant="gradient"
-              gradient={{ ...proAccent.gradient, deg: 45 }}
-              leftSection={<IconCrown size={14} />}
-            >
-              {creditsRemaining === null ? 'Pro' : `Pro · ${creditsRemaining}`}
-            </Badge>
-          )}
+          {planLoaded && isProPlan && proCreditsBadge}
           {planLoaded && !isProPlan && (
             <Button
               size="xs"

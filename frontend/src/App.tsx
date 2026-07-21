@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Alert, Box, Container, Grid, useMantineTheme } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
 import { useAuth } from '@clerk/clerk-react';
+import { useSubscription } from '@clerk/clerk-react/experimental';
 import { IconAlertCircle } from '@tabler/icons-react';
 import AppHeader from './components/AppHeader';
 import AppFooter from './components/AppFooter';
@@ -21,8 +22,52 @@ import { isProPlan as checkIsProPlan } from './lib/constants';
 import { subscribeToRateLimit } from './lib/rateLimitNotice';
 import { formatDefaultResumeName } from './lib/formatDefaultResumeName';
 
+const getNextMonthlyResetAt = (periodStart: Date, now: Date = new Date()): Date => {
+  const anchorDay = periodStart.getUTCDate();
+  let resetYear = now.getUTCFullYear();
+  let resetMonth = now.getUTCMonth();
+  const daysInMonth = new Date(Date.UTC(resetYear, resetMonth + 1, 0)).getUTCDate();
+  let resetAt = new Date(
+    Date.UTC(
+      resetYear,
+      resetMonth,
+      Math.min(anchorDay, daysInMonth),
+      periodStart.getUTCHours(),
+      periodStart.getUTCMinutes(),
+      periodStart.getUTCSeconds(),
+    ),
+  );
+
+  if (resetAt > now) return resetAt;
+
+  resetMonth += 1;
+
+  if (resetMonth === 12) {
+    resetYear += 1;
+    resetMonth = 0;
+  }
+
+  const daysInNextMonth = new Date(Date.UTC(resetYear, resetMonth + 1, 0)).getUTCDate();
+  resetAt = new Date(
+    Date.UTC(
+      resetYear,
+      resetMonth,
+      Math.min(anchorDay, daysInNextMonth),
+      periodStart.getUTCHours(),
+      periodStart.getUTCMinutes(),
+      periodStart.getUTCSeconds(),
+    ),
+  );
+
+  return resetAt;
+};
+
 const App = () => {
   const { isSignedIn, isLoaded, getToken } = useAuth();
+  const { data: subscription } = useSubscription({
+    for: 'user',
+    enabled: isSignedIn === true,
+  });
   const theme = useMantineTheme();
   const isStackedLayout = useMediaQuery(`(max-width: ${theme.breakpoints.md})`);
   const [jobDescription, setJobDescription] = useState('');
@@ -85,6 +130,16 @@ const App = () => {
 
   const isGuest = isSignedIn === false;
   const isProPlan = checkIsProPlan(credits);
+  const proSubscriptionItem = subscription?.subscriptionItems.find(
+    (item) =>
+      item.plan.slug === 'pro' && (item.status === 'active' || item.status === 'past_due'),
+  );
+  const proCreditsResetsAt =
+    proSubscriptionItem === undefined
+      ? null
+      : proSubscriptionItem.planPeriod === 'month' && proSubscriptionItem.periodEnd !== null
+        ? proSubscriptionItem.periodEnd.toISOString()
+        : getNextMonthlyResetAt(proSubscriptionItem.periodStart).toISOString();
   const freeCreditTotal = credits !== null && credits.plan !== 'pro' ? credits.total : null;
   const freeTrialLabel = !isGuest
     ? null
@@ -177,6 +232,7 @@ const App = () => {
       <AppHeader
         creditsLabel={creditsLabel}
         creditsRemaining={credits === null ? null : credits.remaining}
+        creditsResetsAt={proCreditsResetsAt}
         outOfCredits={outOfCredits}
         lowCredits={lowCredits}
         isProPlan={isProPlan}
