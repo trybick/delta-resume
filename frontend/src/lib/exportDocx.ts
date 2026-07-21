@@ -22,8 +22,12 @@ const BULLET_MARKER = /^[\s\u00A0]*(?:[-–—•‣◦▪▫·∙●○*+>][\s\
 const FONT = 'Calibri';
 const BODY_SIZE = 22;
 const BULLET_MARKER_SIZE = 18;
-const NAME_SIZE = 36;
-const HEADING_SIZE = 24;
+const NAME_SIZE = 40;
+const HEADING_SIZE = 22;
+const CONTACT_SIZE = 20;
+const ACCENT_COLOR = '1F4E79';
+const MUTED_COLOR = '595959';
+const RULE_COLOR = 'C9CED6';
 const RESUME_MARGIN = 720;
 const RESUME_PAGE_WIDTH = 12240;
 const RESUME_CONTENT_WIDTH = RESUME_PAGE_WIDTH - RESUME_MARGIN * 2;
@@ -280,7 +284,69 @@ type RunOptions = {
   font: string;
   size: number;
   bold?: boolean;
+  color?: string;
 };
+
+const LEADING_LABEL_PATTERN = /^([^:.]{2,40}):\s+(.+)$/;
+
+type SplitLabelLine = {
+  label: string;
+  rest: string;
+};
+
+const splitLeadingLabel = (text: string): SplitLabelLine | null => {
+  const match = text.match(LEADING_LABEL_PATTERN);
+  if (!match) return null;
+  const label = match[1].trim();
+  const rest = match[2].trim();
+  if (!label || !rest) return null;
+  const words = label.split(/\s+/);
+  if (words.length > 4) return null;
+  return { label, rest };
+};
+
+const labelledTextRuns = (texts: string[], options: RunOptions): TextRun[] => {
+  const runs: TextRun[] = [];
+  texts.forEach((text, index) => {
+    if (index > 0) runs.push(new TextRun({ break: 1 }));
+    const splitLabelLine = splitLeadingLabel(text);
+    if (!splitLabelLine) {
+      runs.push(new TextRun({ text, ...options }));
+      return;
+    }
+    runs.push(
+      new TextRun({ text: `${splitLabelLine.label}: `, ...options, bold: true }),
+      new TextRun({ text: splitLabelLine.rest, ...options }),
+    );
+  });
+  return runs;
+};
+
+const headingParagraph = (texts: string[]): Paragraph =>
+  new Paragraph({
+    spacing: { before: 260, after: 100 },
+    border: {
+      bottom: { style: BorderStyle.SINGLE, size: 6, space: 3, color: RULE_COLOR },
+    },
+    keepNext: true,
+    keepLines: true,
+    children: texts.flatMap((text, index) => {
+      const runs: TextRun[] = [];
+      if (index > 0) runs.push(new TextRun({ break: 1 }));
+      runs.push(
+        new TextRun({
+          text,
+          font: FONT,
+          size: HEADING_SIZE,
+          bold: true,
+          allCaps: true,
+          characterSpacing: 16,
+          color: ACCENT_COLOR,
+        }),
+      );
+      return runs;
+    }),
+  });
 
 type SplitDateLine = {
   left: string;
@@ -311,12 +377,22 @@ const dateAlignedTextRuns = (texts: string[], options: RunOptions): TextRun[] =>
     if (index > 0) runs.push(new TextRun({ break: 1 }));
     const splitDateLine = splitTrailingDate(text);
     if (!splitDateLine) {
+      if (!options.bold) {
+        runs.push(...labelledTextRuns([text], options));
+        return;
+      }
       runs.push(new TextRun({ text, ...options }));
       return;
     }
     runs.push(
       new TextRun({ text: splitDateLine.left, ...options }),
-      new TextRun({ children: [new Tab(), splitDateLine.right], ...options }),
+      new TextRun({
+        children: [new Tab(), splitDateLine.right],
+        ...options,
+        bold: false,
+        italics: true,
+        color: MUTED_COLOR,
+      }),
     );
   });
   return runs;
@@ -326,6 +402,10 @@ const rightDateTabStop = {
   tabStops: [{ type: TabStopType.RIGHT, position: RESUME_CONTENT_WIDTH }],
 } as const;
 
+const CONTACT_LINE_PATTERN = /@|\bwww\.|https?:|linkedin|github|(?:\d[\s().-]*){7,}/i;
+
+const isContactLine = (line: string): boolean => CONTACT_LINE_PATTERN.test(line);
+
 const buildParagraph = (line: string, index: number, previousBlank: boolean): Paragraph | null => {
   const trimmed = line.trim();
   if (trimmed.length === 0) return null;
@@ -333,8 +413,18 @@ const buildParagraph = (line: string, index: number, previousBlank: boolean): Pa
   if (index === 0) {
     return new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 40 },
+      spacing: { after: 60 },
       children: [new TextRun({ text: trimmed, font: FONT, size: NAME_SIZE, bold: true })],
+    });
+  }
+
+  if (index <= 3 && isContactLine(trimmed) && !isBulletLine(line)) {
+    return new Paragraph({
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 20 },
+      children: [
+        new TextRun({ text: trimmed, font: FONT, size: CONTACT_SIZE, color: MUTED_COLOR }),
+      ],
     });
   }
 
@@ -343,20 +433,15 @@ const buildParagraph = (line: string, index: number, previousBlank: boolean): Pa
       ...bulletParagraphOptions,
       spacing: { after: 40 },
       widowControl: true,
-      children: [
-        new TextRun({ text: stripBulletMarker(line).trim(), font: FONT, size: BODY_SIZE }),
-      ],
+      children: labelledTextRuns([stripBulletMarker(line).trim()], {
+        font: FONT,
+        size: BODY_SIZE,
+      }),
     });
   }
 
   if (isHeadingLine(line)) {
-    return new Paragraph({
-      spacing: { before: 220, after: 80 },
-      border: { bottom: { style: BorderStyle.SINGLE, size: 4, space: 2 } },
-      keepNext: true,
-      keepLines: true,
-      children: [new TextRun({ text: trimmed, font: FONT, size: HEADING_SIZE, bold: true })],
-    });
+    return headingParagraph([trimmed]);
   }
 
   return new Paragraph({
@@ -406,14 +491,16 @@ export const buildStructuredDocx = async (
   structure.headerLines.forEach((lineIndex, headerIndex) => {
     const texts = structuredLines(lines, [lineIndex]);
     if (texts.length === 0) return;
+    const isName = headerIndex === 0;
     paragraphs.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { after: headerIndex === 0 ? 60 : 20 },
+        spacing: { after: isName ? 60 : 20 },
         children: textRuns(texts, {
           font: FONT,
-          size: headerIndex === 0 ? NAME_SIZE : BODY_SIZE,
-          bold: headerIndex === 0,
+          size: isName ? NAME_SIZE : CONTACT_SIZE,
+          bold: isName,
+          ...(isName ? {} : { color: MUTED_COLOR }),
         }),
       }),
     );
@@ -423,15 +510,7 @@ export const buildStructuredDocx = async (
     if (section.headingLine !== null) {
       const headingTexts = structuredLines(lines, [section.headingLine]);
       if (headingTexts.length > 0) {
-        paragraphs.push(
-          new Paragraph({
-            spacing: { before: 220, after: 80 },
-            border: { bottom: { style: BorderStyle.SINGLE, size: 4, space: 2 } },
-            keepNext: true,
-            keepLines: true,
-            children: textRuns(headingTexts, { font: FONT, size: HEADING_SIZE, bold: true }),
-          }),
-        );
+        paragraphs.push(headingParagraph(headingTexts));
       }
     }
 
@@ -444,7 +523,7 @@ export const buildStructuredDocx = async (
             ...bulletParagraphOptions,
             spacing: { after: 40 },
             widowControl: true,
-            children: textRuns(texts, { font: FONT, size: BODY_SIZE }),
+            children: labelledTextRuns(texts, { font: FONT, size: BODY_SIZE }),
           }),
         );
         return;

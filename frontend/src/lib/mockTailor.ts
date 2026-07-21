@@ -4,18 +4,18 @@ export const SAMPLE_RESUME = `Jordan Ellis
 Senior Software Engineer | jordan.ellis@email.com | (415) 555-0182 | San Francisco, CA
 linkedin.com/in/jordanellis | github.com/jordanellis
 
+SUMMARY
+
+Senior software engineer with 8 years of experience building consumer-facing web products
+and the platform infrastructure behind them. Comfortable owning features end to end, from
+database schema to pixel-level UI polish. Enjoys mentoring and improving developer experience.
+
 SKILLS
 
 Languages: TypeScript, JavaScript, Python, SQL
 Frontend: React, Next.js, Redux, HTML/CSS, Vite
 Backend: Node.js, Express, PostgreSQL, Redis, REST APIs
 Infrastructure: AWS, Docker, Terraform, GitHub Actions, Datadog
-
-SUMMARY
-
-Senior software engineer with 8 years of experience building consumer-facing web products
-and the platform infrastructure behind them. Comfortable owning features end to end, from
-database schema to pixel-level UI polish. Enjoys mentoring and improving developer experience.
 
 EXPERIENCE
 
@@ -52,7 +52,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
   {
     text: 'Expert React and TypeScript development',
     importance: 'must',
-    satisfiedBy: [6, 7],
+    satisfiedBy: [12, 13],
     satisfiedByChanges: [],
     gapHint: null,
     draftBullet: null,
@@ -62,7 +62,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
   {
     text: 'Building consumer-facing web products',
     importance: 'must',
-    satisfiedBy: [13, 20],
+    satisfiedBy: [6, 20],
     satisfiedByChanges: [],
     gapHint: null,
     draftBullet: null,
@@ -82,7 +82,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
   {
     text: 'REST API design and integration',
     importance: 'must',
-    satisfiedBy: [8, 28],
+    satisfiedBy: [14, 28],
     satisfiedByChanges: [],
     gapHint: null,
     draftBullet: null,
@@ -103,7 +103,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
   {
     text: 'Next.js',
     importance: 'nice',
-    satisfiedBy: [7],
+    satisfiedBy: [13],
     satisfiedByChanges: [],
     gapHint: null,
     draftBullet: null,
@@ -113,7 +113,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
   {
     text: 'AWS cloud infrastructure',
     importance: 'nice',
-    satisfiedBy: [9, 22],
+    satisfiedBy: [15, 22],
     satisfiedByChanges: [],
     gapHint: null,
     draftBullet: null,
@@ -123,7 +123,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
   {
     text: 'Mentoring junior engineers',
     importance: 'nice',
-    satisfiedBy: [15, 23],
+    satisfiedBy: [8, 23],
     satisfiedByChanges: [],
     gapHint: null,
     draftBullet: null,
@@ -214,16 +214,16 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
     },
     {
       id: 'sample-change-5',
-      lineIndex: 7,
-      lineIndexes: [7],
+      lineIndex: 13,
+      lineIndexes: [13],
       original: 'Frontend: React, Next.js, Redux, HTML/CSS, Vite',
       tailored: 'Frontend: React, Next.js, Redux, HTML/CSS, Vite, React Native',
       kind: 'skill',
     },
     {
       id: 'sample-change-6',
-      lineIndex: 13,
-      lineIndexes: [13, 14, 15],
+      lineIndex: 6,
+      lineIndexes: [6, 7, 8],
       original:
         'Senior software engineer with 8 years of experience building consumer-facing web products and the platform infrastructure behind them. Comfortable owning features end to end, from database schema to pixel-level UI polish. Enjoys mentoring and improving developer experience.',
       tailored:
@@ -237,16 +237,16 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
     sections: [
       {
         headingLine: 4,
-        items: [
-          { kind: 'paragraph', lines: [6] },
-          { kind: 'paragraph', lines: [7] },
-          { kind: 'paragraph', lines: [8] },
-          { kind: 'paragraph', lines: [9] },
-        ],
+        items: [{ kind: 'paragraph', lines: [6, 7, 8] }],
       },
       {
-        headingLine: 11,
-        items: [{ kind: 'paragraph', lines: [13, 14, 15] }],
+        headingLine: 10,
+        items: [
+          { kind: 'paragraph', lines: [12] },
+          { kind: 'paragraph', lines: [13] },
+          { kind: 'paragraph', lines: [14] },
+          { kind: 'paragraph', lines: [15] },
+        ],
       },
       {
         headingLine: 17,
