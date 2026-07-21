@@ -118,24 +118,6 @@ body {
     padding-inline: 4px;
   }
 
-  .change-stats-pill {
-    flex-shrink: 1 !important;
-  }
-
-  .change-stats-updated {
-    padding-inline: 10px !important;
-  }
-
-  .change-stat-segment {
-    padding-inline: 8px !important;
-  }
-
-  .change-stat-label,
-  .example-result-badge,
-  .requirements-coverage-detail {
-    display: none;
-  }
-
   .diff-bullet-row {
     align-items: stretch;
     flex-direction: column;
@@ -157,10 +139,6 @@ body {
   .gap-row-action {
     grid-column: 2;
     justify-self: start;
-  }
-
-  .requirements-coverage-badge {
-    max-width: 100%;
   }
 
   .collapsible-insight-label {

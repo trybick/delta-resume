@@ -225,8 +225,8 @@ export const useResumeExport = ({
     variant === 'keep' ? buildPatchedDocx() : buildCleanDocx();
 
   const handlePreviewOpen = () => {
-    if (!result || isExample) return;
-    trackEvent(AnalyticsEvents.ResumePreviewOpen);
+    if (!result) return;
+    trackEvent(AnalyticsEvents.ResumePreviewOpen, { is_example: isExample });
     setPreviewOpen(true);
   };
 

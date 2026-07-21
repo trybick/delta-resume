@@ -220,6 +220,16 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
       tailored: 'Frontend: React, Next.js, Redux, HTML/CSS, Vite, React Native',
       kind: 'skill',
     },
+    {
+      id: 'sample-change-6',
+      lineIndex: 13,
+      lineIndexes: [13, 14, 15],
+      original:
+        'Senior software engineer with 8 years of experience building consumer-facing web products and the platform infrastructure behind them. Comfortable owning features end to end, from database schema to pixel-level UI polish. Enjoys mentoring and improving developer experience.',
+      tailored:
+        'Senior software engineer with 8 years of experience building fast, consumer-facing web products in React and TypeScript. Comfortable owning features end to end, from database schema to pixel-level UI polish. Enjoys mentoring and improving developer experience.',
+      kind: 'paragraph',
+    },
   ],
   requirements: SAMPLE_REQUIREMENTS,
   structure: {

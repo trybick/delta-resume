@@ -27,6 +27,7 @@ type DocumentPreviewModalProps = {
   onClose: () => void;
   originalFile: File | null;
   canPatchOriginal: boolean;
+  isExample?: boolean;
   buildDocx: (variant: PreviewVariant) => Promise<Blob>;
   onExport: (variant: PreviewVariant, format: ExportFormat) => Promise<boolean>;
 };
@@ -36,6 +37,7 @@ const DocumentPreviewModal = ({
   onClose,
   originalFile,
   canPatchOriginal,
+  isExample = false,
   buildDocx,
   onExport,
 }: DocumentPreviewModalProps) => {
@@ -130,7 +132,18 @@ const DocumentPreviewModal = ({
           )}
         </Group>
 
-        {originalFile === null && (
+        {isExample && (
+          <Alert
+            color="cyan"
+            variant="light"
+            icon={<IconInfoCircle size={18} />}
+            py={8}
+          >
+            You&rsquo;re previewing the example resume. Run your own tailor to download your
+            version.
+          </Alert>
+        )}
+        {!isExample && originalFile === null && (
           <Alert
             color="blue"
             variant="light"
@@ -159,7 +172,7 @@ const DocumentPreviewModal = ({
                 )
               }
               loading={exportingFormat === 'pdf'}
-              disabled={exportingFormat === 'docx' || buildFailed}
+              disabled={isExample || exportingFormat === 'docx' || buildFailed}
               onClick={() => void handleDownload('pdf')}
             >
               {downloadedFormat === 'pdf' ? 'Downloaded' : 'PDF (.pdf)'}
@@ -175,7 +188,7 @@ const DocumentPreviewModal = ({
                 )
               }
               loading={exportingFormat === 'docx'}
-              disabled={exportingFormat === 'pdf' || buildFailed}
+              disabled={isExample || exportingFormat === 'pdf' || buildFailed}
               onClick={() => void handleDownload('docx')}
             >
               {downloadedFormat === 'docx' ? 'Downloaded' : 'Word (.docx)'}

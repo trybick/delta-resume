@@ -28,6 +28,7 @@ import {
   IconSparkles,
   IconTargetArrow,
 } from '@tabler/icons-react';
+import { useMediaQuery } from '@mantine/hooks';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { hasDraftBullet } from '../lib/hasDraftBullet';
 import { LOCKED_GAP_PLACEHOLDERS } from '../lib/lockedGapPlaceholders';
@@ -47,7 +48,8 @@ import type {
 import { useProUpgradeCtaLabel } from '../hooks/useProPlan';
 import { useResumeExport } from '../hooks/useResumeExport';
 import AddedBulletRow from './AddedBulletRow';
-import ChangeStatsPill from './ChangeStatsPill';
+import ChangeStatsPill, { UpdatedBadge } from './ChangeStatsPill';
+import RequirementsCoverage from './RequirementsCoverage';
 import CollapsedContext from './CollapsedContext';
 import CollapsibleInsight from './CollapsibleInsight';
 import ContextLine from './ContextLine';
@@ -231,6 +233,7 @@ const ResultsPanel = ({
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [gapsOpen, setGapsOpen] = useState(() => (result ? hasMustHaveGaps(result) : false));
   const upgradeCtaLabel = useProUpgradeCtaLabel();
+  const isNarrowMobile = useMediaQuery('(max-width: 36em)');
 
   useEffect(() => {
     setExpandedSegments(new Set());
@@ -457,183 +460,168 @@ const ResultsPanel = ({
       : 'Sign up to save your resumes automatically'
     : 'Upgrade to Pro';
 
+  const actionButtons = (
+    <Group
+      gap="xs"
+      wrap="nowrap"
+      grow={isNarrowMobile}
+      preventGrowOverflow={false}
+      style={{ flexShrink: 0 }}
+    >
+      <Tooltip label="Preview the final document before downloading" withArrow>
+        <Button
+          size="xs"
+          variant="light"
+          leftSection={<IconEye size={16} />}
+          onClick={handlePreviewOpen}
+        >
+          Preview
+        </Button>
+      </Tooltip>
+      <Menu
+        position="bottom-end"
+        withinPortal
+        onOpen={() => trackEvent(AnalyticsEvents.ResumeExportMenuOpen)}
+      >
+        <Menu.Target>
+          <Button
+            size="xs"
+            variant="light"
+            leftSection={<IconDownload size={16} />}
+            rightSection={<IconChevronDown size={14} />}
+            loading={isExporting}
+          >
+            Export
+          </Button>
+        </Menu.Target>
+        <Menu.Dropdown>
+          <Menu.Item
+            leftSection={<IconCopy size={16} />}
+            disabled={isExample}
+            onClick={handleCopy}
+          >
+            Copy to clipboard
+          </Menu.Item>
+          <Menu.Divider />
+          {isExample && (
+            <>
+              <Menu.Label>Example preview — export unavailable</Menu.Label>
+              <Menu.Divider />
+            </>
+          )}
+          {canPatchOriginal && (
+            <>
+              <Menu.Label>Keep my formatting</Menu.Label>
+              <Menu.Item
+                leftSection={<IconFileDescription size={16} />}
+                rightSection={
+                  <Badge size="xs" variant="light" color="teal">
+                    Recommended
+                  </Badge>
+                }
+                disabled={isExample}
+                onClick={() => handleExport('keep', 'docx')}
+              >
+                Word (.docx)
+              </Menu.Item>
+              <Menu.Item
+                leftSection={<IconFileTypePdf size={16} />}
+                disabled={isExample}
+                onClick={() => handleExport('keep', 'pdf')}
+              >
+                PDF (.pdf)
+              </Menu.Item>
+              <Menu.Divider />
+            </>
+          )}
+          {!canPatchOriginal && !isExample && (
+            <>
+              <Menu.Label>Keep my formatting</Menu.Label>
+              <Text size="xs" c="dimmed" px={12} pb={8} maw={240}>
+                Upload your resume as a .docx to export with your original formatting preserved.
+              </Text>
+              <Menu.Divider />
+            </>
+          )}
+          <Menu.Label>Clean template</Menu.Label>
+          <Menu.Item
+            leftSection={<IconFileDescription size={16} />}
+            disabled={isExample}
+            onClick={() => handleExport('clean', 'docx')}
+          >
+            Word (.docx)
+          </Menu.Item>
+          <Menu.Item
+            leftSection={<IconFileTypePdf size={16} />}
+            disabled={isExample}
+            onClick={() => handleExport('clean', 'pdf')}
+          >
+            PDF (.pdf)
+          </Menu.Item>
+        </Menu.Dropdown>
+      </Menu>
+    </Group>
+  );
+
   return (
     <Card className="results-card" withBorder shadow="xs" p={{ base: 'sm', sm: 'lg' }}>
       <Stack gap="md">
-        <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
-          <Stack gap="xs" style={{ flexShrink: 0, minWidth: 0, maxWidth: '100%' }}>
-            <Group gap="sm" align="center" wrap="nowrap">
-              <ChangeStatsPill
-                bulletCount={bulletChangeCount}
-                skillCount={skillChangeCount}
-                paragraphCount={paragraphChangeCount}
-              />
-              {isExample && (
-                <Badge
-                  className="example-result-badge"
-                  color="cyan"
-                  variant="light"
-                  style={{ flexShrink: 0 }}
-                >
-                  Example
-                </Badge>
-              )}
-            </Group>
-            {requirements.length > 0 && (
-              <Tooltip label="How many of the job's key requirements your resume demonstrates, counting the changes you keep applied.">
-                <Badge
-                  className="requirements-coverage-badge"
-                  size="md"
-                  color="green"
-                  variant="light"
-                  leftSection={<IconTargetArrow size={14} />}
-                  style={{ width: 'fit-content' }}
-                >
-                  Covers {coveredCount} of {requirements.length} requirements
-                  {coveredByChangesCount > 0 && (
-                    <span className="requirements-coverage-detail">
-                      {' '}
-                      (+{coveredByChangesCount} from changes)
-                    </span>
-                  )}
-                </Badge>
-              </Tooltip>
-            )}
-            {(showGuestNudge || showFreeUpgradeNudge) && (
-              <Group
-                gap={6}
-                wrap="nowrap"
-                px={10}
-                py={4}
-                style={{
-                  width: 'fit-content',
-                  maxWidth: '100%',
-                  borderRadius: 999,
-                  backgroundColor: isOutOfCredits
-                    ? 'var(--mantine-color-orange-light)'
-                    : 'var(--mantine-color-default-hover)',
-                }}
-              >
-                <IconCoins
-                  size={13}
-                  stroke={1.8}
-                  color={
-                    isOutOfCredits ? 'var(--mantine-color-orange-5)' : 'var(--mantine-color-dimmed)'
-                  }
-                  style={{ flexShrink: 0 }}
-                />
-                <Text size="xs" c="dimmed" lh={1.4}>
-                  {nudgeCountLabel}{' '}
-                  <Anchor
-                    size="xs"
-                    fw={600}
-                    component="button"
-                    type="button"
-                    onClick={onNudgeClick}
-                  >
-                    {nudgeActionLabel}
-                  </Anchor>
-                </Text>
-              </Group>
-            )}
-          </Stack>
-          <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0, marginLeft: 'auto' }}>
-            <Tooltip label="Preview the final document before downloading" withArrow>
-              <Button
-                size="xs"
-                variant="light"
-                leftSection={<IconEye size={16} />}
-                disabled={isExample}
-                onClick={handlePreviewOpen}
-              >
-                Preview
-              </Button>
-            </Tooltip>
-            <Menu
-              position="bottom-end"
-              withinPortal
-              onOpen={() => trackEvent(AnalyticsEvents.ResumeExportMenuOpen)}
-            >
-              <Menu.Target>
-                <Button
-                  size="xs"
-                  variant="light"
-                  leftSection={<IconDownload size={16} />}
-                  rightSection={<IconChevronDown size={14} />}
-                  loading={isExporting}
-                >
-                  Export
-                </Button>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={<IconCopy size={16} />}
-                  disabled={isExample}
-                  onClick={handleCopy}
-                >
-                  Copy to clipboard
-                </Menu.Item>
-                <Menu.Divider />
-                {isExample && (
-                  <>
-                    <Menu.Label>Example preview — export unavailable</Menu.Label>
-                    <Menu.Divider />
-                  </>
-                )}
-                {canPatchOriginal && (
-                  <>
-                    <Menu.Label>Keep my formatting</Menu.Label>
-                    <Menu.Item
-                      leftSection={<IconFileDescription size={16} />}
-                      rightSection={
-                        <Badge size="xs" variant="light" color="teal">
-                          Recommended
-                        </Badge>
-                      }
-                      disabled={isExample}
-                      onClick={() => handleExport('keep', 'docx')}
-                    >
-                      Word (.docx)
-                    </Menu.Item>
-                    <Menu.Item
-                      leftSection={<IconFileTypePdf size={16} />}
-                      disabled={isExample}
-                      onClick={() => handleExport('keep', 'pdf')}
-                    >
-                      PDF (.pdf)
-                    </Menu.Item>
-                    <Menu.Divider />
-                  </>
-                )}
-                {!canPatchOriginal && !isExample && (
-                  <>
-                    <Menu.Label>Keep my formatting</Menu.Label>
-                    <Text size="xs" c="dimmed" px={12} pb={8} maw={240}>
-                      Upload your resume as a .docx to export with your original formatting
-                      preserved.
-                    </Text>
-                    <Menu.Divider />
-                  </>
-                )}
-                <Menu.Label>Clean template</Menu.Label>
-                <Menu.Item
-                  leftSection={<IconFileDescription size={16} />}
-                  disabled={isExample}
-                  onClick={() => handleExport('clean', 'docx')}
-                >
-                  Word (.docx)
-                </Menu.Item>
-                <Menu.Item
-                  leftSection={<IconFileTypePdf size={16} />}
-                  disabled={isExample}
-                  onClick={() => handleExport('clean', 'pdf')}
-                >
-                  PDF (.pdf)
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
+        <Stack gap="sm">
+          <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
+            <UpdatedBadge />
+            {!isNarrowMobile && actionButtons}
           </Group>
-        </Group>
+          <ChangeStatsPill
+            bulletCount={bulletChangeCount}
+            skillCount={skillChangeCount}
+            paragraphCount={paragraphChangeCount}
+          />
+          {requirements.length > 0 && (
+            <RequirementsCoverage
+              coveredCount={coveredCount}
+              totalCount={requirements.length}
+              coveredByChangesCount={coveredByChangesCount}
+            />
+          )}
+          {(showGuestNudge || showFreeUpgradeNudge) && (
+            <Group
+              gap={6}
+              wrap="nowrap"
+              px={10}
+              py={4}
+              style={{
+                width: 'fit-content',
+                maxWidth: '100%',
+                borderRadius: 999,
+                backgroundColor: isOutOfCredits
+                  ? 'var(--mantine-color-orange-light)'
+                  : 'var(--mantine-color-default-hover)',
+              }}
+            >
+              <IconCoins
+                size={13}
+                stroke={1.8}
+                color={
+                  isOutOfCredits ? 'var(--mantine-color-orange-5)' : 'var(--mantine-color-dimmed)'
+                }
+                style={{ flexShrink: 0 }}
+              />
+              <Text size="xs" c="dimmed" lh={1.4}>
+                {nudgeCountLabel}{' '}
+                <Anchor
+                  size="xs"
+                  fw={600}
+                  component="button"
+                  type="button"
+                  onClick={onNudgeClick}
+                >
+                  {nudgeActionLabel}
+                </Anchor>
+              </Text>
+            </Group>
+          )}
+          {isNarrowMobile && actionButtons}
+        </Stack>
 
         <CollapsibleInsight
           open={summaryOpen}
@@ -792,6 +780,7 @@ const ResultsPanel = ({
         onClose={handlePreviewClose}
         originalFile={originalDocx?.file ?? null}
         canPatchOriginal={canPatchOriginal}
+        isExample={isExample}
         buildDocx={buildPreviewDocx}
         onExport={handleExport}
       />
