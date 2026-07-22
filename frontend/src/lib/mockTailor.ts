@@ -131,17 +131,6 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     locked: false,
   },
   {
-    text: 'Accessibility (WCAG) standards',
-    importance: 'nice',
-    satisfiedBy: [],
-    satisfiedByChanges: [],
-    gapHint: 'Would fit under your onboarding redesign bullet at Globex.',
-    draftBullet:
-      '- Brought [flow or product] up to WCAG [2.1 AA] accessibility standards, validating with [screen readers and audits]',
-    insertAfterLine: 29,
-    locked: false,
-  },
-  {
     text: 'Design systems and component libraries',
     importance: 'nice',
     satisfiedBy: [],

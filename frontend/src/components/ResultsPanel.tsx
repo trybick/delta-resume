@@ -342,12 +342,24 @@ const ResultsPanel = ({
     isRequirementCovered(requirement) || addedByRequirement.has(requirement.text);
 
   const coveredCount = requirements.filter(isRequirementResolved).length;
+  const baseCoveredCount = requirements.filter(
+    (requirement) => requirement.satisfiedBy.length > 0,
+  ).length;
   const coveredByChangesCount = requirements.filter(
     (requirement) => requirement.satisfiedBy.length === 0 && isRequirementCovered(requirement),
+  ).length;
+  const coveredByAddedCount = requirements.filter(
+    (requirement) => !isRequirementCovered(requirement) && addedByRequirement.has(requirement.text),
   ).length;
   const gaps = requirements.filter((requirement) => !isRequirementCovered(requirement));
   const unresolvedGapCount = gaps.filter(
     (requirement) => !addedByRequirement.has(requirement.text),
+  ).length;
+  const availableFillerCount = gaps.filter(
+    (requirement) =>
+      !requirement.locked &&
+      !addedByRequirement.has(requirement.text) &&
+      hasDraftBullet(requirement),
   ).length;
   const gapsLabel =
     unresolvedGapCount > 0
@@ -580,7 +592,10 @@ const ResultsPanel = ({
             <RequirementsCoverage
               coveredCount={coveredCount}
               totalCount={requirements.length}
+              baseCoveredCount={baseCoveredCount}
               coveredByChangesCount={coveredByChangesCount}
+              coveredByAddedCount={coveredByAddedCount}
+              availableFillerCount={availableFillerCount}
             />
           )}
           {(showGuestNudge || showFreeUpgradeNudge) && (

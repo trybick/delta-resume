@@ -4,25 +4,57 @@ import { IconTargetArrow } from '@tabler/icons-react';
 type RequirementsCoverageProps = {
   coveredCount: number;
   totalCount: number;
+  baseCoveredCount: number;
   coveredByChangesCount: number;
+  coveredByAddedCount: number;
+  availableFillerCount: number;
 };
+
+type LegendItemProps = {
+  color: string;
+  dashed?: boolean;
+  label: string;
+};
+
+const LegendItem = ({ color, dashed, label }: LegendItemProps) => (
+  <Group gap={5} wrap="nowrap">
+    <Box
+      w={8}
+      h={8}
+      style={{
+        flexShrink: 0,
+        borderRadius: 999,
+        backgroundColor: dashed ? 'transparent' : color,
+        border: dashed ? `1.5px dashed ${color}` : undefined,
+      }}
+    />
+    <Text size="xs" c="dimmed" lh={1.3}>
+      {label}
+    </Text>
+  </Group>
+);
 
 const RequirementsCoverage = ({
   coveredCount,
   totalCount,
+  baseCoveredCount,
   coveredByChangesCount,
+  coveredByAddedCount,
+  availableFillerCount,
 }: RequirementsCoverageProps) => {
   if (totalCount === 0) return null;
 
-  const baseCoveredCount = Math.max(coveredCount - coveredByChangesCount, 0);
   const basePercent = (baseCoveredCount / totalCount) * 100;
-  const changesPercent = (Math.min(coveredByChangesCount, coveredCount) / totalCount) * 100;
+  const changesPercent = (coveredByChangesCount / totalCount) * 100;
+  const addedPercent = (coveredByAddedCount / totalCount) * 100;
+  const potentialPercent = (availableFillerCount / totalCount) * 100;
+  const potentialCount = coveredCount + availableFillerCount;
 
   return (
     <Tooltip
-      label="How many of the job's key requirements your resume demonstrates, counting the changes you keep applied."
+      label="How many of the job's key requirements your resume demonstrates: what your original resume already covered, what the tailored changes now cover, and gaps you can still fill with suggested bullets."
       multiline
-      maw={320}
+      maw={340}
     >
       <Box
         className="requirements-coverage"
@@ -55,28 +87,51 @@ const RequirementsCoverage = ({
               {' '}
               of {totalCount}
             </Text>
+            {availableFillerCount > 0 && (
+              <Text component="span" size="xs" c="dimmed">
+                {' '}
+                ({potentialCount} possible)
+              </Text>
+            )}
           </Text>
         </Group>
         <Progress.Root size={8} radius="xl">
           <Progress.Section value={basePercent} color="green.7" />
-          <Progress.Section value={changesPercent} color="lime.4" />
+          <Progress.Section value={changesPercent} color="cyan.5" />
+          <Progress.Section value={addedPercent} color="cyan.5" style={{ opacity: 0.55 }} />
+          <Progress.Section
+            value={potentialPercent}
+            color="gray.6"
+            striped
+            style={{ opacity: 0.45 }}
+          />
         </Progress.Root>
-        {coveredByChangesCount > 0 && (
-          <Group gap={6} wrap="nowrap" mt={6}>
-            <Box
-              w={8}
-              h={8}
-              style={{
-                flexShrink: 0,
-                borderRadius: 999,
-                backgroundColor: 'var(--mantine-color-lime-4)',
-              }}
+        <Group gap="sm" mt={6} wrap="wrap">
+          <LegendItem
+            color="var(--mantine-color-green-7)"
+            label={`${baseCoveredCount} already on your resume`}
+          />
+          {coveredByChangesCount > 0 && (
+            <LegendItem
+              color="var(--mantine-color-cyan-5)"
+              label={`+${coveredByChangesCount} from tailored changes`}
             />
-            <Text size="xs" c="dimmed" lh={1.3}>
-              +{coveredByChangesCount} from the changes you keep
-            </Text>
-          </Group>
-        )}
+          )}
+          {coveredByAddedCount > 0 && (
+            <LegendItem
+              color="var(--mantine-color-cyan-5)"
+              dashed
+              label={`+${coveredByAddedCount} from bullets you added`}
+            />
+          )}
+          {availableFillerCount > 0 && (
+            <LegendItem
+              color="var(--mantine-color-gray-5)"
+              dashed
+              label={`+${availableFillerCount} more if you add the suggested bullets below`}
+            />
+          )}
+        </Group>
       </Box>
     </Tooltip>
   );
