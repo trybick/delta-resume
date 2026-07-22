@@ -9,8 +9,10 @@ open Microsoft.AspNetCore.Authentication.JwtBearer
 open Microsoft.AspNetCore.Builder
 open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.ResponseCompression
+open Microsoft.Extensions.Caching.Memory
 open Microsoft.Extensions.DependencyInjection
 open Microsoft.Extensions.Hosting
+open Microsoft.Extensions.Logging
 open Npgsql
 open DeltaResume.Api
 open DeltaResume.Application
@@ -74,6 +76,11 @@ let main args =
         |> Option.filter (String.IsNullOrWhiteSpace >> not)
         |> Option.map (fun url -> url.TrimEnd '/')
 
+    let clerkSecretKey =
+        Environment.GetEnvironmentVariable "CLERK_SECRET_KEY"
+        |> Option.ofObj
+        |> Option.filter (String.IsNullOrWhiteSpace >> not)
+
     let corsOrigins =
         Environment.GetEnvironmentVariable "CORS_ORIGINS"
         |> Option.ofObj
@@ -124,12 +131,21 @@ let main args =
                 options.TokenValidationParameters.ValidateAudience <- false
                 options.TokenValidationParameters.ValidIssuer <- authority)
         |> ignore
+
+        if clerkSecretKey.IsNone then
+            eprintfn "Warning: CLERK_SECRET_KEY is not set; lifetime-free Pro entitlements from public metadata are disabled."
     | None ->
         eprintfn "Warning: CLERK_FRONTEND_API_URL is not set; all requests are treated as guests."
 
     builder.Services.AddCors(fun options ->
         options.AddDefaultPolicy(fun policy ->
             policy.WithOrigins(corsOrigins).AllowAnyHeader().AllowAnyMethod() |> ignore))
+    |> ignore
+
+    builder.Services.AddMemoryCache() |> ignore
+
+    builder.Services
+        .AddHttpClient("clerk", fun client -> client.Timeout <- TimeSpan.FromSeconds 10.0)
     |> ignore
 
     let jsonOptions =
@@ -141,6 +157,15 @@ let main args =
     |> ignore
 
     builder.Services.AddSingleton<HttpClient>(fun _ -> new HttpClient(Timeout = TimeSpan.FromSeconds 120.0))
+    |> ignore
+
+    builder.Services.AddSingleton<ClerkUsers>(fun provider ->
+        ClerkUsers(
+            provider.GetRequiredService<IHttpClientFactory>(),
+            provider.GetRequiredService<IMemoryCache>(),
+            provider.GetRequiredService<ILogger<ClerkUsers>>(),
+            clerkSecretKey
+        ))
     |> ignore
 
     builder.Services.AddSingleton<TailoringEngine>(fun provider ->

@@ -5,6 +5,7 @@ open System.IO
 open System.Threading
 open Giraffe
 open Microsoft.AspNetCore.Http
+open Microsoft.Extensions.Logging
 open Sentry
 open DeltaResume.Application
 open DeltaResume.Domain
@@ -74,6 +75,37 @@ module Handlers =
 
     let private persistenceFailureResponse: HttpHandler =
         errorResponse StatusCodes.Status500InternalServerError "Something went wrong. Please try again."
+
+    let hydrateClerkPublicUser: HttpHandler =
+        fun next ctx ->
+            task {
+                match Identity.tryGetAuthenticatedUserId ctx.User with
+                | None -> return! next ctx
+                | Some userId ->
+                    let clerkUsers = ctx.GetService<ClerkUsers>()
+                    let! publicUser = clerkUsers.GetPublicUser(userId, ctx.RequestAborted)
+
+                    let resolvedUser =
+                        publicUser
+                        |> Option.defaultValue
+                            { UserId = userId
+                              PublicMetadataJson = "{}"
+                              IsLifetimeFree = false }
+
+                    Identity.setClerkPublicUser ctx resolvedUser
+
+                    let logger =
+                        ctx.GetService<ILoggerFactory>().CreateLogger("DeltaResume.Auth")
+
+                    logger.LogInformation(
+                        "Clerk public metadata userId={UserId} isLifetimeFree={IsLifetimeFree} path={Path}",
+                        resolvedUser.UserId,
+                        resolvedUser.IsLifetimeFree,
+                        ctx.Request.Path.Value
+                    )
+
+                    return! next ctx
+            }
 
     let credits: HttpHandler =
         fun next ctx ->

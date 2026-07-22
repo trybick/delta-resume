@@ -36,6 +36,7 @@ createdb deltaresume
 | --- | --- | --- |
 | `ANTHROPIC_API_KEY` | Yes | Anthropic API key for tailoring and cover letters |
 | `CLERK_FRONTEND_API_URL` | Yes | Clerk Frontend API URL (e.g. `https://in-aphid-71.clerk.accounts.dev`). Found in the Clerk Dashboard under **API keys** → **Advanced** → **Frontend API URL**. If unset, all requests are treated as guests. |
+| `CLERK_SECRET_KEY` | Yes | Clerk secret key (`sk_test_…` or `sk_live_…`) from the Clerk Dashboard **API keys**. Used to fetch `user.public_metadata` (e.g. lifetime-free Pro). If unset, lifetime-free entitlements are disabled. |
 | `IP_HASH_SALT` | Yes | Secret key for HMAC-SHA256 hashing of guest IPs for credit tracking. Generate with `openssl rand -hex 32`. |
 | `DATABASE_URL` | No | Postgres connection string or URI. Defaults to `Host=localhost;Database=deltaresume`. On Railway, reference the Postgres plugin’s `DATABASE_URL`. |
 | `BACKEND_RUNNING_LOCALLY` | No | Set to `true` when running the API on your machine (replaces `UNLIMITED_GUEST_CREDITS`, `DISABLE_RATE_LIMITING`, and `TRUST_FORWARDED_HEADERS=false`). When enabled: guest requests get unlimited tailor credits; API rate limiting is disabled; guest IPs are taken from the direct connection instead of `X-Forwarded-For`. Must be unset or `false` in production. |
@@ -56,7 +57,7 @@ Tables are created automatically on startup.
 1. Set the service **Root Directory** to `backend/DeltaResume.Api` (uses the included `Dockerfile`).
 2. Add a **PostgreSQL** plugin to the project.
 3. On the API service, add a variable reference from Postgres → `DATABASE_URL`.
-4. Also set: `ANTHROPIC_API_KEY`, `CLERK_FRONTEND_API_URL`, `IP_HASH_SALT`, `TRUST_FORWARDED_HEADERS=true`, `CORS_ORIGINS` = your deployed frontend origin(s). Optionally set `SENTRY_DSN`.
+4. Also set: `ANTHROPIC_API_KEY`, `CLERK_FRONTEND_API_URL`, `CLERK_SECRET_KEY`, `IP_HASH_SALT`, `TRUST_FORWARDED_HEADERS=true`, `CORS_ORIGINS` = your deployed frontend origin(s). Optionally set `SENTRY_DSN`.
 5. Do **not** set `BACKEND_RUNNING_LOCALLY`.
 
 ### Frontend
