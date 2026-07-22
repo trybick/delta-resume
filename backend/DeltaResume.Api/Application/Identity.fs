@@ -4,6 +4,7 @@ open System
 open System.Security.Claims
 open System.Security.Cryptography
 open System.Text
+open System.Text.Json
 open Microsoft.AspNetCore.Http
 open DeltaResume.Domain
 
@@ -100,14 +101,47 @@ module Identity =
             | null -> "unknown"
             | ip -> ip.ToString()
 
+    let private isTruthyLifetimeFreeFlag (value: string) : bool =
+        not (isNull value)
+        && value.Equals("true", StringComparison.OrdinalIgnoreCase)
+
+    let private tryReadLifetimeFreeFromJson (json: string) : bool =
+        if String.IsNullOrWhiteSpace json then
+            false
+        else
+            try
+                use document = JsonDocument.Parse json
+
+                match document.RootElement.TryGetProperty "isLifetimeFree" with
+                | true, element when element.ValueKind = JsonValueKind.String ->
+                    isTruthyLifetimeFreeFlag (element.GetString())
+                | true, element when element.ValueKind = JsonValueKind.True -> true
+                | _ -> false
+            with _ ->
+                false
+
+    let private claimValue (user: ClaimsPrincipal) (claimType: string) : string option =
+        user.Claims
+        |> Seq.tryFind (fun claim -> claim.Type = claimType)
+        |> Option.map (fun claim -> claim.Value)
+        |> Option.filter (String.IsNullOrWhiteSpace >> not)
+
+    let private hasLifetimeFree (user: ClaimsPrincipal) : bool =
+        match claimValue user "isLifetimeFree" with
+        | Some value when isTruthyLifetimeFreeFlag value -> true
+        | Some value when tryReadLifetimeFreeFromJson value -> true
+        | _ ->
+            [ "metadata"; "public_metadata"; "publicMetadata" ]
+            |> List.exists (fun claimType ->
+                claimValue user claimType
+                |> Option.map tryReadLifetimeFreeFromJson
+                |> Option.defaultValue false)
+
     let private resolveUserPlan (user: ClaimsPrincipal) : CreditPlan =
         let planClaim =
-            user.Claims
-            |> Seq.tryFind (fun claim -> claim.Type = "pla")
-            |> Option.map (fun claim -> claim.Value)
-            |> Option.defaultValue ""
+            claimValue user "pla" |> Option.defaultValue ""
 
-        if planClaim.Contains "pro" then ProPlan else FreePlan
+        if planClaim.Contains "pro" || hasLifetimeFree user then ProPlan else FreePlan
 
     let guestIdentifiers (options: IdentityOptions) (ctx: HttpContext) : string option * string =
         let fingerprint =
