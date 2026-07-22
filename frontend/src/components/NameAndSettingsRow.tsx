@@ -17,6 +17,7 @@ type NameAndSettingsRowProps = {
   isSettingsLoading: boolean;
   onSettingsChange: (next: CoverLetterSettings) => void;
   trailing?: ReactNode;
+  settingsDisabled?: boolean;
 };
 
 const buildSettingsHint = (settings: CoverLetterSettings): string => {
@@ -38,6 +39,7 @@ const NameAndSettingsRow = ({
   isSettingsLoading,
   onSettingsChange,
   trailing,
+  settingsDisabled = false,
 }: NameAndSettingsRowProps) => (
   <Stack gap="sm">
     <Group justify="space-between" align="flex-start" wrap="wrap" gap="sm">
@@ -84,6 +86,7 @@ const NameAndSettingsRow = ({
           />
         }
         aria-expanded={settingsOpened}
+        disabled={settingsDisabled}
         onClick={onToggleSettings}
       >
         Settings

@@ -91,6 +91,18 @@ const CoverLetterPanel = ({
     setCandidateName(value);
   };
 
+  const disabledExportButton = (
+    <Button
+      size="xs"
+      variant="light"
+      leftSection={<IconDownload size={16} />}
+      rightSection={<IconChevronDown size={14} />}
+      disabled
+    >
+      Export
+    </Button>
+  );
+
   const nameAndSettingsRow = (
     <NameAndSettingsRow
       candidateName={candidateName}
@@ -100,6 +112,7 @@ const CoverLetterPanel = ({
       settings={coverLetterSettings}
       isSettingsLoading={isSettingsLoading}
       onSettingsChange={handleSettingsChange}
+      trailing={disabledExportButton}
     />
   );
 
@@ -109,6 +122,13 @@ const CoverLetterPanel = ({
         exampleResult={exampleResult}
         isProPlan={onProPlan}
         onUpgradeClick={onUpgradeClick}
+        candidateName={candidateName}
+        onCandidateNameChange={handleCandidateNameChange}
+        settingsOpened={settingsOpened}
+        onToggleSettings={handleToggleSettings}
+        settings={coverLetterSettings}
+        isSettingsLoading={isSettingsLoading}
+        onSettingsChange={handleSettingsChange}
       />
     );
   }

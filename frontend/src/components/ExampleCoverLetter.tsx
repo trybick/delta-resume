@@ -1,31 +1,63 @@
-import { Badge, Box, Button, Card, Group, Stack, Text } from '@mantine/core';
+import { Box, Button, Card, Group, Stack, Text } from '@mantine/core';
+import { IconChevronDown, IconDownload } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { prependCoverLetterDate } from '../lib/formatCoverLetter';
 import { proAccent } from '../lib/proAccent';
 import { useProUpgradeCtaLabel } from '../hooks/useProPlan';
-import type { CoverLetterResult } from '../lib/types';
+import type { CoverLetterResult, CoverLetterSettings } from '../lib/types';
+import NameAndSettingsRow from './NameAndSettingsRow';
 
 type ExampleCoverLetterProps = {
   exampleResult: CoverLetterResult;
   isProPlan: boolean;
   onUpgradeClick: () => void;
+  candidateName: string;
+  onCandidateNameChange: (value: string) => void;
+  settingsOpened: boolean;
+  onToggleSettings: () => void;
+  settings: CoverLetterSettings;
+  isSettingsLoading: boolean;
+  onSettingsChange: (next: CoverLetterSettings) => void;
 };
 
 const ExampleCoverLetter = ({
   exampleResult,
   isProPlan,
   onUpgradeClick,
+  candidateName,
+  onCandidateNameChange,
+  settingsOpened,
+  onToggleSettings,
+  settings,
+  isSettingsLoading,
+  onSettingsChange,
 }: ExampleCoverLetterProps) => {
   const upgradeCtaLabel = useProUpgradeCtaLabel();
 
   return (
     <Card withBorder shadow="xs" padding="lg">
       <Stack gap="md">
-        <Group gap="sm">
-          <Badge color="cyan" variant="light">
-            Example
-          </Badge>
-        </Group>
+        <NameAndSettingsRow
+          candidateName={candidateName}
+          onCandidateNameChange={onCandidateNameChange}
+          settingsOpened={settingsOpened}
+          onToggleSettings={onToggleSettings}
+          settings={settings}
+          isSettingsLoading={isSettingsLoading}
+          onSettingsChange={onSettingsChange}
+          settingsDisabled
+          trailing={
+            <Button
+              size="xs"
+              variant="light"
+              leftSection={<IconDownload size={16} />}
+              rightSection={<IconChevronDown size={14} />}
+              disabled
+            >
+              Export
+            </Button>
+          }
+        />
         {!isProPlan && (
           <Group justify="space-between" align="center" wrap="wrap">
             <Text size="sm" c="dimmed">
