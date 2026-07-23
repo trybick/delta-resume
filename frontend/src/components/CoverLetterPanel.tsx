@@ -28,6 +28,7 @@ import { buildCoverLetterDocx, downloadDocx } from '../lib/exportDocx';
 import { buildExportFilename } from '../lib/exportFilename';
 import { PdfConversionError, convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
 import {
+  COVER_LETTER_NAME_PLACEHOLDER,
   formatCoverLetterText,
   formatCoverLetterSignature,
 } from '../lib/formatCoverLetter';
@@ -233,18 +234,22 @@ const CoverLetterPanel = ({
       );
       if (format === 'docx') {
         downloadDocx(docxBlob, filename);
-        trackEvent(AnalyticsEvents.ExportSuccess, {
-          source: 'cover_letter',
-          format,
-        });
-        return;
+      } else {
+        const pdfBlob = await convertDocxToPdf(docxBlob);
+        downloadPdf(pdfBlob, filename);
       }
-      const pdfBlob = await convertDocxToPdf(docxBlob);
-      downloadPdf(pdfBlob, filename);
       trackEvent(AnalyticsEvents.ExportSuccess, {
         source: 'cover_letter',
         format,
       });
+      if (candidateName.trim().length === 0) {
+        notifications.show({
+          color: 'orange',
+          autoClose: 6000,
+          title: 'Signature still has a placeholder',
+          message: `Your cover letter is signed “${COVER_LETTER_NAME_PLACEHOLDER}”. Add your name before sending it out.`,
+        });
+      }
     } catch (error) {
       trackEvent(AnalyticsEvents.ExportFailure, {
         source: 'cover_letter',

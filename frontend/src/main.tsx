@@ -28,7 +28,7 @@ createRoot(document.getElementById('root')!, {
 }).render(
   <StrictMode>
     <MantineProvider theme={appTheme.theme} forceColorScheme="dark">
-      <Notifications />
+      <Notifications position="top-center" />
       <ErrorBoundary>
         <AppBootstrap />
       </ErrorBoundary>

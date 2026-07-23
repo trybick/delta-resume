@@ -44,6 +44,23 @@ type UseResumeExportResult = {
   handlePreviewClose: () => void;
 };
 
+const PLACEHOLDER_PATTERN = /\[[^\][]*\]/;
+
+const hasUnfilledPlaceholders = (addedBullets: AddedBullet[]): boolean =>
+  addedBullets.some(
+    (bullet) => bullet.text.trim().length > 0 && PLACEHOLDER_PATTERN.test(bullet.text),
+  );
+
+const notifyPlaceholdersRemain = () => {
+  notifications.show({
+    color: 'orange',
+    autoClose: 6000,
+    title: 'Placeholders still in your resume',
+    message:
+      'Some added bullets still contain [bracketed] placeholders. Fill them in with your real details before sending this resume out.',
+  });
+};
+
 export const useResumeExport = ({
   result,
   isExample,
@@ -187,20 +204,18 @@ export const useResumeExport = ({
       const filename = resumeFilename(format);
       if (format === 'docx') {
         downloadDocx(docxBlob, filename);
-        trackEvent(AnalyticsEvents.ExportSuccess, {
-          source: 'resume',
-          variant,
-          format,
-        });
-        return true;
+      } else {
+        const pdfBlob = await convertDocxToPdf(docxBlob);
+        downloadPdf(pdfBlob, filename);
       }
-      const pdfBlob = await convertDocxToPdf(docxBlob);
-      downloadPdf(pdfBlob, filename);
       trackEvent(AnalyticsEvents.ExportSuccess, {
         source: 'resume',
         variant,
         format,
       });
+      if (hasUnfilledPlaceholders(activeAddedBullets)) {
+        notifyPlaceholdersRemain();
+      }
       return true;
     } catch (error) {
       trackEvent(AnalyticsEvents.ExportFailure, {
