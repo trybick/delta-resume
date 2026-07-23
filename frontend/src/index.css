@@ -10,6 +10,9 @@ body {
 
 .docx-pane p::before {
   font-size: 0.7em !important;
+  display: inline-block;
+  width: 24px;
+  white-space: pre;
 }
 
 .saved-resume-card {

@@ -8,7 +8,12 @@ import {
   Paragraph,
   Tab,
   TabStopType,
+  Table,
+  TableCell,
+  TableLayoutType,
+  TableRow,
   TextRun,
+  WidthType,
 } from 'docx';
 import { formatCoverLetterDate, formatCoverLetterSubject } from './formatCoverLetter';
 import type { ResumeStructure } from './types';
@@ -19,7 +24,7 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
 
 const BULLET_MARKER = /^[\s\u00A0]*(?:[-–—•‣◦▪▫·∙●○*+>][\s\u00A0]*|\d{1,2}[.)][\s\u00A0]+)/;
 
-const FONT = 'Calibri';
+const FONT = 'Arial';
 const BODY_SIZE = 22;
 const BULLET_MARKER_SIZE = 18;
 const NAME_SIZE = 40;
@@ -387,7 +392,7 @@ const dateAlignedTextRuns = (texts: string[], options: RunOptions): TextRun[] =>
     runs.push(
       new TextRun({ text: splitDateLine.left, ...options }),
       new TextRun({
-        children: [new Tab(), splitDateLine.right],
+        children: [new Tab(), splitDateLine.right.replace(/ /g, '\u00A0')],
         ...options,
         bold: false,
         italics: true,
@@ -402,11 +407,91 @@ const rightDateTabStop = {
   tabStops: [{ type: TabStopType.RIGHT, position: RESUME_CONTENT_WIDTH }],
 } as const;
 
+const DATE_CELL_WIDTH = 3600;
+const TITLE_CELL_WIDTH = RESUME_CONTENT_WIDTH - DATE_CELL_WIDTH;
+
+const invisibleBorder = { style: BorderStyle.NONE, size: 0, color: 'auto' } as const;
+
+const invisibleTableBorders = {
+  top: invisibleBorder,
+  bottom: invisibleBorder,
+  left: invisibleBorder,
+  right: invisibleBorder,
+  insideHorizontal: invisibleBorder,
+  insideVertical: invisibleBorder,
+} as const;
+
+const zeroCellMargins = { top: 0, bottom: 0, left: 0, right: 0 } as const;
+
+type DateLineLayout = {
+  spacingBefore?: number;
+  spacingAfter: number;
+  keepNext?: boolean;
+};
+
+const dateLineTable = (
+  splitDateLine: SplitDateLine,
+  options: RunOptions,
+  layout: DateLineLayout,
+): Table => {
+  const spacing = { before: layout.spacingBefore ?? 0, after: layout.spacingAfter };
+  return new Table({
+    width: { size: RESUME_CONTENT_WIDTH, type: WidthType.DXA },
+    columnWidths: [TITLE_CELL_WIDTH, DATE_CELL_WIDTH],
+    layout: TableLayoutType.FIXED,
+    borders: invisibleTableBorders,
+    rows: [
+      new TableRow({
+        cantSplit: true,
+        children: [
+          new TableCell({
+            width: { size: TITLE_CELL_WIDTH, type: WidthType.DXA },
+            margins: zeroCellMargins,
+            children: [
+              new Paragraph({
+                spacing,
+                keepNext: layout.keepNext,
+                keepLines: layout.keepNext,
+                children: [new TextRun({ text: splitDateLine.left, ...options })],
+              }),
+            ],
+          }),
+          new TableCell({
+            width: { size: DATE_CELL_WIDTH, type: WidthType.DXA },
+            margins: zeroCellMargins,
+            children: [
+              new Paragraph({
+                alignment: AlignmentType.RIGHT,
+                spacing,
+                keepNext: layout.keepNext,
+                keepLines: layout.keepNext,
+                children: [
+                  new TextRun({
+                    text: splitDateLine.right,
+                    ...options,
+                    bold: false,
+                    italics: true,
+                    color: MUTED_COLOR,
+                  }),
+                ],
+              }),
+            ],
+          }),
+        ],
+      }),
+    ],
+  });
+};
+
 const CONTACT_LINE_PATTERN = /@|\bwww\.|https?:|linkedin|github|(?:\d[\s().-]*){7,}/i;
 
 const isContactLine = (line: string): boolean => CONTACT_LINE_PATTERN.test(line);
 
-const buildParagraph = (line: string, index: number, previousBlank: boolean): Paragraph | null => {
+const buildParagraph = (
+  line: string,
+  index: number,
+  previousBlank: boolean,
+): Paragraph | Table | null => {
   const trimmed = line.trim();
   if (trimmed.length === 0) return null;
 
@@ -444,6 +529,15 @@ const buildParagraph = (line: string, index: number, previousBlank: boolean): Pa
     return headingParagraph([trimmed]);
   }
 
+  const splitDateLine = splitTrailingDate(trimmed);
+  if (splitDateLine) {
+    return dateLineTable(
+      splitDateLine,
+      { font: FONT, size: BODY_SIZE },
+      { spacingBefore: previousBlank ? 120 : 0, spacingAfter: 40 },
+    );
+  }
+
   return new Paragraph({
     ...rightDateTabStop,
     spacing: { before: previousBlank ? 120 : 0, after: 40 },
@@ -454,7 +548,7 @@ const buildParagraph = (line: string, index: number, previousBlank: boolean): Pa
 
 export const buildTemplateDocx = async (resumeText: string): Promise<Blob> => {
   const lines = resumeText.split('\n');
-  const paragraphs: Paragraph[] = [];
+  const paragraphs: (Paragraph | Table)[] = [];
   let previousBlank = false;
   let contentIndex = 0;
 
@@ -486,7 +580,7 @@ export const buildStructuredDocx = async (
   lines: string[],
   structure: ResumeStructure,
 ): Promise<Blob> => {
-  const paragraphs: Paragraph[] = [];
+  const paragraphs: (Paragraph | Table)[] = [];
 
   structure.headerLines.forEach((lineIndex, headerIndex) => {
     const texts = structuredLines(lines, [lineIndex]);
@@ -528,7 +622,18 @@ export const buildStructuredDocx = async (
         );
         return;
       }
+      const singleLineSplit = texts.length === 1 ? splitTrailingDate(texts[0]) : null;
       if (item.kind === 'subheading') {
+        if (singleLineSplit) {
+          paragraphs.push(
+            dateLineTable(
+              singleLineSplit,
+              { font: FONT, size: BODY_SIZE, bold: true },
+              { spacingBefore: 120, spacingAfter: 40, keepNext: true },
+            ),
+          );
+          return;
+        }
         paragraphs.push(
           new Paragraph({
             ...rightDateTabStop,
@@ -541,6 +646,16 @@ export const buildStructuredDocx = async (
               bold: true,
             }),
           }),
+        );
+        return;
+      }
+      if (singleLineSplit) {
+        paragraphs.push(
+          dateLineTable(
+            singleLineSplit,
+            { font: FONT, size: BODY_SIZE },
+            { spacingAfter: 80 },
+          ),
         );
         return;
       }
