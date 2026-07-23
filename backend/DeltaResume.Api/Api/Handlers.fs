@@ -5,7 +5,6 @@ open System.IO
 open System.Threading
 open Giraffe
 open Microsoft.AspNetCore.Http
-open Microsoft.Extensions.Logging
 open Sentry
 open DeltaResume.Application
 open DeltaResume.Domain
@@ -93,17 +92,6 @@ module Handlers =
                               IsLifetimeFree = false }
 
                     Identity.setClerkPublicUser ctx resolvedUser
-
-                    let logger =
-                        ctx.GetService<ILoggerFactory>().CreateLogger("DeltaResume.Auth")
-
-                    logger.LogInformation(
-                        "Clerk public metadata userId={UserId} isLifetimeFree={IsLifetimeFree} path={Path}",
-                        resolvedUser.UserId,
-                        resolvedUser.IsLifetimeFree,
-                        ctx.Request.Path.Value
-                    )
-
                     return! next ctx
             }
 
