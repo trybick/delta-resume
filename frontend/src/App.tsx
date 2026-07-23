@@ -320,7 +320,7 @@ const App = () => {
       </Container>
 
       <LandingStrip
-        collapsible={runCount > 0}
+        collapsible={status !== 'idle' || runCount > 0}
         freeCreditTotal={freeCreditTotal}
         onUpgradeClick={() => openPaywall('upgrade')}
       />

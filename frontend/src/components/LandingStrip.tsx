@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Anchor,
   Badge,
@@ -114,6 +114,12 @@ const LandingStrip = ({ collapsible, freeCreditTotal, onUpgradeClick }: LandingS
   const proPrice = annualMonthlyPrice ?? monthlyPrice;
   const showContent = !collapsible || expanded;
   const freePlanFeatures = getFreePlanFeatures(freeCreditTotal);
+
+  useEffect(() => {
+    if (collapsible) {
+      setExpanded(false);
+    }
+  }, [collapsible]);
 
   const handleOpenPrivacyPolicy = () => {
     trackEvent(AnalyticsEvents.LandingPrivacyPolicy);
