@@ -97,8 +97,8 @@ const RequirementsCoverage = ({
         </Group>
         <Progress.Root size={8} radius="xl">
           <Progress.Section value={basePercent} color="green.7" />
-          <Progress.Section value={changesPercent} color="cyan.5" />
-          <Progress.Section value={addedPercent} color="cyan.5" style={{ opacity: 0.55 }} />
+          <Progress.Section value={changesPercent} color="violet.5" />
+          <Progress.Section value={addedPercent} color="violet.5" style={{ opacity: 0.55 }} />
           <Progress.Section
             value={potentialPercent}
             color="gray.6"
@@ -113,13 +113,13 @@ const RequirementsCoverage = ({
           />
           {coveredByChangesCount > 0 && (
             <LegendItem
-              color="var(--mantine-color-cyan-5)"
+              color="var(--mantine-color-violet-5)"
               label={`+${coveredByChangesCount} from tailored changes`}
             />
           )}
           {coveredByAddedCount > 0 && (
             <LegendItem
-              color="var(--mantine-color-cyan-5)"
+              color="var(--mantine-color-violet-5)"
               dashed
               label={`+${coveredByAddedCount} from bullets you added`}
             />
