@@ -1,4 +1,4 @@
-import type { ResumeStructure } from './types';
+import type { ResumeDocument } from './types';
 
 export const slugifyFilenamePart = (value: string): string =>
   value
@@ -23,11 +23,17 @@ export const buildExportFilename = (
 
 export const extractCandidateNameFromResume = (
   lines: string[],
-  structure?: ResumeStructure | null,
+  document?: ResumeDocument | null,
+  textsByNodeId?: Map<string, string>,
 ): string | null => {
-  if (structure && structure.headerLines.length > 0) {
-    const header = (lines[structure.headerLines[0]] ?? '').trim();
-    if (header.length > 0) return header;
+  if (document) {
+    const fromMap = textsByNodeId?.get(document.header.name.id)?.trim();
+    if (fromMap) return fromMap;
+    const fromLines = document.header.name.sourceLines
+      .map((lineIndex) => (lines[lineIndex] ?? '').trim())
+      .filter((line) => line.length > 0)
+      .join(' ');
+    if (fromLines) return fromLines;
   }
   const firstLine = lines.find((line) => line.trim().length > 0);
   return firstLine?.trim() ?? null;

@@ -2,9 +2,8 @@ import { useState } from 'react';
 import { notifications } from '@mantine/notifications';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { copyResumeRichText } from '../lib/copyResume';
-import { applyAddedBullets, formatAddedBulletLine } from '../lib/insertions';
 import {
-  buildStructuredDocx,
+  buildDocumentDocx,
   buildTemplateDocx,
   downloadDocx,
   normalizeResumeTextForComparison,
@@ -13,9 +12,9 @@ import {
 } from '../lib/exportDocx';
 import { buildExportFilename, extractCandidateNameFromResume } from '../lib/exportFilename';
 import { PdfConversionError, convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
+import { applyDecisionsAndInsertions, createLookup, lineAnchorIndex } from '../lib/resumeModel';
 import type {
   AddedBullet,
-  BulletChange,
   ChangeDecision,
   OriginalDocx,
   TailorResult,
@@ -29,7 +28,6 @@ type UseResumeExportOptions = {
   jobTitle?: string;
   companyName?: string;
   decisions: Record<string, ChangeDecision>;
-  changesByLine: Map<number, BulletChange>;
   activeAddedBullets: AddedBullet[];
 };
 
@@ -44,23 +42,6 @@ type UseResumeExportResult = {
   handlePreviewClose: () => void;
 };
 
-const PLACEHOLDER_PATTERN = /\[[^\][]*\]/;
-
-const hasUnfilledPlaceholders = (addedBullets: AddedBullet[]): boolean =>
-  addedBullets.some(
-    (bullet) => bullet.text.trim().length > 0 && PLACEHOLDER_PATTERN.test(bullet.text),
-  );
-
-const notifyPlaceholdersRemain = () => {
-  notifications.show({
-    color: 'orange',
-    autoClose: 6000,
-    title: 'Placeholders still in your resume',
-    message:
-      'Some added bullets still contain [bracketed] placeholders. Fill them in with your real details before sending this resume out.',
-  });
-};
-
 export const useResumeExport = ({
   result,
   isExample,
@@ -68,34 +49,27 @@ export const useResumeExport = ({
   jobTitle,
   companyName,
   decisions,
-  changesByLine,
   activeAddedBullets,
 }: UseResumeExportOptions): UseResumeExportResult => {
   const [isExporting, setIsExporting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
 
-  const buildMergedLines = (): string[] => {
-    if (!result) return [];
-    const consumedByChange = new Map<number, BulletChange>();
-    changesByLine.forEach((change) => {
-      change.lineIndexes
-        .filter((lineIndex) => lineIndex !== change.lineIndex)
-        .forEach((lineIndex) => consumedByChange.set(lineIndex, change));
-    });
-    return result.resumeText.split('\n').map((line, lineIndex) => {
-      const change = changesByLine.get(lineIndex);
-      if (change) {
-        if (decisions[change.id] !== 'reverted') return change.tailored;
-        return change.lineIndexes.length > 1 ? line : change.original;
-      }
-      const consumingChange = consumedByChange.get(lineIndex);
-      if (!consumingChange) return line;
-      return decisions[consumingChange.id] === 'reverted' ? line : '';
-    });
+  const buildMergedResume = () => {
+    if (!result) {
+      return {
+        lines: [] as string[],
+        document: null,
+        textsByNodeId: new Map<string, string>(),
+      };
+    }
+    return applyDecisionsAndInsertions(
+      result.resumeText,
+      result.document,
+      result.changes,
+      decisions,
+      activeAddedBullets,
+    );
   };
-
-  const buildMergedResume = () =>
-    applyAddedBullets(buildMergedLines(), result?.structure, activeAddedBullets);
 
   const canPatchOriginal =
     result !== null &&
@@ -105,7 +79,11 @@ export const useResumeExport = ({
 
   const resumeFilename = (format: 'docx' | 'pdf'): string => {
     const merged = buildMergedResume();
-    const candidateName = extractCandidateNameFromResume(merged.lines, merged.structure);
+    const candidateName = extractCandidateNameFromResume(
+      merged.lines,
+      merged.document,
+      merged.textsByNodeId,
+    );
     const exportDate = new Date().toLocaleDateString('en-CA');
     return buildExportFilename(
       [candidateName, companyName, jobTitle, 'tailored-resume', exportDate],
@@ -116,45 +94,51 @@ export const useResumeExport = ({
 
   const buildCleanDocx = (): Promise<Blob> => {
     const merged = buildMergedResume();
-    return merged.structure
-      ? buildStructuredDocx(merged.lines, merged.structure)
+    return merged.document
+      ? buildDocumentDocx(merged.document, merged.textsByNodeId)
       : buildTemplateDocx(merged.lines.join('\n'));
   };
 
   const buildKeepInsertions = (): DocxInsertion[] => {
     if (!result || activeAddedBullets.length === 0) return [];
     const resumeLines = result.resumeText.split('\n');
+    const lookup = createLookup(result.resumeText, result.document ?? null);
     return activeAddedBullets
       .filter((bullet) => bullet.text.trim().length > 0)
       .map((bullet) => {
-        const afterLineIndex = Math.max(
-          0,
-          Math.min(bullet.afterLineIndex, Math.max(resumeLines.length - 1, 0)),
-        );
-        const afterOriginal = resumeLines[afterLineIndex] ?? '';
-        return {
-          afterOriginal,
-          text: formatAddedBulletLine(bullet.text, afterOriginal),
-        };
-      });
+        const anchorIndex = lineAnchorIndex(bullet.afterId);
+        const afterOriginal =
+          (anchorIndex !== null ? resumeLines[anchorIndex] : null) ??
+          lookup.textForNode(bullet.afterId) ??
+          result.changes.find((change) => change.targetId === bullet.afterId)?.original ??
+          '';
+        const trimmed = bullet.text.trim();
+        const text = isLikelyBullet(trimmed)
+          ? trimmed
+          : isLikelyBullet(afterOriginal)
+            ? `${bulletPrefix(afterOriginal)}${trimmed}`
+            : `- ${trimmed}`;
+        return { afterOriginal, text };
+      })
+      .filter((insertion) => insertion.afterOriginal.trim().length > 0);
   };
 
   const buildPatchedDocx = async (): Promise<Blob> => {
     if (!result || !originalDocx) return buildCleanDocx();
-    const resumeLines = result.resumeText.split('\n');
     const replacements = result.changes
       .filter((change) => decisions[change.id] !== 'reverted')
       .flatMap((change) => {
-        if (change.lineIndexes.length <= 1) {
+        if (change.sourceLines.length <= 1) {
           return [{ original: change.original, tailored: change.tailored }];
         }
-        const [firstLineIndex, ...continuationIndexes] = [...change.lineIndexes].sort(
+        const lines = result.resumeText.split('\n');
+        const [firstLineIndex, ...continuationIndexes] = [...change.sourceLines].sort(
           (a, b) => a - b,
         );
         return [
-          { original: resumeLines[firstLineIndex] ?? change.original, tailored: change.tailored },
+          { original: lines[firstLineIndex] ?? change.original, tailored: change.tailored },
           ...continuationIndexes.map((lineIndex) => ({
-            original: resumeLines[lineIndex] ?? '',
+            original: lines[lineIndex] ?? '',
             tailored: '',
           })),
         ];
@@ -178,7 +162,7 @@ export const useResumeExport = ({
     trackEvent(AnalyticsEvents.ResumeCopy);
     try {
       const merged = buildMergedResume();
-      await copyResumeRichText(merged.lines, merged.structure);
+      await copyResumeRichText(merged.lines, merged.document, merged.textsByNodeId);
       trackEvent(AnalyticsEvents.CopySuccess, { source: 'resume' });
       notifications.show({
         color: 'green',
@@ -204,18 +188,20 @@ export const useResumeExport = ({
       const filename = resumeFilename(format);
       if (format === 'docx') {
         downloadDocx(docxBlob, filename);
-      } else {
-        const pdfBlob = await convertDocxToPdf(docxBlob);
-        downloadPdf(pdfBlob, filename);
+        trackEvent(AnalyticsEvents.ExportSuccess, {
+          source: 'resume',
+          variant,
+          format,
+        });
+        return true;
       }
+      const pdfBlob = await convertDocxToPdf(docxBlob);
+      downloadPdf(pdfBlob, filename);
       trackEvent(AnalyticsEvents.ExportSuccess, {
         source: 'resume',
         variant,
         format,
       });
-      if (hasUnfilledPlaceholders(activeAddedBullets)) {
-        notifyPlaceholdersRemain();
-      }
       return true;
     } catch (error) {
       trackEvent(AnalyticsEvents.ExportFailure, {
@@ -261,3 +247,14 @@ export const useResumeExport = ({
     handlePreviewClose,
   };
 };
+
+const BULLET_MARKER = /^[\s\u00A0]*(?:[-–—•‣◦▪▫·∙●○*+>][\s\u00A0]*|\d{1,2}[.)][\s\u00A0]+)/;
+
+const isLikelyBullet = (line: string): boolean => {
+  const trimmed = line.trim();
+  const stripped = line.replace(BULLET_MARKER, '').trim();
+  return stripped !== trimmed && stripped.length > 0;
+};
+
+const bulletPrefix = (line: string): string =>
+  line.slice(0, line.length - line.replace(BULLET_MARKER, '').length);

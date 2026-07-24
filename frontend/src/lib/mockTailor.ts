@@ -1,4 +1,4 @@
-import type { CoverLetterResult, JobRequirement, TailorResult } from './types';
+import type { CoverLetterResult, JobRequirement, ResumeDocument, TailorResult } from './types';
 
 export const SAMPLE_RESUME = `Jordan Ellis
 Senior Software Engineer | jordan.ellis@email.com | (415) 555-0182 | San Francisco, CA
@@ -48,45 +48,155 @@ EDUCATION
 B.S. Computer Science, State University (2018)
 Graduated with honors; teaching assistant for Intro to Data Structures`;
 
+const SAMPLE_DOCUMENT: ResumeDocument = {
+  version: 1,
+  header: {
+    name: { id: 'h.name', sourceLines: [0] },
+    contact: [
+      { id: 'h.contact.0', sourceLines: [1] },
+      { id: 'h.contact.1', sourceLines: [2] },
+    ],
+  },
+  sections: [
+    {
+      id: 's.0',
+      kind: 'summary',
+      heading: { id: 's.0.heading', sourceLines: [4] },
+      blocks: [{ kind: 'paragraph', id: 's.0.b.0', sourceLines: [6, 7, 8] }],
+    },
+    {
+      id: 's.1',
+      kind: 'skills',
+      heading: { id: 's.1.heading', sourceLines: [10] },
+      blocks: [
+        { kind: 'skillsGroup', id: 's.1.b.0', label: 'Languages', sourceLines: [12] },
+        { kind: 'skillsGroup', id: 's.1.b.1', label: 'Frontend', sourceLines: [13] },
+        { kind: 'skillsGroup', id: 's.1.b.2', label: 'Backend', sourceLines: [14] },
+        { kind: 'skillsGroup', id: 's.1.b.3', label: 'Infrastructure', sourceLines: [15] },
+      ],
+    },
+    {
+      id: 's.2',
+      kind: 'experience',
+      heading: { id: 's.2.heading', sourceLines: [17] },
+      blocks: [
+        {
+          kind: 'entry',
+          id: 's.2.b.0',
+          title: 'Senior Software Engineer',
+          organization: 'Acme Corp',
+          location: null,
+          dates: { start: '2021', end: 'Present', text: '2021 – Present' },
+          headingSourceLines: [19],
+          bullets: [
+            { id: 's.2.b.0.bullet.0', sourceLines: [20] },
+            { id: 's.2.b.0.bullet.1', sourceLines: [21] },
+            { id: 's.2.b.0.bullet.2', sourceLines: [22] },
+            { id: 's.2.b.0.bullet.3', sourceLines: [23] },
+            { id: 's.2.b.0.bullet.4', sourceLines: [24] },
+            { id: 's.2.b.0.bullet.5', sourceLines: [25] },
+          ],
+        },
+        {
+          kind: 'entry',
+          id: 's.2.b.1',
+          title: 'Software Engineer',
+          organization: 'Globex Inc',
+          location: null,
+          dates: { start: '2018', end: '2021', text: '2018 – 2021' },
+          headingSourceLines: [27],
+          bullets: [
+            { id: 's.2.b.1.bullet.0', sourceLines: [28] },
+            { id: 's.2.b.1.bullet.1', sourceLines: [29] },
+            { id: 's.2.b.1.bullet.2', sourceLines: [30] },
+            { id: 's.2.b.1.bullet.3', sourceLines: [31] },
+            { id: 's.2.b.1.bullet.4', sourceLines: [32] },
+          ],
+        },
+        {
+          kind: 'entry',
+          id: 's.2.b.2',
+          title: 'Software Engineering Intern',
+          organization: 'Initech',
+          location: null,
+          dates: { start: 'Summer 2017', end: null, text: 'Summer 2017' },
+          headingSourceLines: [34],
+          bullets: [
+            { id: 's.2.b.2.bullet.0', sourceLines: [35] },
+            { id: 's.2.b.2.bullet.1', sourceLines: [36] },
+          ],
+        },
+      ],
+    },
+    {
+      id: 's.3',
+      kind: 'projects',
+      heading: { id: 's.3.heading', sourceLines: [38] },
+      blocks: [
+        { kind: 'paragraph', id: 's.3.b.0', sourceLines: [40] },
+        { kind: 'paragraph', id: 's.3.b.1', sourceLines: [41] },
+      ],
+    },
+    {
+      id: 's.4',
+      kind: 'education',
+      heading: { id: 's.4.heading', sourceLines: [43] },
+      blocks: [
+        {
+          kind: 'entry',
+          id: 's.4.b.0',
+          title: 'B.S. Computer Science',
+          organization: 'State University',
+          location: null,
+          dates: { start: '2018', end: null, text: '2018' },
+          headingSourceLines: [45],
+          bullets: [],
+        },
+        { kind: 'paragraph', id: 's.4.b.1', sourceLines: [46] },
+      ],
+    },
+  ],
+};
+
 const SAMPLE_REQUIREMENTS: JobRequirement[] = [
   {
     text: 'Expert React and TypeScript development',
     importance: 'must',
-    satisfiedBy: [12, 13],
+    satisfiedBy: ['s.1.b.1', 's.1.b.0'],
     satisfiedByChanges: [],
     gapHint: null,
     draftBullet: null,
-    insertAfterLine: null,
+    insertAfterId: null,
     locked: false,
   },
   {
     text: 'Building consumer-facing web products',
     importance: 'must',
-    satisfiedBy: [6, 20],
+    satisfiedBy: ['s.0.b.0', 's.2.b.0.bullet.0'],
     satisfiedByChanges: [],
     gapHint: null,
     draftBullet: null,
-    insertAfterLine: null,
+    insertAfterId: null,
     locked: false,
   },
   {
     text: 'Performance and conversion optimization',
     importance: 'must',
     satisfiedBy: [],
-    satisfiedByChanges: [20],
+    satisfiedByChanges: ['s.2.b.0.bullet.0'],
     gapHint: null,
     draftBullet: null,
-    insertAfterLine: null,
+    insertAfterId: null,
     locked: false,
   },
   {
     text: 'REST API design and integration',
     importance: 'must',
-    satisfiedBy: [14, 28],
+    satisfiedBy: ['s.1.b.2', 's.2.b.1.bullet.0'],
     satisfiedByChanges: [],
     gapHint: null,
     draftBullet: null,
-    insertAfterLine: null,
+    insertAfterId: null,
     locked: false,
   },
   {
@@ -97,37 +207,37 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     gapHint: 'Would fit in your Backend skills line or under your Globex API work.',
     draftBullet:
       '- Designed and shipped GraphQL APIs for [product or service], serving [number] of clients',
-    insertAfterLine: 28,
+    insertAfterId: 's.2.b.1.bullet.0',
     locked: false,
   },
   {
     text: 'Next.js',
     importance: 'nice',
-    satisfiedBy: [13],
+    satisfiedBy: ['s.1.b.1'],
     satisfiedByChanges: [],
     gapHint: null,
     draftBullet: null,
-    insertAfterLine: null,
+    insertAfterId: null,
     locked: false,
   },
   {
     text: 'AWS cloud infrastructure',
     importance: 'nice',
-    satisfiedBy: [15, 22],
+    satisfiedBy: ['s.1.b.3', 's.2.b.0.bullet.2'],
     satisfiedByChanges: [],
     gapHint: null,
     draftBullet: null,
-    insertAfterLine: null,
+    insertAfterId: null,
     locked: false,
   },
   {
     text: 'Mentoring junior engineers',
     importance: 'nice',
-    satisfiedBy: [8, 23],
+    satisfiedBy: ['s.0.b.0', 's.2.b.0.bullet.3'],
     satisfiedByChanges: [],
     gapHint: null,
     draftBullet: null,
-    insertAfterLine: null,
+    insertAfterId: null,
     locked: false,
   },
   {
@@ -138,7 +248,7 @@ const SAMPLE_REQUIREMENTS: JobRequirement[] = [
     gapHint: 'Would fit under your Acme Corp role, alongside the checkout work.',
     draftBullet:
       '- Built and maintained a design system of [number] reusable React components adopted by [teams or products]',
-    insertAfterLine: 20,
+    insertAfterId: 's.2.b.0.bullet.0',
     locked: false,
   },
 ];
@@ -167,8 +277,8 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
   changes: [
     {
       id: 'sample-change-1',
-      lineIndex: 20,
-      lineIndexes: [20],
+      targetId: 's.2.b.0.bullet.0',
+      sourceLines: [20],
       original: '- Worked on the checkout flow for the main e-commerce product',
       tailored:
         '- Rebuilt the checkout flow in React and TypeScript, lifting conversion 12% for the main e-commerce product',
@@ -176,8 +286,8 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
     },
     {
       id: 'sample-change-2',
-      lineIndex: 21,
-      lineIndexes: [21],
+      targetId: 's.2.b.0.bullet.1',
+      sourceLines: [21],
       original: '- Built internal dashboards for tracking team metrics',
       tailored:
         '- Built real-time internal dashboards with React and PostgreSQL, cutting weekly reporting time by 6 hours',
@@ -185,8 +295,8 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
     },
     {
       id: 'sample-change-3',
-      lineIndex: 22,
-      lineIndexes: [22],
+      targetId: 's.2.b.0.bullet.2',
+      sourceLines: [22],
       original: '- Helped migrate legacy services to a modern cloud platform',
       tailored:
         '- Led migration of 14 legacy services to AWS with Docker, reducing infrastructure costs by 30%',
@@ -194,8 +304,8 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
     },
     {
       id: 'sample-change-4',
-      lineIndex: 28,
-      lineIndexes: [28],
+      targetId: 's.2.b.1.bullet.0',
+      sourceLines: [28],
       original: '- Made improvements to the public REST API',
       tailored:
         '- Redesigned the public REST API in Node.js, improving p95 latency by 40% for 200+ integration partners',
@@ -203,16 +313,16 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
     },
     {
       id: 'sample-change-5',
-      lineIndex: 13,
-      lineIndexes: [13],
+      targetId: 's.1.b.1',
+      sourceLines: [13],
       original: 'Frontend: React, Next.js, Redux, HTML/CSS, Vite',
       tailored: 'Frontend: React, Next.js, Redux, HTML/CSS, Vite, React Native',
       kind: 'skill',
     },
     {
       id: 'sample-change-6',
-      lineIndex: 6,
-      lineIndexes: [6, 7, 8],
+      targetId: 's.0.b.0',
+      sourceLines: [6, 7, 8],
       original:
         'Senior software engineer with 8 years of experience building consumer-facing web products and the platform infrastructure behind them. Comfortable owning features end to end, from database schema to pixel-level UI polish. Enjoys mentoring and improving developer experience.',
       tailored:
@@ -221,57 +331,5 @@ export const SAMPLE_TAILOR_RESULT: TailorResult = {
     },
   ],
   requirements: SAMPLE_REQUIREMENTS,
-  structure: {
-    headerLines: [0, 1, 2],
-    sections: [
-      {
-        headingLine: 4,
-        items: [{ kind: 'paragraph', lines: [6, 7, 8] }],
-      },
-      {
-        headingLine: 10,
-        items: [
-          { kind: 'paragraph', lines: [12] },
-          { kind: 'paragraph', lines: [13] },
-          { kind: 'paragraph', lines: [14] },
-          { kind: 'paragraph', lines: [15] },
-        ],
-      },
-      {
-        headingLine: 17,
-        items: [
-          { kind: 'subheading', lines: [19] },
-          { kind: 'bullet', lines: [20] },
-          { kind: 'bullet', lines: [21] },
-          { kind: 'bullet', lines: [22] },
-          { kind: 'bullet', lines: [23] },
-          { kind: 'bullet', lines: [24] },
-          { kind: 'bullet', lines: [25] },
-          { kind: 'subheading', lines: [27] },
-          { kind: 'bullet', lines: [28] },
-          { kind: 'bullet', lines: [29] },
-          { kind: 'bullet', lines: [30] },
-          { kind: 'bullet', lines: [31] },
-          { kind: 'bullet', lines: [32] },
-          { kind: 'subheading', lines: [34] },
-          { kind: 'bullet', lines: [35] },
-          { kind: 'bullet', lines: [36] },
-        ],
-      },
-      {
-        headingLine: 38,
-        items: [
-          { kind: 'paragraph', lines: [40] },
-          { kind: 'paragraph', lines: [41] },
-        ],
-      },
-      {
-        headingLine: 43,
-        items: [
-          { kind: 'subheading', lines: [45] },
-          { kind: 'paragraph', lines: [46] },
-        ],
-      },
-    ],
-  },
+  document: SAMPLE_DOCUMENT,
 };

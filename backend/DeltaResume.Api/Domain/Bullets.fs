@@ -96,12 +96,13 @@ module Bullets =
                 && not (trimmed.Contains ",")
                 && withoutColon.Split([| ' ' |], StringSplitOptions.RemoveEmptyEntries).Length <= 3)
 
-    let private itemContaining (structure: ResumeStructure option) (lineIndex: int) : ResumeItem option =
-        structure
-        |> Option.bind (fun resumeStructure ->
-            resumeStructure.Sections
-            |> List.collect (fun section -> section.Items)
-            |> List.tryFind (fun item -> List.contains lineIndex item.Lines))
+    let private nodeContaining (document: ResumeDocument option) (lineIndex: int) : (ResumeNodeId * int list) option =
+        document
+        |> Option.bind (fun resumeDocument ->
+            ResumeDocument.tryFindNodeIdByLine resumeDocument lineIndex
+            |> Option.bind (fun nodeId ->
+                ResumeDocument.findNodeSourceLines resumeDocument nodeId
+                |> Option.map (fun lines -> nodeId, lines)))
 
     /// Walks from the anchor in one direction, consuming physically adjacent lines
     /// (a missing index means a blank line, which ends the block) that read like
@@ -118,38 +119,41 @@ module Bullets =
     /// Text extraction often hard-wraps one visual bullet or paragraph across several
     /// physical lines. A change must consume every line of the block it rewrites, or
     /// the resume is left showing the block's tail as untouched original text. The
-    /// model's structure is the primary source for that grouping; paragraphs also get
+    /// typed document is the primary source for that grouping; paragraphs also get
     /// a contiguity fallback because the summary rewrite is the change most often
     /// affected and the model cannot be trusted to group or anchor it correctly.
     let private lineIndexesFor
-        (structure: ResumeStructure option)
+        (document: ResumeDocument option)
         (bulletsByIndex: Map<int, string>)
         (proposal: ProposedChange)
-        : int list =
+        : ResumeNodeId option * int list =
         match proposal.Kind with
-        | Skill -> [ proposal.LineIndex ]
+        | Skill ->
+            let nodeId = document |> Option.bind (fun doc -> ResumeDocument.tryFindNodeIdByLine doc proposal.LineIndex)
+            nodeId, [ proposal.LineIndex ]
         | Bullet ->
-            match itemContaining structure proposal.LineIndex with
-            | Some item when item.Kind = ResumeItemKind.Bullet -> List.sort item.Lines
-            | Some _ -> [ proposal.LineIndex ]
+            match nodeContaining document proposal.LineIndex with
+            | Some(nodeId, lines) -> Some nodeId, List.sort lines
             | None ->
-                proposal.LineIndex :: wrappedContinuationsFrom bulletsByIndex proposal.LineIndex 1
-                |> List.sort
+                let lines =
+                    proposal.LineIndex :: wrappedContinuationsFrom bulletsByIndex proposal.LineIndex 1
+                    |> List.sort
+
+                None, lines
         | Paragraph ->
-            let structureLines =
-                itemContaining structure proposal.LineIndex
-                |> Option.map (fun item -> item.Lines)
-                |> Option.defaultValue []
+            let containingNode = nodeContaining document proposal.LineIndex
+            let structureLines = containingNode |> Option.map snd |> Option.defaultValue []
+            let nodeId = containingNode |> Option.map fst
 
             let contiguousLines =
                 wrappedContinuationsFrom bulletsByIndex proposal.LineIndex -1
                 @ (proposal.LineIndex :: wrappedContinuationsFrom bulletsByIndex proposal.LineIndex 1)
 
-            structureLines @ contiguousLines |> List.distinct |> List.sort
+            nodeId, structureLines @ contiguousLines |> List.distinct |> List.sort
 
     let toChanges
         (bullets: BulletLine list)
-        (structure: ResumeStructure option)
+        (document: ResumeDocument option)
         (proposals: ProposedChange list)
         : BulletChange list =
         let bulletsByIndex =
@@ -178,7 +182,11 @@ module Bullets =
             cappedBullets @ skillProposals @ cappedParagraphs
             |> List.fold
                 (fun (consumed: Set<int>, changes) proposal ->
-                    let lineIndexes = lineIndexesFor structure bulletsByIndex proposal
+                    let maybeTargetId, lineIndexes = lineIndexesFor document bulletsByIndex proposal
+
+                    let targetId =
+                        maybeTargetId
+                        |> Option.defaultValue (sprintf "line.%d" (List.min lineIndexes))
 
                     if lineIndexes |> List.exists consumed.Contains then
                         consumed, changes
@@ -194,8 +202,8 @@ module Bullets =
 
                         let change =
                             { Id = ChangeId(Guid.NewGuid())
-                              LineIndex = List.min lineIndexes
-                              LineIndexes = lineIndexes
+                              TargetId = targetId
+                              SourceLines = lineIndexes
                               Original = original
                               Tailored = normalizeTailored original proposal.Tailored
                               Kind = proposal.Kind }
@@ -203,4 +211,5 @@ module Bullets =
                         Set.union consumed (Set.ofList lineIndexes), change :: changes)
                 (Set.empty, [])
 
-        changes |> List.sortBy (fun change -> change.LineIndex)
+        changes
+        |> List.sortBy (fun change -> change.SourceLines |> List.tryHead |> Option.defaultValue 0)

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ApiError, CreditsExhaustedError, postTailor } from '../lib/api';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { NETWORK_ERROR_MESSAGE } from '../lib/constants';
-import type { TailorResult, TailorStatus } from '../lib/types';
+import type { ResumeDocument, TailorResult, TailorStatus } from '../lib/types';
 
 type UseTailorRunOptions = {
   onSuccess: () => void;
@@ -16,7 +16,12 @@ type UseTailorRunResult = {
   runCount: number;
   errorMessage: string | null;
   clearError: () => void;
-  runTailor: (resumeText: string, jobDescription: string, resumeName: string) => Promise<boolean>;
+  runTailor: (
+    resumeText: string,
+    jobDescription: string,
+    resumeName: string,
+    resumeDocument?: ResumeDocument | null,
+  ) => Promise<boolean>;
 };
 
 export const useTailorRun = ({
@@ -45,6 +50,7 @@ export const useTailorRun = ({
     resumeText: string,
     jobDescription: string,
     resumeName: string,
+    resumeDocument?: ResumeDocument | null,
   ): Promise<boolean> => {
     if (inFlightRef.current) return false;
     inFlightRef.current = true;
@@ -57,6 +63,7 @@ export const useTailorRun = ({
         resumeText,
         jobDescription,
         resumeName,
+        resumeDocument,
         abortController.signal,
       );
       resultRef.current = tailorResult;

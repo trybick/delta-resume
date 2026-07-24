@@ -43,6 +43,9 @@ module Schema =
                 created_at TIMESTAMPTZ NOT NULL
             );
 
+            ALTER TABLE saved_resumes
+                ADD COLUMN IF NOT EXISTS resume_document JSONB;
+
             CREATE INDEX IF NOT EXISTS idx_saved_resumes_owner
                 ON saved_resumes (owner_key);
 
@@ -148,6 +151,7 @@ type private SavedResumeRow =
       owner_key: string
       name: string
       resume_text: string
+      resume_document: string
       content_hash: string
       created_at: DateTimeOffset }
 
@@ -158,6 +162,11 @@ type PostgresSavedResumeRepository(connectionString: string) =
           OwnerKey = OwnerKey.ofPersisted row.owner_key
           Name = row.name
           ResumeText = row.resume_text
+          ResumeDocument =
+            if isNull row.resume_document then
+                None
+            else
+                ResumeDocumentJson.tryParse row.resume_document
           ContentHash = row.content_hash
           CreatedAt = row.created_at }
 
@@ -171,7 +180,8 @@ type PostgresSavedResumeRepository(connectionString: string) =
                 let! rows =
                     connection.QueryAsync<SavedResumeRow>(
                         """
-                        SELECT id, owner_key, name, resume_text, content_hash, created_at
+                        SELECT id, owner_key, name, resume_text, resume_document::text AS resume_document,
+                               content_hash, created_at
                         FROM saved_resumes
                         WHERE owner_key = @OwnerKey
                         ORDER BY created_at DESC
@@ -190,7 +200,8 @@ type PostgresSavedResumeRepository(connectionString: string) =
                 let! rows =
                     connection.QueryAsync<SavedResumeRow>(
                         """
-                        SELECT id, owner_key, name, resume_text, content_hash, created_at
+                        SELECT id, owner_key, name, resume_text, resume_document::text AS resume_document,
+                               content_hash, created_at
                         FROM saved_resumes
                         WHERE owner_key = @OwnerKey AND content_hash = @ContentHash
                         LIMIT 1
@@ -212,15 +223,46 @@ type PostgresSavedResumeRepository(connectionString: string) =
                 let! _ =
                     connection.ExecuteAsync(
                         """
-                        INSERT INTO saved_resumes (id, owner_key, name, resume_text, content_hash, created_at)
-                        VALUES (@Id, @OwnerKey, @Name, @ResumeText, @ContentHash, @CreatedAt)
+                        INSERT INTO saved_resumes (id, owner_key, name, resume_text, resume_document, content_hash, created_at)
+                        VALUES (@Id, @OwnerKey, @Name, @ResumeText, CAST(@ResumeDocument AS jsonb), @ContentHash, @CreatedAt)
                         """,
                         {| Id = string id
                            OwnerKey = OwnerKey.value resume.OwnerKey
                            Name = resume.Name
                            ResumeText = resume.ResumeText
+                           ResumeDocument =
+                            resume.ResumeDocument
+                            |> Option.map ResumeDocumentJson.serialize
+                            |> Option.toObj
                            ContentHash = resume.ContentHash
                            CreatedAt = resume.CreatedAt |}
+                    )
+
+                return ()
+            }
+
+        member _.UpdateDocument
+            (id: SavedResumeId, ownerKey: OwnerKey, document: ResumeDocument option)
+            : Task<unit> =
+            task {
+                use connection = new NpgsqlConnection(connectionString)
+                do! connection.OpenAsync()
+
+                let (SavedResumeId resumeId) = id
+
+                let! _ =
+                    connection.ExecuteAsync(
+                        """
+                        UPDATE saved_resumes
+                        SET resume_document = CAST(@ResumeDocument AS jsonb)
+                        WHERE id = @Id AND owner_key = @OwnerKey
+                        """,
+                        {| Id = string resumeId
+                           OwnerKey = OwnerKey.value ownerKey
+                           ResumeDocument =
+                            document
+                            |> Option.map ResumeDocumentJson.serialize
+                            |> Option.toObj |}
                     )
 
                 return ()

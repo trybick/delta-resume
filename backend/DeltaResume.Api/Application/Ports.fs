@@ -9,11 +9,14 @@ type EngineProposal =
     { Summary: string
       Changes: ProposedChange list
       Requirements: JobRequirement list
-      Structure: ResumeStructure option }
+      Document: ResumeDocument option }
 
 type TailoringEngine =
     abstract member ProposeChanges:
-        bullets: BulletLine list * jobDescription: string * cancellationToken: CancellationToken ->
+        bullets: BulletLine list *
+        jobDescription: string *
+        existingDocument: ResumeDocument option *
+        cancellationToken: CancellationToken ->
             Task<Result<EngineProposal, string>>
 
 type CoverLetterDraft =
@@ -144,6 +147,8 @@ type SavedResumeRepository =
     abstract member ListByOwner: ownerKey: OwnerKey -> Task<SavedResume list>
     abstract member FindByHash: ownerKey: OwnerKey * contentHash: string -> Task<SavedResume option>
     abstract member Insert: resume: SavedResume -> Task<unit>
+    abstract member UpdateDocument:
+        id: SavedResumeId * ownerKey: OwnerKey * document: ResumeDocument option -> Task<unit>
     abstract member Rename: id: SavedResumeId * ownerKey: OwnerKey * name: string -> Task<bool>
     abstract member Delete: id: SavedResumeId * ownerKey: OwnerKey -> Task<bool>
     abstract member DeleteLeastRecentlyUsed: ownerKey: OwnerKey * keepCount: int -> Task<unit>

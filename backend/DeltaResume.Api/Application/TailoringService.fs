@@ -20,16 +20,33 @@ type TailoringService(engine: TailoringEngine) =
         | Ok() -> Ok()
 
     member _.TailorResume
-        (resumeText: string, jobDescription: string, cancellationToken: CancellationToken)
-        : Task<Result<TailorRun, TailorError>> =
+        (
+            resumeText: string,
+            jobDescription: string,
+            existingDocument: ResumeDocument option,
+            cancellationToken: CancellationToken
+        ) : Task<Result<TailorRun, TailorError>> =
         task {
             let bullets = Bullets.extract resumeText
-            let! engineResult = engine.ProposeChanges(bullets, jobDescription, cancellationToken)
+
+            let validatedExisting =
+                existingDocument
+                |> Option.bind (fun document ->
+                    let validLineIndexes = bullets |> List.map _.LineIndex |> Set.ofList
+                    ResumeDocument.validate validLineIndexes document)
+
+            let! engineResult =
+                engine.ProposeChanges(bullets, jobDescription, validatedExisting, cancellationToken)
 
             match engineResult with
             | Error message -> return Error(EngineFailure message)
             | Ok proposal ->
-                let changes = Bullets.toChanges bullets proposal.Structure proposal.Changes
+                let document =
+                    match validatedExisting with
+                    | Some existing -> Some existing
+                    | None -> proposal.Document
+
+                let changes = Bullets.toChanges bullets document proposal.Changes
 
                 let run =
                     { Id = RunId(Guid.NewGuid())
@@ -39,7 +56,7 @@ type TailoringService(engine: TailoringEngine) =
                       Summary = proposal.Summary
                       Changes = changes
                       Requirements = proposal.Requirements
-                      Structure = proposal.Structure }
+                      Document = document }
 
                 return Ok run
         }

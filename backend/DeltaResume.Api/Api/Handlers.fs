@@ -191,14 +191,30 @@ module Handlers =
                             | None -> return! persistenceFailureResponse next ctx
                         | Ok(SpendRecorded operationId) ->
                             try
+                                let existingDocument =
+                                    request.ResumeDocument
+                                    |> Option.bind ResumeDocumentJson.tryParse
+
                                 let! result =
-                                    service.TailorResume(request.ResumeText, request.JobDescription, ctx.RequestAborted)
+                                    service.TailorResume(
+                                        request.ResumeText,
+                                        request.JobDescription,
+                                        existingDocument,
+                                        ctx.RequestAborted
+                                    )
 
                                 match result with
                                 | Ok run ->
                                     try
                                         let savedResumeService = ctx.GetService<SavedResumeService>()
-                                        do! savedResumeService.AutoSave(ctx, request.ResumeText, request.ResumeName)
+
+                                        do!
+                                            savedResumeService.AutoSave(
+                                                ctx,
+                                                request.ResumeText,
+                                                request.ResumeName,
+                                                run.Document
+                                            )
                                     with ex ->
                                         eprintfn "Failed to auto-save resume: %s" ex.Message
 

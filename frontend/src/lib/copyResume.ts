@@ -1,10 +1,11 @@
 import { isBulletLine, isHeadingLine, stripBulletMarker } from './exportDocx';
-import type { ResumeStructure } from './types';
+import { entryDisplayDate, entryDisplayLeft } from './resumeModel';
+import type { ResumeDocument } from './types';
 
 const escapeHtml = (text: string): string =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-const BASE_STYLE = 'font-family: Calibri, Arial, sans-serif; font-size: 11pt;';
+const BASE_STYLE = 'font-family: Arial, sans-serif; font-size: 11pt;';
 
 const escapeLines = (texts: string[]): string => texts.map(escapeHtml).join('<br>');
 
@@ -29,14 +30,13 @@ const listItemHtml = (texts: string[]): string =>
 const wrapList = (items: string[]): string =>
   `<ul style="margin: 0 0 6pt 0;">${items.join('')}</ul>`;
 
-const structuredLines = (lines: string[], lineIndexes: number[]): string[] =>
-  lineIndexes
-    .map((lineIndex) => stripBulletMarker(lines[lineIndex] ?? '').trim())
-    .filter((text) => text.length > 0);
-
-export const buildStructuredResumeHtml = (lines: string[], structure: ResumeStructure): string => {
+export const buildDocumentResumeHtml = (
+  document: ResumeDocument,
+  textsByNodeId: Map<string, string>,
+): string => {
   const blocks: string[] = [];
   let listItems: string[] = [];
+  const textOf = (nodeId: string): string => textsByNodeId.get(nodeId)?.trim() ?? '';
 
   const flushList = () => {
     if (listItems.length === 0) return;
@@ -44,29 +44,44 @@ export const buildStructuredResumeHtml = (lines: string[], structure: ResumeStru
     listItems = [];
   };
 
-  structure.headerLines.forEach((lineIndex, headerIndex) => {
-    const texts = structuredLines(lines, [lineIndex]);
-    if (texts.length === 0) return;
-    blocks.push(headerIndex === 0 ? nameHtml(texts) : headerLineHtml(texts));
+  const nameText = textOf(document.header.name.id);
+  if (nameText) blocks.push(nameHtml([nameText]));
+  document.header.contact.forEach((item) => {
+    const text = textOf(item.id);
+    if (text) blocks.push(headerLineHtml([text]));
   });
 
-  structure.sections.forEach((section) => {
-    if (section.headingLine !== null) {
-      const headingTexts = structuredLines(lines, [section.headingLine]);
-      if (headingTexts.length > 0) {
+  document.sections.forEach((section) => {
+    if (section.heading) {
+      const headingText = textOf(section.heading.id);
+      if (headingText) {
         flushList();
-        blocks.push(headingHtml(headingTexts));
+        blocks.push(headingHtml([headingText]));
       }
     }
-    section.items.forEach((item) => {
-      const texts = structuredLines(lines, item.lines);
-      if (texts.length === 0) return;
-      if (item.kind === 'bullet') {
-        listItems.push(listItemHtml(texts));
+
+    section.blocks.forEach((block) => {
+      if (block.kind === 'entry') {
+        flushList();
+        const left = entryDisplayLeft(block) || textOf(block.id);
+        const dateText = entryDisplayDate(block);
+        const heading = left && dateText ? `${left} ${dateText}` : left || dateText || '';
+        if (heading) blocks.push(subheadingHtml([heading]));
+        block.bullets.forEach((bullet) => {
+          const text = stripBulletMarker(textOf(bullet.id)).trim();
+          if (text) listItems.push(listItemHtml([text]));
+        });
+        flushList();
+        return;
+      }
+      if (block.kind === 'bullet') {
+        const text = stripBulletMarker(textOf(block.id)).trim();
+        if (text) listItems.push(listItemHtml([text]));
         return;
       }
       flushList();
-      blocks.push(item.kind === 'subheading' ? subheadingHtml(texts) : paragraphHtml(texts));
+      const text = textOf(block.id);
+      if (text) blocks.push(paragraphHtml([text]));
     });
     flushList();
   });
@@ -133,9 +148,13 @@ const writeToClipboard = async (html: string, plainText: string): Promise<void> 
 
 export const copyResumeRichText = async (
   lines: string[],
-  structure: ResumeStructure | null | undefined,
+  document: ResumeDocument | null | undefined,
+  textsByNodeId?: Map<string, string>,
 ): Promise<void> => {
   const plainText = lines.join('\n').replace(/\n{3,}/g, '\n\n');
-  const html = structure ? buildStructuredResumeHtml(lines, structure) : buildResumeHtml(plainText);
+  const html =
+    document && textsByNodeId
+      ? buildDocumentResumeHtml(document, textsByNodeId)
+      : buildResumeHtml(plainText);
   await writeToClipboard(html, plainText);
 };

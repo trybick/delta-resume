@@ -29,12 +29,11 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
 
     // Called after a successful tailor only - upload/paste never hits the server.
     // Formatting lives primarily in the browser: .docx originals are kept in IndexedDB
-    // so export can restore layout. The backend only stores plain text, so it cannot
-    // be the source of truth for formatting.
-    // We still persist text here so the Saved list works across sessions/devices, and
-    // so we can content-hash each resume to skip duplicates and trim oldest entries
-    // when the plan's saved-resume limit is exceeded.
-    member _.AutoSave(ctx: HttpContext, resumeText: string, requestedName: string option) : Task<unit> =
+    // so export can restore layout. The backend stores plain text plus an optional typed
+    // document so later runs can reuse structure without re-extraction.
+    member _.AutoSave
+        (ctx: HttpContext, resumeText: string, requestedName: string option, resumeDocument: ResumeDocument option)
+        : Task<unit> =
         task {
             let identity = Identity.resolve options ctx
 
@@ -50,7 +49,10 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
                     let! existing = repository.FindByHash(ownerKey, contentHash)
 
                     match existing with
-                    | Some _ -> ()
+                    | Some existingResume when existingResume.ResumeDocument.IsSome || resumeDocument.IsNone ->
+                        ()
+                    | Some existingResume ->
+                        do! repository.UpdateDocument(existingResume.Id, ownerKey, resumeDocument)
                     | None ->
                         do!
                             repository.Insert
@@ -58,6 +60,7 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
                                   OwnerKey = ownerKey
                                   Name = sanitizeName requestedName now
                                   ResumeText = resumeText
+                                  ResumeDocument = resumeDocument
                                   ContentHash = contentHash
                                   CreatedAt = now }
 

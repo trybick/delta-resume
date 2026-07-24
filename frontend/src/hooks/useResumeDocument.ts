@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { cleanupOriginalDocxStore, loadOriginalDocx, saveOriginalDocx } from '../lib/docxStore';
 import { normalizeResumeTextForComparison } from '../lib/exportDocx';
-import type { AttachedFile, OriginalDocx, SavedResume } from '../lib/types';
+import type { AttachedFile, OriginalDocx, ResumeDocument, SavedResume } from '../lib/types';
 
 type UseResumeDocumentOptions = {
   savedResumes: SavedResume[];
@@ -13,6 +13,7 @@ type UseResumeDocumentResult = {
   resumeText: string;
   pasteFieldText: string;
   setResumeText: (text: string) => void;
+  resumeDocument: ResumeDocument | null;
   attachedFile: AttachedFile | null;
   originalDocx: OriginalDocx | null;
   handleResumeTextChange: (text: string) => void;
@@ -29,6 +30,7 @@ export const useResumeDocument = ({
 }: UseResumeDocumentOptions): UseResumeDocumentResult => {
   const [resumeText, setResumeText] = useState('');
   const [pasteFieldText, setPasteFieldText] = useState('');
+  const [resumeDocument, setResumeDocument] = useState<ResumeDocument | null>(null);
   const [attachedFile, setAttachedFile] = useState<AttachedFile | null>(null);
   const [originalDocx, setOriginalDocx] = useState<OriginalDocx | null>(null);
   const pendingDocxRestoreRef = useRef<string | null>(null);
@@ -44,6 +46,7 @@ export const useResumeDocument = ({
     pendingDocxRestoreRef.current = null;
     setAttachedFile(null);
     setOriginalDocx(null);
+    setResumeDocument(null);
     setPasteFieldText(text);
     setResumeText(text);
   };
@@ -53,6 +56,7 @@ export const useResumeDocument = ({
     setAttachedFile(file);
     setResumeText(text);
     setPasteFieldText('');
+    setResumeDocument(null);
     const isDocx = sourceFile.name.toLowerCase().endsWith('.docx');
     setOriginalDocx(isDocx ? { file: sourceFile, parsedText: text } : null);
     if (isDocx) {
@@ -64,6 +68,7 @@ export const useResumeDocument = ({
     pendingDocxRestoreRef.current = null;
     setAttachedFile(null);
     setOriginalDocx(null);
+    setResumeDocument(null);
     setResumeText('');
     setPasteFieldText('');
   };
@@ -75,6 +80,7 @@ export const useResumeDocument = ({
         normalizeResumeTextForComparison(resume.resumeText);
 
     setResumeText(resume.resumeText);
+    setResumeDocument(resume.resumeDocument);
 
     if (matchesAttachedDocx) {
       pendingDocxRestoreRef.current = null;
@@ -111,6 +117,7 @@ export const useResumeDocument = ({
     resumeText,
     pasteFieldText,
     setResumeText,
+    resumeDocument,
     attachedFile,
     originalDocx,
     handleResumeTextChange,

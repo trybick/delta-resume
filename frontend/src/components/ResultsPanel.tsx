@@ -33,6 +33,7 @@ import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { hasDraftBullet } from '../lib/hasDraftBullet';
 import { LOCKED_GAP_PLACEHOLDERS } from '../lib/lockedGapPlaceholders';
 import { proAccent } from '../lib/proAccent';
+import { buildReviewSegments } from '../lib/resumeModel';
 import { appTheme } from '../lib/theme';
 import type {
   AddedBullet,
@@ -41,7 +42,6 @@ import type {
   CreditStatus,
   JobRequirement,
   OriginalDocx,
-  ResumeStructure,
   TailorResult,
   TailorStatus,
 } from '../lib/types';
@@ -133,79 +133,14 @@ const splitContextLines = (lines: string[], collapsed: boolean): ContextSplit =>
 type ResumeSegment =
   | { kind: 'change'; change: BulletChange }
   | { kind: 'added'; bullet: AddedBullet }
-  | { kind: 'context'; startIndex: number; lines: string[] };
-
-const buildMultiLineGroups = (structure: ResumeStructure | null | undefined): Map<number, number> => {
-  const groups = new Map<number, number>();
-  if (!structure) return groups;
-  structure.sections.forEach((section) => {
-    section.items.forEach((item) => {
-      if (item.lines.length < 2) return;
-      const groupKey = Math.min(...item.lines);
-      item.lines.forEach((lineIndex) => groups.set(lineIndex, groupKey));
-    });
-  });
-  return groups;
-};
-
-const buildSegments = (
-  lines: string[],
-  changesByLine: Map<number, BulletChange>,
-  addedByAnchor: Map<number, AddedBullet[]>,
-  multiLineGroups: Map<number, number>,
-): ResumeSegment[] => {
-  const consumedByChange = new Set<number>();
-  changesByLine.forEach((change) => {
-    change.lineIndexes
-      .filter((lineIndex) => lineIndex !== change.lineIndex)
-      .forEach((lineIndex) => consumedByChange.add(lineIndex));
-  });
-  const segments: ResumeSegment[] = [];
-  let lastContextLineIndex: number | null = null;
-  lines.forEach((line, lineIndex) => {
-    const change = changesByLine.get(lineIndex);
-    if (change) {
-      segments.push({ kind: 'change', change });
-    } else if (consumedByChange.has(lineIndex)) {
-      const addedAfterConsumed = addedByAnchor.get(lineIndex);
-      if (addedAfterConsumed) {
-        addedAfterConsumed.forEach((bullet) => segments.push({ kind: 'added', bullet }));
-      }
-      return;
-    } else {
-      const previousSegment = segments[segments.length - 1];
-      const groupKey = multiLineGroups.get(lineIndex);
-      if (previousSegment && previousSegment.kind === 'context') {
-        const joinsPreviousLine =
-          groupKey !== undefined &&
-          lastContextLineIndex !== null &&
-          multiLineGroups.get(lastContextLineIndex) === groupKey;
-        if (joinsPreviousLine) {
-          const lastPosition = previousSegment.lines.length - 1;
-          previousSegment.lines[lastPosition] =
-            `${previousSegment.lines[lastPosition].trimEnd()} ${line.trim()}`;
-        } else {
-          previousSegment.lines.push(line);
-        }
-      } else {
-        segments.push({ kind: 'context', startIndex: lineIndex, lines: [line] });
-      }
-      lastContextLineIndex = lineIndex;
-    }
-    const addedBullets = addedByAnchor.get(lineIndex);
-    if (addedBullets) {
-      addedBullets.forEach((bullet) => segments.push({ kind: 'added', bullet }));
-    }
-  });
-  return segments;
-};
+  | { kind: 'context'; nodeId: string; lines: string[] };
 
 const hasMustHaveGaps = (result: TailorResult): boolean => {
-  const changedLines = new Set(result.changes.flatMap((change) => change.lineIndexes));
+  const changedTargets = new Set(result.changes.map((change) => change.targetId));
   return result.requirements.some((requirement) => {
     const covered =
       requirement.satisfiedBy.length > 0 ||
-      requirement.satisfiedByChanges.some((lineIndex) => changedLines.has(lineIndex));
+      requirement.satisfiedByChanges.some((targetId) => changedTargets.has(targetId));
     return !covered && requirement.importance === 'must';
   });
 };
@@ -229,7 +164,7 @@ const ResultsPanel = ({
     buildDecisionMap(result),
   );
   const [addedBullets, setAddedBullets] = useState<AddedBullet[]>([]);
-  const [expandedSegments, setExpandedSegments] = useState<Set<number>>(new Set());
+  const [expandedSegments, setExpandedSegments] = useState<Set<string>>(new Set());
   const [summaryOpen, setSummaryOpen] = useState(false);
   const [gapsOpen, setGapsOpen] = useState(() => (result ? hasMustHaveGaps(result) : false));
   const upgradeCtaLabel = useProUpgradeCtaLabel();
@@ -239,23 +174,14 @@ const ResultsPanel = ({
     setExpandedSegments(new Set());
   }, [result]);
 
-  const handleExpandSegment = (startIndex: number, hiddenCount: number) => {
+  const handleExpandSegment = (nodeId: string, hiddenCount: number) => {
     trackEvent(AnalyticsEvents.ShowHiddenLines, { hidden_count: hiddenCount });
-    setExpandedSegments((current) => new Set(current).add(startIndex));
+    setExpandedSegments((current) => new Set(current).add(nodeId));
   };
 
-  const changesByLine = useMemo(() => {
-    if (!result) return new Map<number, BulletChange>();
-    return new Map(result.changes.map((change) => [change.lineIndex, change]));
-  }, [result]);
-
-  const changesByAnyLine = useMemo(() => {
-    const map = new Map<number, BulletChange>();
-    if (!result) return map;
-    result.changes.forEach((change) => {
-      change.lineIndexes.forEach((lineIndex) => map.set(lineIndex, change));
-    });
-    return map;
+  const changesByTarget = useMemo(() => {
+    if (!result) return new Map<string, BulletChange>();
+    return new Map(result.changes.map((change) => [change.targetId, change]));
   }, [result]);
 
   const handleDecisionChange = (id: string, decision: ChangeDecision) => {
@@ -271,7 +197,7 @@ const ResultsPanel = ({
         id: crypto.randomUUID(),
         requirementText: requirement.text,
         text: requirement.draftBullet,
-        afterLineIndex: requirement.insertAfterLine,
+        afterId: requirement.insertAfterId,
       },
     ]);
   };
@@ -286,19 +212,6 @@ const ResultsPanel = ({
       current.map((bullet) => (bullet.id === id ? { ...bullet, text } : bullet)),
     );
   };
-
-  const addedByAnchor = useMemo(() => {
-    const map = new Map<number, AddedBullet[]>();
-    addedBullets.forEach((bullet) => {
-      const group = map.get(bullet.afterLineIndex);
-      if (group) {
-        group.push(bullet);
-        return;
-      }
-      map.set(bullet.afterLineIndex, [bullet]);
-    });
-    return map;
-  }, [addedBullets]);
 
   const addedByRequirement = useMemo(
     () => new Map(addedBullets.map((bullet) => [bullet.requirementText, bullet])),
@@ -325,7 +238,6 @@ const ResultsPanel = ({
     jobTitle,
     companyName,
     decisions,
-    changesByLine,
     activeAddedBullets,
   });
 
@@ -333,8 +245,8 @@ const ResultsPanel = ({
 
   const isRequirementCovered = (requirement: JobRequirement): boolean =>
     requirement.satisfiedBy.length > 0 ||
-    requirement.satisfiedByChanges.some((lineIndex) => {
-      const change = changesByAnyLine.get(lineIndex);
+    requirement.satisfiedByChanges.some((targetId) => {
+      const change = changesByTarget.get(targetId);
       return change !== undefined && decisions[change.id] !== 'reverted';
     });
 
@@ -446,9 +358,26 @@ const ResultsPanel = ({
   const paragraphChangeCount = result.changes.filter(
     (change) => change.kind === 'paragraph',
   ).length;
-  const lines = result.resumeText.split('\n');
-  const multiLineGroups = buildMultiLineGroups(result.structure);
-  const segments = buildSegments(lines, changesByLine, addedByAnchor, multiLineGroups);
+  const reviewSegments = buildReviewSegments(
+    result.resumeText,
+    result.document,
+    result.changes,
+    decisions,
+    addedBullets,
+  );
+  const segments: ResumeSegment[] = [];
+  reviewSegments.forEach((segment) => {
+    if (segment.kind !== 'context') {
+      segments.push(segment);
+      return;
+    }
+    const previous = segments[segments.length - 1];
+    if (previous && previous.kind === 'context') {
+      previous.lines.push(segment.text);
+      return;
+    }
+    segments.push({ kind: 'context', nodeId: segment.nodeId, lines: [segment.text] });
+  });
   const showGuestNudge = !isExample && isGuest && credits !== null;
   const showFreeUpgradeNudge =
     !isExample &&
@@ -763,25 +692,24 @@ const ResultsPanel = ({
             }
             const trimmed = trimBlankEdges(segment.lines);
             if (trimmed.lines.length === 0) return null;
-            const keyBase = segment.startIndex + trimmed.offset;
             const { leading, hidden, trailing } = splitContextLines(
               trimmed.lines,
-              !expandedSegments.has(segment.startIndex),
+              !expandedSegments.has(segment.nodeId),
             );
             return (
-              <div key={segment.startIndex}>
+              <div key={segment.nodeId}>
                 {leading.map((line, offset) => (
-                  <ContextLine key={keyBase + offset} line={line} />
+                  <ContextLine key={`${segment.nodeId}-l-${offset}`} line={line} />
                 ))}
                 {hidden.length > 0 && (
                   <CollapsedContext
                     hiddenCount={hidden.length}
-                    onExpand={() => handleExpandSegment(segment.startIndex, hidden.length)}
+                    onExpand={() => handleExpandSegment(segment.nodeId, hidden.length)}
                   />
                 )}
                 {trailing.map((line, offset) => (
                   <ContextLine
-                    key={keyBase + leading.length + hidden.length + offset}
+                    key={`${segment.nodeId}-t-${offset}`}
                     line={line}
                   />
                 ))}

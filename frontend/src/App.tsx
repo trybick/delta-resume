@@ -95,6 +95,7 @@ const App = () => {
   const {
     resumeText,
     pasteFieldText,
+    resumeDocument,
     attachedFile,
     originalDocx,
     handleResumeTextChange,
@@ -214,6 +215,7 @@ const App = () => {
           attachedFile?.name,
           savedResumes.map((resume) => resume.name),
         ),
+        result?.document ?? resumeDocument,
       );
       if (succeeded) {
         setLastSuccessfulInputs({

@@ -16,7 +16,8 @@ import {
   WidthType,
 } from 'docx';
 import { formatCoverLetterDate, formatCoverLetterSubject } from './formatCoverLetter';
-import type { ResumeStructure } from './types';
+import type { ResumeDocument } from './types';
+import { entryDisplayDate, entryDisplayLeft } from './resumeModel';
 
 const WORD_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const XML_NS = 'http://www.w3.org/XML/1998/namespace';
@@ -367,15 +368,6 @@ const splitTrailingDate = (text: string): SplitDateLine | null => {
   return { left, right };
 };
 
-const textRuns = (texts: string[], options: RunOptions): TextRun[] => {
-  const runs: TextRun[] = [];
-  texts.forEach((text, index) => {
-    if (index > 0) runs.push(new TextRun({ break: 1 }));
-    runs.push(new TextRun({ text, ...options }));
-  });
-  return runs;
-};
-
 const dateAlignedTextRuns = (texts: string[], options: RunOptions): TextRun[] => {
   const runs: TextRun[] = [];
   texts.forEach((text, index) => {
@@ -571,100 +563,122 @@ export const buildTemplateDocx = async (resumeText: string): Promise<Blob> => {
   return Packer.toBlob(document);
 };
 
-const structuredLines = (lines: string[], lineIndexes: number[]): string[] =>
-  lineIndexes
-    .map((lineIndex) => stripBulletMarker(lines[lineIndex] ?? '').trim())
-    .filter((text) => text.length > 0);
-
-export const buildStructuredDocx = async (
-  lines: string[],
-  structure: ResumeStructure,
+export const buildDocumentDocx = async (
+  resumeDocument: ResumeDocument,
+  textsByNodeId: Map<string, string>,
 ): Promise<Blob> => {
   const paragraphs: (Paragraph | Table)[] = [];
+  const textOf = (nodeId: string): string => textsByNodeId.get(nodeId)?.trim() ?? '';
 
-  structure.headerLines.forEach((lineIndex, headerIndex) => {
-    const texts = structuredLines(lines, [lineIndex]);
-    if (texts.length === 0) return;
-    const isName = headerIndex === 0;
+  const nameText = textOf(resumeDocument.header.name.id);
+  if (nameText) {
     paragraphs.push(
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { after: isName ? 60 : 20 },
-        children: textRuns(texts, {
-          font: FONT,
-          size: isName ? NAME_SIZE : CONTACT_SIZE,
-          bold: isName,
-          ...(isName ? {} : { color: MUTED_COLOR }),
-        }),
+        spacing: { after: 60 },
+        children: [new TextRun({ text: nameText, font: FONT, size: NAME_SIZE, bold: true })],
+      }),
+    );
+  }
+
+  resumeDocument.header.contact.forEach((item) => {
+    const text = textOf(item.id);
+    if (!text) return;
+    paragraphs.push(
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 20 },
+        children: [new TextRun({ text, font: FONT, size: CONTACT_SIZE, color: MUTED_COLOR })],
       }),
     );
   });
 
-  structure.sections.forEach((section) => {
-    if (section.headingLine !== null) {
-      const headingTexts = structuredLines(lines, [section.headingLine]);
-      if (headingTexts.length > 0) {
-        paragraphs.push(headingParagraph(headingTexts));
-      }
+  resumeDocument.sections.forEach((section) => {
+    if (section.heading) {
+      const headingText = textOf(section.heading.id);
+      if (headingText) paragraphs.push(headingParagraph([headingText]));
     }
 
-    section.items.forEach((item) => {
-      const texts = structuredLines(lines, item.lines);
-      if (texts.length === 0) return;
-      if (item.kind === 'bullet') {
+    section.blocks.forEach((block) => {
+      if (block.kind === 'entry') {
+        const left = entryDisplayLeft(block) || textOf(block.id);
+        const dateText = entryDisplayDate(block);
+        if (left || dateText) {
+          if (left && dateText) {
+            paragraphs.push(
+              dateLineTable(
+                { left, right: dateText },
+                { font: FONT, size: BODY_SIZE, bold: true },
+                { spacingBefore: 120, spacingAfter: 40, keepNext: true },
+              ),
+            );
+          } else {
+            paragraphs.push(
+              new Paragraph({
+                spacing: { before: 120, after: 40 },
+                keepNext: true,
+                keepLines: true,
+                children: [
+                  new TextRun({
+                    text: left || dateText || '',
+                    font: FONT,
+                    size: BODY_SIZE,
+                    bold: true,
+                  }),
+                ],
+              }),
+            );
+          }
+        }
+        block.bullets.forEach((bullet) => {
+          const text = stripBulletMarker(textOf(bullet.id)).trim();
+          if (!text) return;
+          paragraphs.push(
+            new Paragraph({
+              ...bulletParagraphOptions,
+              spacing: { after: 40 },
+              widowControl: true,
+              children: labelledTextRuns([text], { font: FONT, size: BODY_SIZE }),
+            }),
+          );
+        });
+        return;
+      }
+
+      if (block.kind === 'bullet') {
+        const text = stripBulletMarker(textOf(block.id)).trim();
+        if (!text) return;
         paragraphs.push(
           new Paragraph({
             ...bulletParagraphOptions,
             spacing: { after: 40 },
             widowControl: true,
-            children: labelledTextRuns(texts, { font: FONT, size: BODY_SIZE }),
+            children: labelledTextRuns([text], { font: FONT, size: BODY_SIZE }),
           }),
         );
         return;
       }
-      const singleLineSplit = texts.length === 1 ? splitTrailingDate(texts[0]) : null;
-      if (item.kind === 'subheading') {
-        if (singleLineSplit) {
-          paragraphs.push(
-            dateLineTable(
-              singleLineSplit,
-              { font: FONT, size: BODY_SIZE, bold: true },
-              { spacingBefore: 120, spacingAfter: 40, keepNext: true },
-            ),
-          );
-          return;
-        }
+
+      if (block.kind === 'skillsGroup') {
+        const text = textOf(block.id);
+        if (!text) return;
         paragraphs.push(
           new Paragraph({
-            ...rightDateTabStop,
-            spacing: { before: 120, after: 40 },
-            keepNext: true,
-            keepLines: true,
-            children: dateAlignedTextRuns(texts, {
-              font: FONT,
-              size: BODY_SIZE,
-              bold: true,
-            }),
+            spacing: { after: 40 },
+            widowControl: true,
+            children: labelledTextRuns([text], { font: FONT, size: BODY_SIZE }),
           }),
         );
         return;
       }
-      if (singleLineSplit) {
-        paragraphs.push(
-          dateLineTable(
-            singleLineSplit,
-            { font: FONT, size: BODY_SIZE },
-            { spacingAfter: 80 },
-          ),
-        );
-        return;
-      }
+
+      const text = textOf(block.id);
+      if (!text) return;
       paragraphs.push(
         new Paragraph({
-          ...rightDateTabStop,
           spacing: { after: 80 },
           widowControl: true,
-          children: dateAlignedTextRuns(texts, { font: FONT, size: BODY_SIZE }),
+          children: labelledTextRuns([text], { font: FONT, size: BODY_SIZE }),
         }),
       );
     });

@@ -8,7 +8,8 @@ open DeltaResume.Domain
 type TailorRequestDto =
     { ResumeText: string
       JobDescription: string
-      ResumeName: string option }
+      ResumeName: string option
+      ResumeDocument: string option }
 
 [<CLIMutable>]
 type RenameSavedResumeRequestDto = { Name: string }
@@ -37,36 +38,25 @@ type SavedResumeDto =
     { Id: Guid
       Name: string
       ResumeText: string
+      ResumeDocument: string option
       CreatedAt: DateTimeOffset }
 
 type BulletChangeDto =
     { Id: Guid
-      LineIndex: int
-      LineIndexes: int list
+      TargetId: string
+      SourceLines: int list
       Original: string
       Tailored: string
       Kind: string }
 
-type ResumeItemDto =
-    { Kind: string
-      Lines: int list }
-
-type ResumeSectionDto =
-    { HeadingLine: int option
-      Items: ResumeItemDto list }
-
-type ResumeStructureDto =
-    { HeaderLines: int list
-      Sections: ResumeSectionDto list }
-
 type JobRequirementDto =
     { Text: string
       Importance: string
-      SatisfiedBy: int list
-      SatisfiedByChanges: int list
+      SatisfiedBy: string list
+      SatisfiedByChanges: string list
       GapHint: string option
       DraftBullet: string option
-      InsertAfterLine: int option
+      InsertAfterId: string option
       Locked: bool }
 
 type TailorResponseDto =
@@ -75,7 +65,7 @@ type TailorResponseDto =
       Summary: string
       Changes: BulletChangeDto list
       Requirements: JobRequirementDto list
-      Structure: ResumeStructureDto option }
+      Document: string option }
 
 type ErrorResponseDto = { Message: string }
 
@@ -96,23 +86,11 @@ module Mapping =
         let (ChangeId id) = change.Id
 
         { Id = id
-          LineIndex = change.LineIndex
-          LineIndexes = change.LineIndexes
+          TargetId = change.TargetId
+          SourceLines = change.SourceLines
           Original = change.Original
           Tailored = change.Tailored
           Kind = LineKind.toString change.Kind }
-
-    let toStructureDto (structure: ResumeStructure) : ResumeStructureDto =
-        { HeaderLines = structure.HeaderLines
-          Sections =
-            structure.Sections
-            |> List.map (fun section ->
-                { HeadingLine = section.HeadingLine
-                  Items =
-                    section.Items
-                    |> List.map (fun item ->
-                        { Kind = ResumeItemKind.toString item.Kind
-                          Lines = item.Lines }) }) }
 
     let toRequirementDto (requirement: JobRequirement) : JobRequirementDto =
         { Text = requirement.Text
@@ -121,7 +99,7 @@ module Mapping =
           SatisfiedByChanges = requirement.SatisfiedByChanges
           GapHint = requirement.GapHint
           DraftBullet = requirement.DraftBullet
-          InsertAfterLine = requirement.InsertAfterLine
+          InsertAfterId = requirement.InsertAfterId
           Locked = false }
 
     let private toLockedRequirementDto (requirement: JobRequirement) : JobRequirementDto =
@@ -131,20 +109,20 @@ module Mapping =
           SatisfiedByChanges = []
           GapHint = None
           DraftBullet = None
-          InsertAfterLine = None
+          InsertAfterId = None
           Locked = true }
 
     // Free/guest plans only get the first uncovered requirement in full; the rest
     // are stripped server-side so gap details never leave the API for non-Pro users.
     let private toGatedRequirementDtos (run: TailorRun) : JobRequirementDto list =
-        let changeLines =
+        let changedTargets =
             run.Changes
-            |> List.collect (fun change -> change.LineIndexes)
+            |> List.map (fun change -> change.TargetId)
             |> Set.ofList
 
         let isCovered (requirement: JobRequirement) =
             not (List.isEmpty requirement.SatisfiedBy)
-            || requirement.SatisfiedByChanges |> List.exists changeLines.Contains
+            || requirement.SatisfiedByChanges |> List.exists changedTargets.Contains
 
         run.Requirements
         |> List.mapFold
@@ -170,7 +148,7 @@ module Mapping =
                 run.Requirements |> List.map toRequirementDto
             else
                 toGatedRequirementDtos run
-          Structure = run.Structure |> Option.map toStructureDto }
+          Document = run.Document |> Option.map ResumeDocumentJson.serialize }
 
     let toUserSettingsDto (settings: UserSettings) : UserSettingsDto =
         { CoverLetter =
@@ -183,4 +161,5 @@ module Mapping =
         { Id = id
           Name = resume.Name
           ResumeText = resume.ResumeText
+          ResumeDocument = resume.ResumeDocument |> Option.map ResumeDocumentJson.serialize
           CreatedAt = resume.CreatedAt }

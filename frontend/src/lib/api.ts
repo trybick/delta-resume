@@ -1,6 +1,7 @@
 import type {
   CoverLetterResult,
   CreditStatus,
+  ResumeDocument,
   SavedResume,
   TailorResult,
   UserSettings,
@@ -8,6 +9,7 @@ import type {
 import { getAuthToken } from './authToken';
 import { getFingerprint } from './fingerprint';
 import { notifyRateLimited } from './rateLimitNotice';
+import { parseResumeDocument } from './resumeModel';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
@@ -104,34 +106,43 @@ export const postTailor = async (
   resumeText: string,
   jobDescription: string,
   resumeName: string,
+  resumeDocument?: ResumeDocument | null,
   signal?: AbortSignal,
 ): Promise<TailorResponse> => {
   const response = await fetch(`${API_BASE_URL}/api/tailor`, {
     method: 'POST',
     headers: await buildHeaders(),
-    body: JSON.stringify({ resumeText, jobDescription, resumeName }),
+    body: JSON.stringify({
+      resumeText,
+      jobDescription,
+      resumeName,
+      resumeDocument: resumeDocument ? JSON.stringify(resumeDocument) : null,
+    }),
     signal,
   });
   if (!response.ok) {
     return throwApiError(response);
   }
-  const data = (await response.json()) as TailorResponse;
+  const data = (await response.json()) as TailorResponse & {
+    document?: string | ResumeDocument | null;
+  };
   return {
     ...data,
     changes: (data.changes ?? []).map((change) => ({
       ...change,
-      lineIndexes:
-        change.lineIndexes && change.lineIndexes.length > 0
-          ? change.lineIndexes
-          : [change.lineIndex],
+      sourceLines:
+        change.sourceLines && change.sourceLines.length > 0
+          ? change.sourceLines
+          : [],
     })),
     requirements: (data.requirements ?? []).map((requirement) => ({
       ...requirement,
       gapHint: requirement.gapHint ?? null,
       draftBullet: requirement.draftBullet ?? null,
-      insertAfterLine: requirement.insertAfterLine ?? null,
+      insertAfterId: requirement.insertAfterId ?? null,
       locked: requirement.locked ?? false,
     })),
+    document: parseResumeDocument(data.document),
   };
 };
 
@@ -197,7 +208,13 @@ export const getSavedResumes = async (): Promise<SavedResume[]> => {
   if (!response.ok) {
     return throwApiError(response);
   }
-  return (await response.json()) as SavedResume[];
+  const data = (await response.json()) as Array<
+    SavedResume & { resumeDocument?: string | ResumeDocument | null }
+  >;
+  return data.map((resume) => ({
+    ...resume,
+    resumeDocument: parseResumeDocument(resume.resumeDocument),
+  }));
 };
 
 export const renameSavedResume = async (resumeId: string, name: string): Promise<void> => {

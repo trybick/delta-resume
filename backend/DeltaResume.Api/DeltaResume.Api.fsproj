@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <Compile Include="Domain/Types.fs" />
+    <Compile Include="Domain/ResumeDocumentJson.fs" />
     <Compile Include="Domain/Bullets.fs" />
     <Compile Include="Application/Ports.fs" />
     <Compile Include="Application/InputValidation.fs" />
