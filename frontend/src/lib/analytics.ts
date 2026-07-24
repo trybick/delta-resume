@@ -110,8 +110,8 @@ export const initAnalytics = (id: string) => {
 
   measurementId = id;
   window.dataLayer = window.dataLayer ?? [];
-  window.gtag = (...args: unknown[]) => {
-    window.dataLayer.push(args);
+  window.gtag = function gtag(..._args: unknown[]) {
+    window.dataLayer.push(arguments);
   };
 
   window.gtag('js', new Date());

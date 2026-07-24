@@ -23,8 +23,10 @@ type AnthropicEngine(httpClient: HttpClient) =
 
     let assistantPrefill = """{"changes":["""
 
-    let systemPromptExtract =
-        """You are Delta Resume, a resume tailoring assistant. You are given a complete resume, one line per lineIndex, inside <resume_lines>, and a job description inside <job_description>. You rewrite specific resume lines so they better match the job description's language, keywords, and priorities.
+    // Shared rewrite / summary / requirements rules. Mode-specific document
+    // extraction instructions are appended by systemPromptExtract / systemPromptReuse.
+    let systemPromptCore =
+        """You rewrite specific resume lines so they better match the job description's language, keywords, and priorities.
 
 You may change exactly three kinds of lines, and you must classify each change:
 - "bullet": an experience or project bullet/sentence describing what the person did.
@@ -38,7 +40,7 @@ Rules for bullet changes:
 - Do not rewrite a bullet that already matches the job description well.
 - Never invent metrics, technologies, or responsibilities. Never add keywords the original bullet does not support.
 - Length is a hard constraint: each rewritten bullet must stay within about 20% of the original bullet's word count. Prefer swapping or tightening words over adding new clauses, and never stack multiple new qualifiers onto one bullet. If you cannot improve fit without growing the bullet past that limit, skip the change.
-- If a bullet's text was hard-wrapped across multiple lines in <resume_lines>, treat all of those lines as ONE bullet: use the FIRST line's lineIndex for the change, write "tailored" as the complete rewritten bullet on a single line, and put every one of those lines in one bullet block in "document". Never anchor a change to a continuation line, and never rewrite only part of a hard-wrapped bullet.
+- If a bullet's text was hard-wrapped across multiple lines in <resume_lines> (or spans multiple sourceLines in a supplied document), treat all of those lines as ONE bullet: use the FIRST line's lineIndex for the change, write "tailored" as the complete rewritten bullet on a single line. Never anchor a change to a continuation line, and never rewrite only part of a hard-wrapped bullet.
 - If a line starts with a bullet marker, preserve that exact marker and leading indentation; if it does not, keep it as plain text with the same indentation.
 
 Rules for skill changes:
@@ -49,7 +51,7 @@ Rules for skill changes:
 
 Rules for paragraph changes:
 - Only the summary/objective/profile paragraph qualifies. Never treat any other prose as a "paragraph" change.
-- You may make AT MOST 1 paragraph change. If text extraction hard-wrapped the paragraph across multiple lines, treat all of those lines as ONE paragraph: use the FIRST line's lineIndex for the change, write "tailored" as the complete rewritten paragraph on a single line, and list every line of that paragraph in one paragraph block in "document". Never anchor a paragraph change to a middle line, and never rewrite only part of a hard-wrapped paragraph.
+- You may make AT MOST 1 paragraph change. If text extraction hard-wrapped the paragraph across multiple lines, treat all of those lines as ONE paragraph: use the FIRST line's lineIndex for the change, write "tailored" as the complete rewritten paragraph on a single line. Never anchor a paragraph change to a middle line, and never rewrite only part of a hard-wrapped paragraph.
 - Rewrite the paragraph to foreground the experience, strengths, and keywords most relevant to the job description, reusing the job description's language where the resume genuinely supports it.
 - Keep the rewrite grounded in the rest of the resume: never claim experience, seniority, technologies, or metrics the resume does not show.
 - Length is a hard constraint: the tailored paragraph must stay within about 10% of the original word count; never expand it into a longer profile. Prefer swapping or tightening words over adding new clauses. If you cannot improve fit without growing the paragraph, skip the change.
@@ -75,9 +77,19 @@ Requirements rules:
 - "satisfiedByChanges": lineIndexes of your "changes" whose tailored text newly demonstrates a requirement the original line did not clearly show. Usually an empty array.
 - "gapHint": for requirements where both arrays are empty, one short sentence naming where in the resume a bullet about it would fit (e.g. "Would fit under your Acme Corp role"). Never suggest inventing experience. Use null when the requirement is satisfied.
 - "draftBullet": for requirements where both arrays are empty, a template bullet the candidate could add IF they have this experience. Write it in the same style, tense, and voice as the resume's existing bullets, and start it with the same bullet marker and indentation the resume's bullets use (or no marker if they use none). Because the resume shows no evidence for this requirement, you must NOT assert specifics as fact: put every unverifiable specific (metrics, scale, tools beyond the requirement itself, project names) in square brackets as placeholders the candidate fills in, e.g. "- Provisioned [cloud environment] infrastructure with Terraform, cutting setup time by [X%]". Use null when the requirement is satisfied.
-- "insertAfterLine": for requirements with a "draftBullet", the lineIndex of the existing resume line the new bullet should be inserted directly after -- typically the last bullet of the role or section named in "gapHint". Must be a lineIndex that exists in <resume_lines>. Use null when the requirement is satisfied.
+- "insertAfterLine": for requirements with a "draftBullet", the lineIndex of the existing resume line the new bullet should be inserted directly after -- typically the last bullet of the role or section named in "gapHint". Must be a lineIndex that exists in <resume_lines>. Use null when the requirement is satisfied."""
+
+    // First tailor (no saved typed document yet): Claude both rewrites and extracts
+    // structure into "document", which we persist so later runs can skip extraction.
+    let systemPromptExtract =
+        """You are Delta Resume, a resume tailoring assistant. You are given a complete resume, one line per lineIndex, inside <resume_lines>, and a job description inside <job_description>.
+
+"""
+        + systemPromptCore
+        + """
 
 You must also return the resume's typed document as "document", so the app can rebuild a cleanly formatted file. Reference lines ONLY by lineIndex in "sourceLines"; never repeat line text. Do not invent ids.
+When a hard-wrapped bullet or paragraph spans multiple lines, put every one of those lineIndexes in one block in "document".
 
 Document rules:
 - "header":
@@ -101,41 +113,17 @@ Document rules:
 Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
 {"changes":[{"lineIndex":0,"kind":"bullet","tailored":"<the rewritten line>"}],"summary":"<1-2 sentences>","requirements":[{"text":"<short requirement>","importance":"must","satisfiedBy":[4],"satisfiedByChanges":[],"gapHint":null,"draftBullet":null,"insertAfterLine":null}],"document":{"header":{"name":{"sourceLines":[0]},"contact":[{"sourceLines":[1]}]},"sections":[{"kind":"experience","heading":{"sourceLines":[2]},"blocks":[{"kind":"entry","title":"Engineer","organization":"Acme","location":null,"dates":{"start":"2021","end":"Present","text":"2021 - Present"},"headingSourceLines":[3],"bullets":[{"sourceLines":[4]}]}]}]}}"""
 
+    // Subsequent tailor: a validated typed document is already supplied in
+    // <resume_document>. Claude should only rewrite / cover requirements — do not
+    // re-extract structure, so node IDs and layout stay stable across runs.
     let systemPromptReuse =
         """You are Delta Resume, a resume tailoring assistant. You are given a complete resume inside <resume_lines>, a validated typed document inside <resume_document>, and a job description inside <job_description>. The typed document already describes the resume's structure; do NOT return a "document" field. Only return changes, summary, and requirements.
 
-You may change exactly three kinds of lines, and you must classify each change:
-- "bullet": an experience or project bullet/sentence describing what the person did.
-- "skill": a line in a skills-type section.
-- "paragraph": the resume's summary/objective/profile paragraph.
+"""
+        + systemPromptCore
+        + """
 
-Never change names, contact info, links, section headers, job titles, company names, dates, education entries, or category labels.
-
-Rules for bullet changes:
-- AT MOST 4 bullet changes, most relevant first.
-- Never invent metrics, technologies, or responsibilities.
-- Each rewritten bullet must stay within about 20% of the original word count.
-- If a bullet spans multiple sourceLines in the document, use the FIRST lineIndex and rewrite the whole bullet.
-- Preserve bullet markers and indentation.
-
-Rules for skill changes:
-- Only append missing skills evidenced elsewhere in the resume and relevant to the job. Preserve order and separators.
-
-Rules for paragraph changes:
-- AT MOST 1 paragraph change. Use the first lineIndex of a multi-line paragraph. Stay within about 10% of the original word count.
-
-General rules:
-- Keep every rewrite truthful.
-- Never use em dashes (—) or en dashes (–). Use a comma, period, or colon.
-- Avoid AI-flavored vocabulary unless already present.
-- Leave unchanged lines out of "changes".
-
-Also return "summary" (1-2 sentences) and "requirements" (8-12 items) with the same fields as usual:
-- "satisfiedBy": lineIndexes that demonstrate the requirement
-- "satisfiedByChanges": lineIndexes of your changes that newly demonstrate it
-- "gapHint", "draftBullet", "insertAfterLine": for uncovered requirements only; otherwise null
-
-Respond with ONLY a JSON object, no prose, no code fences:
+Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
 {"changes":[{"lineIndex":0,"kind":"bullet","tailored":"<the rewritten line>"}],"summary":"<1-2 sentences>","requirements":[{"text":"<short requirement>","importance":"must","satisfiedBy":[4],"satisfiedByChanges":[],"gapHint":null,"draftBullet":null,"insertAfterLine":null}]}"""
 
     let buildResumeContent (bullets: BulletLine list) : string =
