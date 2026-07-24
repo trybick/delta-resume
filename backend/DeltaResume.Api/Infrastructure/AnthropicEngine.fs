@@ -23,10 +23,10 @@ type AnthropicEngine(httpClient: HttpClient) =
 
     let assistantPrefill = """{"changes":["""
 
-    // Shared rewrite / summary / requirements rules. Mode-specific document
-    // extraction instructions are appended by systemPromptExtract / systemPromptReuse.
+    // Shared identity, rewrite, summary, and requirements rules. Sent as its own
+    // cached system block so both modes hit the same prompt cache prefix.
     let systemPromptCore =
-        """You rewrite specific resume lines so they better match the job description's language, keywords, and priorities.
+        """You are Delta Resume, a resume tailoring assistant. You are given a complete resume, one line per lineIndex, inside <resume_lines>, and a job description inside <job_description>. You rewrite specific resume lines so they better match the job description's language, keywords, and priorities.
 
 You may change exactly three kinds of lines, and you must classify each change:
 - "bullet": an experience or project bullet/sentence describing what the person did.
@@ -40,7 +40,7 @@ Rules for bullet changes:
 - Do not rewrite a bullet that already matches the job description well.
 - Never invent metrics, technologies, or responsibilities. Never add keywords the original bullet does not support.
 - Length is a hard constraint: each rewritten bullet must stay within about 20% of the original bullet's word count. Prefer swapping or tightening words over adding new clauses, and never stack multiple new qualifiers onto one bullet. If you cannot improve fit without growing the bullet past that limit, skip the change.
-- If a bullet's text was hard-wrapped across multiple lines in <resume_lines> (or spans multiple sourceLines in a supplied document), treat all of those lines as ONE bullet: use the FIRST line's lineIndex for the change, write "tailored" as the complete rewritten bullet on a single line. Never anchor a change to a continuation line, and never rewrite only part of a hard-wrapped bullet.
+- If a bullet's text was hard-wrapped across multiple lines in <resume_lines> (or, when a <resume_document> is supplied, spans multiple sourceLines of one bullet), treat all of those lines as ONE bullet: use the FIRST line's lineIndex for the change, write "tailored" as the complete rewritten bullet on a single line. Never anchor a change to a continuation line, and never rewrite only part of a hard-wrapped bullet.
 - If a line starts with a bullet marker, preserve that exact marker and leading indentation; if it does not, keep it as plain text with the same indentation.
 
 Rules for skill changes:
@@ -81,15 +81,9 @@ Requirements rules:
 
     // First tailor (no saved typed document yet): Claude both rewrites and extracts
     // structure into "document", which we persist so later runs can skip extraction.
-    let systemPromptExtract =
-        """You are Delta Resume, a resume tailoring assistant. You are given a complete resume, one line per lineIndex, inside <resume_lines>, and a job description inside <job_description>.
-
-"""
-        + systemPromptCore
-        + """
-
-You must also return the resume's typed document as "document", so the app can rebuild a cleanly formatted file. Reference lines ONLY by lineIndex in "sourceLines"; never repeat line text. Do not invent ids.
-When a hard-wrapped bullet or paragraph spans multiple lines, put every one of those lineIndexes in one block in "document".
+    let extractModeInstructions =
+        """You must also return the resume's typed document as "document", so the app can rebuild a cleanly formatted file. Reference lines ONLY by lineIndex in "sourceLines"; never repeat line text. Do not invent ids.
+When a hard-wrapped bullet or paragraph spans multiple lines, put every one of those lineIndexes in one block in "document"; never split one bullet or paragraph across blocks.
 
 Document rules:
 - "header":
@@ -100,13 +94,13 @@ Document rules:
   - "heading": { "sourceLines": [heading lineIndex] } or null if the section has no heading
   - "blocks": ordered content blocks. Each block has "kind" and "sourceLines" (or nested bullets):
     - "paragraph": one prose paragraph. Hard-wrapped lines belong in one block.
-    - "bullet": a standalone bullet not under an entry.
+    - "bullet": a standalone bullet not under an entry. Hard-wrapped lines belong in one block.
     - "skillsGroup": a skills category/list line. Optional "label" when the line starts with a category label (e.g. "Languages").
     - "entry": a role/project/degree block with optional typed fields:
       - "title", "organization", "location": strings or null when unknown
       - "dates": { "start", "end", "text" } or null. "text" is the date range as written; "end" may be "Present".
       - "headingSourceLines": lineIndexes of the title/company/date line(s)
-      - "bullets": array of { "sourceLines": [...] }, one per bullet under the entry
+      - "bullets": array of { "sourceLines": [...] }, one per bullet under the entry. A hard-wrapped bullet's lines all belong to that one bullet's "sourceLines"
 - Typed fields are optional: omit or null any field you cannot confidently extract. Never invent title/company/dates.
 - Every lineIndex in <resume_lines> must appear exactly once across header and section sourceLines. Never drop or duplicate a lineIndex.
 
@@ -114,14 +108,10 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
 {"changes":[{"lineIndex":0,"kind":"bullet","tailored":"<the rewritten line>"}],"summary":"<1-2 sentences>","requirements":[{"text":"<short requirement>","importance":"must","satisfiedBy":[4],"satisfiedByChanges":[],"gapHint":null,"draftBullet":null,"insertAfterLine":null}],"document":{"header":{"name":{"sourceLines":[0]},"contact":[{"sourceLines":[1]}]},"sections":[{"kind":"experience","heading":{"sourceLines":[2]},"blocks":[{"kind":"entry","title":"Engineer","organization":"Acme","location":null,"dates":{"start":"2021","end":"Present","text":"2021 - Present"},"headingSourceLines":[3],"bullets":[{"sourceLines":[4]}]}]}]}}"""
 
     // Subsequent tailor: a validated typed document is already supplied in
-    // <resume_document>. Claude should only rewrite / cover requirements — do not
-    // re-extract structure, so node IDs and layout stay stable across runs.
-    let systemPromptReuse =
-        """You are Delta Resume, a resume tailoring assistant. You are given a complete resume inside <resume_lines>, a validated typed document inside <resume_document>, and a job description inside <job_description>. The typed document already describes the resume's structure; do NOT return a "document" field. Only return changes, summary, and requirements.
-
-"""
-        + systemPromptCore
-        + """
+    // <resume_document>, so Claude only rewrites and covers requirements. Skipping
+    // re-extraction keeps node ids and layout stable across runs.
+    let reuseModeInstructions =
+        """A validated typed document is also supplied inside <resume_document>. It already describes the resume's structure; do NOT return a "document" field. Only return changes, summary, and requirements.
 
 Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
 {"changes":[{"lineIndex":0,"kind":"bullet","tailored":"<the rewritten line>"}],"summary":"<1-2 sentences>","requirements":[{"text":"<short requirement>","importance":"must","satisfiedBy":[4],"satisfiedByChanges":[],"gapHint":null,"draftBullet":null,"insertAfterLine":null}]}"""
@@ -538,11 +528,20 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                 match apiKey with
                 | None -> return Error "ANTHROPIC_API_KEY is not set on the server."
                 | Some apiKey ->
-                    let systemPrompt =
+                    let modeInstructions =
                         if existingDocument.IsSome then
-                            systemPromptReuse
+                            reuseModeInstructions
                         else
-                            systemPromptExtract
+                            extractModeInstructions
+
+                    let systemContent: obj[] =
+                        [| box
+                               {| ``type`` = "text"
+                                  text = systemPromptCore
+                                  cache_control = {| ``type`` = "ephemeral" |} |}
+                           box
+                               {| ``type`` = "text"
+                                  text = modeInstructions |} |]
 
                     let userContent: obj[] =
                         match existingDocument with
@@ -573,10 +572,7 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                         {| model = model
                            max_tokens = 10240
                            temperature = 0.2
-                           system =
-                            [| {| ``type`` = "text"
-                                  text = systemPrompt
-                                  cache_control = {| ``type`` = "ephemeral" |} |} |]
+                           system = systemContent
                            messages =
                             [| {| role = "user"
                                   content = box userContent |}
