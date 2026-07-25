@@ -12,6 +12,7 @@ module Schema =
         use connection = new NpgsqlConnection(connectionString)
         connection.Open()
 
+        // Existing DBs ignore CREATE TABLE IF NOT EXISTS; new columns need ALTER + backfill.
         connection.Execute(
             """
             CREATE TABLE IF NOT EXISTS credit_usage (
@@ -23,6 +24,9 @@ module Schema =
                 operation_id UUID NOT NULL,
                 email TEXT
             );
+
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS operation_id UUID;
 
             ALTER TABLE credit_usage
                 ADD COLUMN IF NOT EXISTS email TEXT;
@@ -50,8 +54,35 @@ module Schema =
                 updated_at TIMESTAMPTZ NOT NULL
             );
 
+            ALTER TABLE saved_resumes
+                ADD COLUMN IF NOT EXISTS resume_document JSONB;
+
+            ALTER TABLE saved_resumes
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;
+
+            UPDATE saved_resumes
+            SET updated_at = created_at
+            WHERE updated_at IS NULL;
+
+            ALTER TABLE saved_resumes
+                ALTER COLUMN updated_at SET DEFAULT now();
+
+            ALTER TABLE saved_resumes
+                ALTER COLUMN updated_at SET NOT NULL;
+
             CREATE INDEX IF NOT EXISTS idx_saved_resumes_owner
                 ON saved_resumes (owner_key);
+
+            -- Drop older duplicates so the unique index can be created on existing data.
+            DELETE FROM saved_resumes a
+            USING saved_resumes b
+            WHERE a.owner_key = b.owner_key
+              AND a.content_hash = b.content_hash
+              AND (
+                    a.updated_at < b.updated_at
+                    OR (a.updated_at = b.updated_at AND a.created_at < b.created_at)
+                    OR (a.updated_at = b.updated_at AND a.created_at = b.created_at AND a.id::text < b.id::text)
+                  );
 
             -- Auto-save treats (owner, content hash) as unique; without this two
             -- concurrent tailor runs on the same resume would both insert.
