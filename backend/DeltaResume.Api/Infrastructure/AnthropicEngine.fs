@@ -7,10 +7,11 @@ open System.Text
 open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
+open Microsoft.Extensions.Logging
 open DeltaResume.Application
 open DeltaResume.Domain
 
-type AnthropicEngine(httpClient: HttpClient) =
+type AnthropicEngine(httpClient: HttpClient, logger: ILogger<AnthropicEngine>) =
 
     let model = "claude-sonnet-4-6"
 
@@ -602,6 +603,27 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                             return Error(sprintf "Claude API returned %d: %s" statusCode bodyPreview)
                         else
                             use document = JsonDocument.Parse body
+
+                            match document.RootElement.TryGetProperty "usage" with
+                            | true, usage ->
+                                let inputTokens =
+                                    match usage.TryGetProperty "input_tokens" with
+                                    | true, value -> value.GetInt32()
+                                    | _ -> 0
+
+                                let outputTokens =
+                                    match usage.TryGetProperty "output_tokens" with
+                                    | true, value -> value.GetInt32()
+                                    | _ -> 0
+
+                                logger.LogInformation(
+                                    "Claude tailor usage input_tokens={InputTokens} output_tokens={OutputTokens} model={Model}",
+                                    inputTokens,
+                                    outputTokens,
+                                    model
+                                )
+                            | _ ->
+                                logger.LogWarning("Claude tailor response missing usage object")
 
                             let textContent =
                                 document.RootElement.GetProperty("content").EnumerateArray()

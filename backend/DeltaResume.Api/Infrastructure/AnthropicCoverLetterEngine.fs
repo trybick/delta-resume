@@ -7,9 +7,10 @@ open System.Text
 open System.Text.Json
 open System.Threading
 open System.Threading.Tasks
+open Microsoft.Extensions.Logging
 open DeltaResume.Application
 
-type AnthropicCoverLetterEngine(httpClient: HttpClient) =
+type AnthropicCoverLetterEngine(httpClient: HttpClient, logger: ILogger<AnthropicCoverLetterEngine>) =
 
     let model = "claude-sonnet-4-6"
 
@@ -182,6 +183,27 @@ Rules for the letter:
                             return Error(sprintf "Claude API returned %d: %s" statusCode bodyPreview)
                         else
                             use document = JsonDocument.Parse body
+
+                            match document.RootElement.TryGetProperty "usage" with
+                            | true, usage ->
+                                let inputTokens =
+                                    match usage.TryGetProperty "input_tokens" with
+                                    | true, value -> value.GetInt32()
+                                    | _ -> 0
+
+                                let outputTokens =
+                                    match usage.TryGetProperty "output_tokens" with
+                                    | true, value -> value.GetInt32()
+                                    | _ -> 0
+
+                                logger.LogInformation(
+                                    "Claude cover letter usage input_tokens={InputTokens} output_tokens={OutputTokens} model={Model}",
+                                    inputTokens,
+                                    outputTokens,
+                                    model
+                                )
+                            | _ ->
+                                logger.LogWarning("Claude cover letter response missing usage object")
 
                             let textContent =
                                 document.RootElement.GetProperty("content").EnumerateArray()

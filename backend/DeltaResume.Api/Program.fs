@@ -169,11 +169,19 @@ let main args =
     |> ignore
 
     builder.Services.AddSingleton<TailoringEngine>(fun provider ->
-        AnthropicEngine(provider.GetRequiredService<HttpClient>()) :> TailoringEngine)
+        AnthropicEngine(
+            provider.GetRequiredService<HttpClient>(),
+            provider.GetRequiredService<ILogger<AnthropicEngine>>()
+        )
+        :> TailoringEngine)
     |> ignore
 
     builder.Services.AddSingleton<CoverLetterEngine>(fun provider ->
-        AnthropicCoverLetterEngine(provider.GetRequiredService<HttpClient>()) :> CoverLetterEngine)
+        AnthropicCoverLetterEngine(
+            provider.GetRequiredService<HttpClient>(),
+            provider.GetRequiredService<ILogger<AnthropicCoverLetterEngine>>()
+        )
+        :> CoverLetterEngine)
     |> ignore
 
     builder.Services.AddSingleton<TailoringService>() |> ignore
