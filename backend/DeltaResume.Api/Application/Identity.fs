@@ -1,6 +1,7 @@
 namespace DeltaResume.Application
 
 open System
+open System.Net
 open System.Security.Claims
 open System.Security.Cryptography
 open System.Text
@@ -87,26 +88,47 @@ module Identity =
         else
             Some trimmed
 
-    let private firstNonEmptyHeader (ctx: HttpContext) (name: string) : string option =
-        let value = ctx.Request.Headers[name].ToString().Trim()
+    /// Skips addresses that cannot belong to a real internet client. A proxy hop
+    /// reporting its own address here would otherwise become one shared identity that
+    /// every visitor lands in, handing them all the same exhausted credit bucket.
+    let private isPublicClient (address: IPAddress) : bool =
+        let bytes = address.GetAddressBytes()
 
-        if String.IsNullOrWhiteSpace value then None else Some value
+        if IPAddress.IsLoopback address then false
+        elif bytes.Length <> 4 then true
+        else
+            match bytes[0], bytes[1] with
+            | 0uy, _
+            | 10uy, _ -> false
+            | 169uy, 254uy -> false
+            | 172uy, second when second >= 16uy && second <= 31uy -> false
+            | 192uy, 168uy -> false
+            | 100uy, second when second >= 64uy && second <= 127uy -> false // CGNAT, used by Railway internally
+            | _ -> true
 
     let private resolveClientIp (options: IdentityOptions) (ctx: HttpContext) : string =
-        if options.TrustForwardedHeaders then
-            match firstNonEmptyHeader ctx "X-Real-IP" with
-            | Some realIp -> realIp.Split(',').[0].Trim()
-            | None ->
-                match firstNonEmptyHeader ctx "X-Forwarded-For" with
-                | Some forwarded -> forwarded.Split(',').[0].Trim()
-                | None ->
-                    match ctx.Connection.RemoteIpAddress with
-                    | null -> "unknown"
-                    | ip -> ip.ToString()
-        else
+        let connectionIp () =
             match ctx.Connection.RemoteIpAddress with
             | null -> "unknown"
-            | ip -> ip.ToString()
+            | address -> address.ToString()
+
+        if not options.TrustForwardedHeaders then
+            connectionIp ()
+        else
+            // Railway's edge puts the real client at the left of X-Forwarded-For and
+            // recommends that header; X-Real-IP is a fallback because their CDN layer
+            // has been seen overwriting it with an edge address.
+            let forwarded =
+                ctx.Request.Headers["X-Forwarded-For"].ToString()
+                + ","
+                + ctx.Request.Headers["X-Real-IP"].ToString()
+
+            forwarded.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            |> Array.tryPick (fun value ->
+                match IPEndPoint.TryParse(value.Trim()) with
+                | true, endpoint when isPublicClient endpoint.Address -> Some(endpoint.Address.ToString())
+                | _ -> None)
+            |> Option.defaultWith connectionIp
 
     let private claimValue (user: ClaimsPrincipal) (claimType: string) : string option =
         user.Claims
