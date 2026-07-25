@@ -22,8 +22,6 @@ type AnthropicEngine(httpClient: HttpClient, logger: ILogger<AnthropicEngine>) =
 
     let jsonOptions = JsonSerializerOptions(PropertyNameCaseInsensitive = true)
 
-    let assistantPrefill = """{"changes":["""
-
     // Shared identity, rewrite, summary, and requirements rules. Sent as its own
     // cached system block so both modes hit the same prompt cache prefix.
     let systemPromptCore =
@@ -456,11 +454,7 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
         try
             let stripped = stripCodeFences content
 
-            use document =
-                try
-                    JsonDocument.Parse(assistantPrefill + stripped)
-                with :? JsonException ->
-                    JsonDocument.Parse stripped
+            use document = JsonDocument.Parse stripped
 
             let summary =
                 match document.RootElement.TryGetProperty "summary" with
@@ -576,9 +570,7 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                            system = systemContent
                            messages =
                             [| {| role = "user"
-                                  content = box userContent |}
-                               {| role = "assistant"
-                                  content = box assistantPrefill |} |] |}
+                                  content = box userContent |} |] |}
 
                     use request = new HttpRequestMessage(HttpMethod.Post, "https://api.anthropic.com/v1/messages")
                     request.Headers.Add("x-api-key", apiKey)
@@ -598,6 +590,11 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                         if not response.IsSuccessStatusCode then
                             let statusCode = int response.StatusCode
                             let bodyPreview = body.Substring(0, min body.Length 500)
+                            logger.LogError(
+                                "Claude tailor API failed status={StatusCode} body={BodyPreview}",
+                                statusCode,
+                                bodyPreview
+                            )
                             ClaudeSentry.captureApiFailure "tailor" statusCode bodyPreview
 
                             return Error(sprintf "Claude API returned %d: %s" statusCode bodyPreview)
@@ -639,6 +636,7 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                     | :? OperationCanceledException as ex when cancellationToken.IsCancellationRequested ->
                         return raise ex
                     | ex ->
+                        logger.LogError(ex, "Claude tailor API request failed")
                         ClaudeSentry.captureApiException "tailor" ex
                         return Error(sprintf "Failed to reach the Claude API: %s" ex.Message)
             }

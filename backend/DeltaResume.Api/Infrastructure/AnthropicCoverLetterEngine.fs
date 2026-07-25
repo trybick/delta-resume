@@ -178,6 +178,11 @@ Rules for the letter:
                         if not response.IsSuccessStatusCode then
                             let statusCode = int response.StatusCode
                             let bodyPreview = body.Substring(0, min body.Length 500)
+                            logger.LogError(
+                                "Claude cover letter API failed status={StatusCode} body={BodyPreview}",
+                                statusCode,
+                                bodyPreview
+                            )
                             ClaudeSentry.captureApiFailure "cover_letter" statusCode bodyPreview
 
                             return Error(sprintf "Claude API returned %d: %s" statusCode bodyPreview)
