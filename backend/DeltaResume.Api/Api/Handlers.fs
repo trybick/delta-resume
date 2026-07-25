@@ -216,7 +216,7 @@ module Handlers =
                                                 run.Document
                                             )
                                     with ex ->
-                                        eprintfn "Failed to auto-save resume: %s" ex.Message
+                                        SentrySdk.CaptureException(ex) |> ignore
 
                                     let identityOptions = ctx.GetService<IdentityOptions>()
                                     let identity = Identity.resolve identityOptions ctx
