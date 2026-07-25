@@ -20,8 +20,12 @@ module Schema =
                 kind TEXT NOT NULL,
                 period TEXT NOT NULL,
                 used_at TIMESTAMPTZ NOT NULL,
-                operation_id UUID NOT NULL
+                operation_id UUID NOT NULL,
+                email TEXT
             );
+
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS email TEXT;
 
             CREATE INDEX IF NOT EXISTS idx_credit_usage_key_period
                 ON credit_usage (identity_key, period);
@@ -31,6 +35,9 @@ module Schema =
 
             CREATE INDEX IF NOT EXISTS idx_credit_usage_used_at
                 ON credit_usage (used_at);
+
+            CREATE INDEX IF NOT EXISTS idx_credit_usage_email
+                ON credit_usage (email);
 
             CREATE TABLE IF NOT EXISTS saved_resumes (
                 id UUID PRIMARY KEY,

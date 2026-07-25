@@ -18,31 +18,37 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
           | Some fp ->
               { IdentityKey = OwnerKey.forFingerprint fp
                 Kind = Fingerprint
-                Period = Lifetime }
+                Period = Lifetime
+                Email = None }
           | None -> ()
           { IdentityKey = OwnerKey.forIpHash ipHash
             Kind = Ip
-            Period = Lifetime } ]
+            Period = Lifetime
+            Email = None } ]
 
     let usageEntries (ctx: HttpContext) (identity: RequestIdentity) : CreditUsageEntry list =
         match identity with
         | AuthenticatedUser(userId, ProPlan) ->
             [ { IdentityKey = OwnerKey.forUser userId
                 Kind = User
-                Period = UsagePeriod.currentMonth () } ]
+                Period = UsagePeriod.currentMonth ()
+                Email = Identity.tryGetEmail ctx.User } ]
         | AuthenticatedUser(userId, _) ->
             let fingerprint, _ = Identity.guestIdentifiers options ctx
+            let email = Identity.tryGetEmail ctx.User
 
             [ yield
                   { IdentityKey = OwnerKey.forUser userId
                     Kind = User
-                    Period = Lifetime }
+                    Period = Lifetime
+                    Email = email }
               match fingerprint with
               | Some fp ->
                   yield
                       { IdentityKey = OwnerKey.forFingerprint fp
                         Kind = Fingerprint
-                        Period = Lifetime }
+                        Period = Lifetime
+                        Email = email }
               | None -> () ]
         | GuestVisitor(fingerprint, ipHash) -> guestUsageEntries fingerprint ipHash
 

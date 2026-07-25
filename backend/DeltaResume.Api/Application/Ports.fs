@@ -126,7 +126,8 @@ module OperationId =
 type CreditUsageEntry =
     { IdentityKey: OwnerKey
       Kind: CreditKind
-      Period: UsagePeriod }
+      Period: UsagePeriod
+      Email: string option }
 
 type CreditSpendResult =
     | SpendRecorded of OperationId

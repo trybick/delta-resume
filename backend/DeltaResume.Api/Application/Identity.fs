@@ -146,6 +146,17 @@ module Identity =
         else
             None
 
+    /// Email from the Clerk session JWT when present. Guests have none; signed-in
+    /// users only have it if the session token template includes the email claim.
+    let tryGetEmail (user: ClaimsPrincipal) : string option =
+        if isNull user then
+            None
+        else
+            [ ClaimTypes.Email; "email"; "email_address" ]
+            |> List.tryPick (claimValue user)
+            |> Option.map (fun value -> value.Trim())
+            |> Option.filter (fun value -> value.Length > 0 && value.Length <= 320)
+
     let tryGetClerkPublicUser (ctx: HttpContext) : ClerkPublicUser option =
         match ctx.Items.TryGetValue ClerkPublicUserItemKey with
         | true, (:? ClerkPublicUser as publicUser) -> Some publicUser

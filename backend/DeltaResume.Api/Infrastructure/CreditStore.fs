@@ -92,16 +92,17 @@ type PostgresCreditStore(connectionString: string) =
                                 CommandDefinition(
                                     """
                                     INSERT INTO credit_usage
-                                        (id, identity_key, kind, period, used_at, operation_id)
+                                        (id, identity_key, kind, period, used_at, operation_id, email)
                                     VALUES
-                                        (@Id, @IdentityKey, @Kind, @Period, @UsedAt, @OperationId)
+                                        (@Id, @IdentityKey, @Kind, @Period, @UsedAt, @OperationId, @Email)
                                     """,
                                     {| Id = Guid.NewGuid()
                                        IdentityKey = OwnerKey.value entry.IdentityKey
                                        Kind = CreditKind.toString entry.Kind
                                        Period = UsagePeriod.toString entry.Period
                                        UsedAt = usedAt
-                                       OperationId = OperationId.value operationId |},
+                                       OperationId = OperationId.value operationId
+                                       Email = entry.Email |> Option.toObj |},
                                     transaction,
                                     cancellationToken = cancellationToken
                                 )
