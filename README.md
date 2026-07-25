@@ -68,7 +68,7 @@ cd backend/DeltaResume.Api
 dotnet run
 ```
 
-Tables are created automatically on startup.
+Tables are created automatically on startup (`CREATE TABLE IF NOT EXISTS`). Recreating the database is required for schema changes that alter existing column types.
 
 ### Backend on Railway
 

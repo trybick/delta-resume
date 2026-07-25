@@ -15,16 +15,13 @@ module Schema =
         connection.Execute(
             """
             CREATE TABLE IF NOT EXISTS credit_usage (
-                id TEXT PRIMARY KEY,
+                id UUID PRIMARY KEY,
                 identity_key TEXT NOT NULL,
                 kind TEXT NOT NULL,
                 period TEXT NOT NULL,
                 used_at TIMESTAMPTZ NOT NULL,
-                operation_id TEXT
+                operation_id UUID NOT NULL
             );
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS operation_id TEXT;
 
             CREATE INDEX IF NOT EXISTS idx_credit_usage_key_period
                 ON credit_usage (identity_key, period);
@@ -32,22 +29,27 @@ module Schema =
             CREATE INDEX IF NOT EXISTS idx_credit_usage_operation
                 ON credit_usage (operation_id);
 
-            DROP TABLE IF EXISTS credit_operations;
+            CREATE INDEX IF NOT EXISTS idx_credit_usage_used_at
+                ON credit_usage (used_at);
 
             CREATE TABLE IF NOT EXISTS saved_resumes (
-                id TEXT PRIMARY KEY,
+                id UUID PRIMARY KEY,
                 owner_key TEXT NOT NULL,
                 name TEXT NOT NULL,
                 resume_text TEXT NOT NULL,
                 content_hash TEXT NOT NULL,
-                created_at TIMESTAMPTZ NOT NULL
+                resume_document JSONB,
+                created_at TIMESTAMPTZ NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL
             );
-
-            ALTER TABLE saved_resumes
-                ADD COLUMN IF NOT EXISTS resume_document JSONB;
 
             CREATE INDEX IF NOT EXISTS idx_saved_resumes_owner
                 ON saved_resumes (owner_key);
+
+            -- Auto-save treats (owner, content hash) as unique; without this two
+            -- concurrent tailor runs on the same resume would both insert.
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_saved_resumes_owner_hash
+                ON saved_resumes (owner_key, content_hash);
 
             CREATE TABLE IF NOT EXISTS user_settings (
                 owner_key TEXT PRIMARY KEY,
@@ -147,18 +149,23 @@ type PostgresUserSettingsRepository(connectionString: string) =
 
 [<CLIMutable>]
 type private SavedResumeRow =
-    { id: string
+    { id: Guid
       owner_key: string
       name: string
       resume_text: string
       resume_document: string
       content_hash: string
-      created_at: DateTimeOffset }
+      created_at: DateTimeOffset
+      updated_at: DateTimeOffset }
 
 type PostgresSavedResumeRepository(connectionString: string) =
 
+    let selectColumns =
+        "id, owner_key, name, resume_text, resume_document::text AS resume_document, \
+         content_hash, created_at, updated_at"
+
     let toDomain (row: SavedResumeRow) : SavedResume =
-        { Id = SavedResumeId(Guid.Parse row.id)
+        { Id = SavedResumeId row.id
           OwnerKey = OwnerKey.ofPersisted row.owner_key
           Name = row.name
           ResumeText = row.resume_text
@@ -168,7 +175,8 @@ type PostgresSavedResumeRepository(connectionString: string) =
             else
                 ResumeDocumentJson.tryParse row.resume_document
           ContentHash = row.content_hash
-          CreatedAt = row.created_at }
+          CreatedAt = row.created_at
+          UpdatedAt = row.updated_at }
 
     interface SavedResumeRepository with
 
@@ -179,13 +187,8 @@ type PostgresSavedResumeRepository(connectionString: string) =
 
                 let! rows =
                     connection.QueryAsync<SavedResumeRow>(
-                        """
-                        SELECT id, owner_key, name, resume_text, resume_document::text AS resume_document,
-                               content_hash, created_at
-                        FROM saved_resumes
-                        WHERE owner_key = @OwnerKey
-                        ORDER BY created_at DESC
-                        """,
+                        $"SELECT {selectColumns} FROM saved_resumes \
+                          WHERE owner_key = @OwnerKey ORDER BY updated_at DESC",
                         {| OwnerKey = OwnerKey.value ownerKey |}
                     )
 
@@ -199,13 +202,8 @@ type PostgresSavedResumeRepository(connectionString: string) =
 
                 let! rows =
                     connection.QueryAsync<SavedResumeRow>(
-                        """
-                        SELECT id, owner_key, name, resume_text, resume_document::text AS resume_document,
-                               content_hash, created_at
-                        FROM saved_resumes
-                        WHERE owner_key = @OwnerKey AND content_hash = @ContentHash
-                        LIMIT 1
-                        """,
+                        $"SELECT {selectColumns} FROM saved_resumes \
+                          WHERE owner_key = @OwnerKey AND content_hash = @ContentHash LIMIT 1",
                         {| OwnerKey = OwnerKey.value ownerKey
                            ContentHash = contentHash |}
                     )
@@ -223,10 +221,14 @@ type PostgresSavedResumeRepository(connectionString: string) =
                 let! _ =
                     connection.ExecuteAsync(
                         """
-                        INSERT INTO saved_resumes (id, owner_key, name, resume_text, resume_document, content_hash, created_at)
-                        VALUES (@Id, @OwnerKey, @Name, @ResumeText, CAST(@ResumeDocument AS jsonb), @ContentHash, @CreatedAt)
+                        INSERT INTO saved_resumes
+                            (id, owner_key, name, resume_text, resume_document, content_hash, created_at, updated_at)
+                        VALUES
+                            (@Id, @OwnerKey, @Name, @ResumeText, CAST(@ResumeDocument AS jsonb), @ContentHash,
+                             @CreatedAt, @UpdatedAt)
+                        ON CONFLICT (owner_key, content_hash) DO NOTHING
                         """,
-                        {| Id = string id
+                        {| Id = id
                            OwnerKey = OwnerKey.value resume.OwnerKey
                            Name = resume.Name
                            ResumeText = resume.ResumeText
@@ -235,7 +237,8 @@ type PostgresSavedResumeRepository(connectionString: string) =
                             |> Option.map ResumeDocumentJson.serialize
                             |> Option.toObj
                            ContentHash = resume.ContentHash
-                           CreatedAt = resume.CreatedAt |}
+                           CreatedAt = resume.CreatedAt
+                           UpdatedAt = resume.UpdatedAt |}
                     )
 
                 return ()
@@ -254,11 +257,12 @@ type PostgresSavedResumeRepository(connectionString: string) =
                     connection.ExecuteAsync(
                         """
                         UPDATE saved_resumes
-                        SET resume_document = CAST(@ResumeDocument AS jsonb)
+                        SET resume_document = CAST(@ResumeDocument AS jsonb), updated_at = @UpdatedAt
                         WHERE id = @Id AND owner_key = @OwnerKey
                         """,
-                        {| Id = string resumeId
+                        {| Id = resumeId
                            OwnerKey = OwnerKey.value ownerKey
+                           UpdatedAt = DateTimeOffset.UtcNow
                            ResumeDocument =
                             document
                             |> Option.map ResumeDocumentJson.serialize
@@ -277,9 +281,14 @@ type PostgresSavedResumeRepository(connectionString: string) =
 
                 let! affected =
                     connection.ExecuteAsync(
-                        "UPDATE saved_resumes SET name = @Name WHERE id = @Id AND owner_key = @OwnerKey",
-                        {| Id = string resumeId
+                        """
+                        UPDATE saved_resumes
+                        SET name = @Name, updated_at = @UpdatedAt
+                        WHERE id = @Id AND owner_key = @OwnerKey
+                        """,
+                        {| Id = resumeId
                            OwnerKey = OwnerKey.value ownerKey
+                           UpdatedAt = DateTimeOffset.UtcNow
                            Name = name |}
                     )
 
@@ -296,7 +305,7 @@ type PostgresSavedResumeRepository(connectionString: string) =
                 let! affected =
                     connection.ExecuteAsync(
                         "DELETE FROM saved_resumes WHERE id = @Id AND owner_key = @OwnerKey",
-                        {| Id = string resumeId
+                        {| Id = resumeId
                            OwnerKey = OwnerKey.value ownerKey |}
                     )
 
@@ -315,7 +324,7 @@ type PostgresSavedResumeRepository(connectionString: string) =
                         WHERE id IN (
                             SELECT id FROM saved_resumes
                             WHERE owner_key = @OwnerKey
-                            ORDER BY created_at DESC
+                            ORDER BY updated_at DESC, created_at DESC
                             OFFSET @KeepCount
                         )
                         """,

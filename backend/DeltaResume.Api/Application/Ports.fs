@@ -121,7 +121,7 @@ type OperationId = OperationId of Guid
 module OperationId =
     let create () = OperationId(Guid.NewGuid())
 
-    let asString (OperationId id) = string id
+    let value (OperationId id) = id
 
 type CreditUsageEntry =
     { IdentityKey: OwnerKey

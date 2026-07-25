@@ -96,12 +96,12 @@ type PostgresCreditStore(connectionString: string) =
                                     VALUES
                                         (@Id, @IdentityKey, @Kind, @Period, @UsedAt, @OperationId)
                                     """,
-                                    {| Id = string (Guid.NewGuid())
+                                    {| Id = Guid.NewGuid()
                                        IdentityKey = OwnerKey.value entry.IdentityKey
                                        Kind = CreditKind.toString entry.Kind
                                        Period = UsagePeriod.toString entry.Period
                                        UsedAt = usedAt
-                                       OperationId = OperationId.asString operationId |},
+                                       OperationId = OperationId.value operationId |},
                                     transaction,
                                     cancellationToken = cancellationToken
                                 )
@@ -124,7 +124,7 @@ type PostgresCreditStore(connectionString: string) =
                     connection.ExecuteAsync(
                         CommandDefinition(
                             "DELETE FROM credit_usage WHERE operation_id = @OperationId",
-                            {| OperationId = OperationId.asString operationId |},
+                            {| OperationId = OperationId.value operationId |},
                             cancellationToken = cancellationToken
                         )
                     )

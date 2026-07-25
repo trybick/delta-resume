@@ -62,7 +62,8 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
                                   ResumeText = resumeText
                                   ResumeDocument = resumeDocument
                                   ContentHash = contentHash
-                                  CreatedAt = now }
+                                  CreatedAt = now
+                                  UpdatedAt = now }
 
                         do! repository.DeleteLeastRecentlyUsed(ownerKey, limit)
         }
