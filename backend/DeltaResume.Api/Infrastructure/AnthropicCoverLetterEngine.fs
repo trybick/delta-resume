@@ -11,7 +11,7 @@ open DeltaResume.Application
 
 type AnthropicCoverLetterEngine(httpClient: HttpClient) =
 
-    let model = "claude-sonnet-4-5"
+    let model = "claude-sonnet-4-6"
 
     let apiKey =
         Environment.GetEnvironmentVariable "ANTHROPIC_API_KEY"
