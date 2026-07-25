@@ -94,6 +94,46 @@ module Schema =
                 settings JSONB NOT NULL,
                 updated_at TIMESTAMPTZ NOT NULL
             );
+
+            -- Older installs used TEXT uuid strings; Dapper now maps these to Guid.
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'saved_resumes'
+                      AND column_name = 'id'
+                      AND data_type = 'text'
+                ) THEN
+                    ALTER TABLE saved_resumes
+                        ALTER COLUMN id TYPE uuid USING id::uuid;
+                END IF;
+
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'credit_usage'
+                      AND column_name = 'id'
+                      AND data_type = 'text'
+                ) THEN
+                    ALTER TABLE credit_usage
+                        ALTER COLUMN id TYPE uuid USING id::uuid;
+                END IF;
+
+                IF EXISTS (
+                    SELECT 1
+                    FROM information_schema.columns
+                    WHERE table_schema = 'public'
+                      AND table_name = 'credit_usage'
+                      AND column_name = 'operation_id'
+                      AND data_type = 'text'
+                ) THEN
+                    ALTER TABLE credit_usage
+                        ALTER COLUMN operation_id TYPE uuid USING operation_id::uuid;
+                END IF;
+            END $$;
             """
         )
         |> ignore
