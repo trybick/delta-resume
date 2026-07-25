@@ -74,7 +74,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
 
 export const PRIVACY_POLICY: LegalDocument = {
   title: 'Privacy Policy',
-  lastUpdated: 'July 17, 2026',
+  lastUpdated: 'July 25, 2026',
   sections: [
     {
       heading: '1. Information We Collect',
@@ -106,7 +106,8 @@ export const PRIVACY_POLICY: LegalDocument = {
     {
       heading: '4. Data Retention and Deletion',
       paragraphs: [
-        'Saved resumes are retained while your account is active and can be deleted anytime from the app. Guest tailor runs and job descriptions submitted for processing are not retained after results are returned. Contact us to request deletion of your data, and we will remove it within a reasonable period.',
+        'Saved resumes are retained while your account is active and can be deleted anytime from the app. Guest tailor runs and job descriptions submitted for processing are not retained after results are returned.',
+        `You may request full account deletion at any time by contacting us at ${SUPPORT_EMAIL}. Upon request, we will delete your account and associated data — including all saved resumes, account information, and credit records — within 30 days, except where we are required to retain information for legal or billing purposes.`,
       ],
     },
     {
@@ -123,7 +124,7 @@ export const PRIVACY_POLICY: LegalDocument = {
     },
     {
       heading: '7. Contact',
-      paragraphs: [`Privacy questions or data deletion requests can be sent to ${SUPPORT_EMAIL}.`],
+      paragraphs: [`Privacy questions, data deletion, or full account deletion requests can be sent to ${SUPPORT_EMAIL}.`],
     },
   ],
 };
