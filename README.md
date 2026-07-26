@@ -1,6 +1,6 @@
 # Delta Resume
 
-Tailor your resume to any job in seconds, and walk away with a matching cover letter.
+Tailor your resume to any job description in seconds, and walk away with a matching cover letter.
 
 Upload or paste a base resume, drop in a job description, and Claude rewrites your bullets to fit the role. Every suggestion shows up as an inline word-level diff: accept or reject each change, then copy or export the result as DOCX or PDF (including format-preserving export from your original `.docx`).
 
