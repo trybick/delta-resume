@@ -6,7 +6,7 @@ import type { ResumeDocument } from './types';
 const escapeHtml = (text: string): string =>
   text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-const BASE_STYLE = 'font-family: Arial, sans-serif; font-size: 11pt;';
+const BASE_STYLE = 'font-family: Arial, sans-serif; font-size: 9.5pt;';
 
 type LineHtml = (texts: string[], anchorHrefs?: AnchorHrefs) => string;
 
@@ -25,13 +25,13 @@ const escapeLines = (texts: string[], anchorHrefs?: AnchorHrefs): string =>
   texts.map((text) => linkedHtml(text, anchorHrefs)).join('<br>');
 
 const nameHtml: LineHtml = (texts) =>
-  `<p style="text-align: center; font-size: 16pt; font-weight: bold; margin: 0 0 4pt 0;">${texts.map(escapeHtml).join('<br>')}</p>`;
+  `<p style="text-align: center; font-size: 14pt; font-weight: bold; margin: 0 0 4pt 0;">${texts.map(escapeHtml).join('<br>')}</p>`;
 
 const headerLineHtml: LineHtml = (texts, anchorHrefs) =>
   `<p style="text-align: center; margin: 0 0 2pt 0;">${escapeLines(texts, anchorHrefs)}</p>`;
 
 const headingHtml: LineHtml = (texts) =>
-  `<p style="font-size: 12pt; font-weight: bold; border-bottom: 1px solid #999; margin: 10pt 0 4pt 0;">${texts.map(escapeHtml).join('<br>')}</p>`;
+  `<p style="font-size: 10pt; font-weight: bold; border-bottom: 1px solid #999; margin: 10pt 0 4pt 0;">${texts.map(escapeHtml).join('<br>')}</p>`;
 
 const subheadingHtml: LineHtml = (texts, anchorHrefs) =>
   `<p style="font-weight: bold; margin: 6pt 0 2pt 0;">${escapeLines(texts, anchorHrefs)}</p>`;

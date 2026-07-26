@@ -30,18 +30,20 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
 const BULLET_MARKER = /^[\s\u00A0]*(?:[-–—•‣◦▪▫·∙●○*+>][\s\u00A0]*|\d{1,2}[.)][\s\u00A0]+)/;
 
 const FONT = 'Arial';
-const BODY_SIZE = 22;
-const BULLET_MARKER_SIZE = 18;
-const NAME_SIZE = 40;
-const HEADING_SIZE = 22;
-const CONTACT_SIZE = 20;
+const BODY_SIZE = 19;
+const BULLET_MARKER_SIZE = 16;
+const NAME_SIZE = 36;
+const HEADING_SIZE = 20;
+const CONTACT_SIZE = 18;
 const ACCENT_COLOR = '1F4E79';
 const MUTED_COLOR = '595959';
 const LINK_COLOR = '0563C1';
 const RULE_COLOR = 'C9CED6';
 const RESUME_MARGIN = 720;
-const RESUME_PAGE_WIDTH = 12240;
-const RESUME_CONTENT_WIDTH = RESUME_PAGE_WIDTH - RESUME_MARGIN * 2;
+const PAGE_WIDTH = 12240;
+const PAGE_HEIGHT = 15840;
+const PAGE_SIZE = { width: PAGE_WIDTH, height: PAGE_HEIGHT } as const;
+const RESUME_CONTENT_WIDTH = PAGE_WIDTH - RESUME_MARGIN * 2;
 const RESUME_BULLET_REF = 'resume-bullets';
 const MONTH_PATTERN =
   '(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\\.?';
@@ -67,7 +69,7 @@ const resumeNumbering = {
           alignment: AlignmentType.LEFT,
           style: {
             run: { font: FONT, size: BULLET_MARKER_SIZE },
-            paragraph: { indent: { left: 720, hanging: 360 } },
+            paragraph: { indent: { left: 288, hanging: 288 } },
           },
         },
       ],
@@ -81,6 +83,7 @@ const bulletParagraphOptions = {
 
 const resumeSectionProperties = {
   page: {
+    size: PAGE_SIZE,
     margin: {
       top: RESUME_MARGIN,
       bottom: RESUME_MARGIN,
@@ -1014,10 +1017,11 @@ export const buildDocumentDocx = async (
   return Packer.toBlob(document);
 };
 
-const LETTER_NAME_SIZE = 40;
-const LETTER_META_SIZE = 20;
-const LETTER_BODY_SIZE = 22;
-const LETTER_LINE_SPACING = 320;
+const LETTER_NAME_SIZE = 34;
+const LETTER_META_SIZE = 18;
+const LETTER_BODY_SIZE = 20;
+const LETTER_LINE_SPACING = 290;
+const LETTER_MARGIN = 1440;
 
 const letterBodyParagraph = (text: string, spacingAfter: number): Paragraph =>
   new Paragraph({
@@ -1094,7 +1098,13 @@ export const buildCoverLetterDocx = async (
       {
         properties: {
           page: {
-            margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 },
+            size: PAGE_SIZE,
+            margin: {
+              top: LETTER_MARGIN,
+              bottom: LETTER_MARGIN,
+              left: LETTER_MARGIN,
+              right: LETTER_MARGIN,
+            },
           },
         },
         children: paragraphs,
