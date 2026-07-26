@@ -26,7 +26,7 @@ type ResumeInputProps = {
 
 type InputMode = 'upload' | 'paste' | 'saved';
 
-const TAB_PANEL_HEIGHT = '9rem';
+const TAB_PANEL_HEIGHT = '11rem';
 
 const ResumeInput = ({
   resumeText,

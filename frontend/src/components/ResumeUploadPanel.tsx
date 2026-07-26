@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { ActionIcon, Group, Paper, Stack, Text } from '@mantine/core';
+import { Button, Paper, Stack, Text } from '@mantine/core';
 import { Dropzone, type FileRejection } from '@mantine/dropzone';
-import { IconFileText, IconFileUpload, IconX } from '@tabler/icons-react';
+import { IconCircleCheck, IconFileUpload, IconX } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { parseResumeFile, ResumeParseError } from '../lib/parseResumeFile';
 import type { AttachedFile } from '../lib/types';
@@ -15,12 +15,6 @@ const ACCEPTED_MIME_TYPES = [
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
-
-const formatFileSize = (bytes: number): string => {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-};
 
 type ResumeUploadPanelProps = {
   attachedFile: AttachedFile | null;
@@ -82,34 +76,40 @@ const ResumeUploadPanel = ({
 
   if (attachedFile) {
     return (
-      <Stack gap="xs" h="100%" justify="center">
-        <Paper withBorder px="md" py="lg" radius="md" bg="dark.5">
-          <Group justify="space-between" wrap="nowrap">
-            <Group gap="sm" wrap="nowrap">
-              <IconFileText size={26} color="var(--mantine-primary-color-filled)" />
-              <div>
-                <Text size="sm" fw={600} lineClamp={1}>
-                  {attachedFile.name}
-                </Text>
-                <Text size="xs" c="dimmed">
-                  {formatFileSize(attachedFile.size)}
-                </Text>
-              </div>
-            </Group>
-            <ActionIcon
-              variant="subtle"
-              color="gray"
-              onClick={() => {
-                trackEvent(AnalyticsEvents.RemoveAttachedResume);
-                onClear();
-              }}
-              aria-label="Remove attached resume"
-            >
-              <IconX size={16} />
-            </ActionIcon>
-          </Group>
-        </Paper>
-      </Stack>
+      <Paper
+        withBorder
+        radius="md"
+        bg="dark.5"
+        h="100%"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderStyle: 'dashed',
+        }}
+      >
+        <Stack align="center" gap={6} px="md">
+          <IconCircleCheck size={32} color="var(--mantine-color-teal-5)" />
+          <Text size="sm" fw={600} ta="center" lineClamp={1} maw="100%">
+            {attachedFile.name}
+          </Text>
+          <Text size="xs" c="dimmed">
+            Ready to tailor
+          </Text>
+          <Button
+            variant="subtle"
+            color="gray"
+            size="compact-xs"
+            leftSection={<IconX size={14} />}
+            onClick={() => {
+              trackEvent(AnalyticsEvents.RemoveAttachedResume);
+              onClear();
+            }}
+          >
+            Remove
+          </Button>
+        </Stack>
+      </Paper>
     );
   }
 
