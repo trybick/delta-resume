@@ -10,12 +10,14 @@ const BASE_STYLE = 'font-family: Arial, sans-serif; font-size: 11pt;';
 
 type LineHtml = (texts: string[], anchorHrefs?: AnchorHrefs) => string;
 
+const LINK_STYLE = 'color: #0563C1; text-decoration: underline;';
+
 const linkedHtml = (text: string, anchorHrefs?: AnchorHrefs): string =>
   splitLinkSegments(text, anchorHrefs)
     .map((segment) =>
       segment.href === null
         ? escapeHtml(segment.text)
-        : `<a href="${escapeHtml(segment.href)}">${escapeHtml(segment.text)}</a>`,
+        : `<a href="${escapeHtml(segment.href)}" style="${LINK_STYLE}">${escapeHtml(segment.text)}</a>`,
     )
     .join('');
 

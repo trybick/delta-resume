@@ -59,6 +59,8 @@ const intAttribute = (element: Element | null, localName: string): number | null
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+// Line text exists only to match against the mammoth-extracted resume text, so
+// it has to drop tabs and breaks exactly the way mammoth's raw text does.
 const runText = (element: Element): string => {
   let text = '';
   Array.from(element.childNodes).forEach((node) => {
@@ -72,7 +74,7 @@ const runText = (element: Element): string => {
       text += child.textContent ?? '';
       return;
     }
-    if (child.localName === 'tab' || child.localName === 'br' || child.localName === 'cr') {
+    if (child.localName === 'tab') {
       text += ' ';
       return;
     }
@@ -80,7 +82,14 @@ const runText = (element: Element): string => {
       text += '-';
       return;
     }
-    if (child.localName === 'rPr' || child.localName === 'instrText') return;
+    if (
+      child.localName === 'br' ||
+      child.localName === 'cr' ||
+      child.localName === 'rPr' ||
+      child.localName === 'instrText'
+    ) {
+      return;
+    }
     text += runText(child);
   });
   return text;
@@ -264,30 +273,69 @@ export const readDocxLayout = (file: File): Promise<DocxLayout> => {
   return pending;
 };
 
+const MAX_ALIGNMENT_CELLS = 4_000_000;
+
+// Pairs up two line sequences by longest common subsequence. Matching on order
+// rather than position means a line the two extractors disagree on only costs
+// that one line, and repeated text (two cells both reading "React") still lands
+// on the right occurrence.
+const alignSequences = (left: string[], right: string[]): Map<number, number> => {
+  const pairs = new Map<number, number>();
+  const rows = left.length;
+  const columns = right.length;
+  if (rows === 0 || columns === 0 || rows * columns > MAX_ALIGNMENT_CELLS) return pairs;
+
+  const width = columns + 1;
+  const lengths = new Uint32Array((rows + 1) * width);
+  for (let row = rows - 1; row >= 0; row -= 1) {
+    for (let column = columns - 1; column >= 0; column -= 1) {
+      lengths[row * width + column] =
+        left[row] === right[column]
+          ? lengths[(row + 1) * width + column + 1] + 1
+          : Math.max(lengths[(row + 1) * width + column], lengths[row * width + column + 1]);
+    }
+  }
+
+  let row = 0;
+  let column = 0;
+  while (row < rows && column < columns) {
+    if (left[row] === right[column]) {
+      pairs.set(row, column);
+      row += 1;
+      column += 1;
+      continue;
+    }
+    if (lengths[(row + 1) * width + column] >= lengths[row * width + column + 1]) {
+      row += 1;
+      continue;
+    }
+    column += 1;
+  }
+  return pairs;
+};
+
 // The layout is keyed by position in the original document while the rest of the
-// app is keyed by line index in the extracted resume text. The two only line up
-// when the same file produced both, so an exact sequence match is required and
-// anything else falls back to no table information at all.
+// app is keyed by line index in the extracted resume text.
 export const buildCellRefsByLine = (
   layout: DocxLayout,
   resumeText: string,
 ): Map<number, DocxCellRef> => {
-  const empty = new Map<number, DocxCellRef>();
   const layoutLines = layout.lines.filter((line) => line.text.trim().length > 0);
   const resumeLines = resumeText
     .split('\n')
     .map((text, lineIndex) => ({ text, lineIndex }))
     .filter((line) => line.text.trim().length > 0);
 
-  if (layoutLines.length !== resumeLines.length) return empty;
+  const pairs = alignSequences(
+    layoutLines.map((line) => normalizeForMatch(line.text)),
+    resumeLines.map((line) => normalizeForMatch(line.text)),
+  );
 
   const cellRefsByLine = new Map<number, DocxCellRef>();
-  for (let index = 0; index < resumeLines.length; index += 1) {
-    const layoutLine = layoutLines[index];
-    const resumeLine = resumeLines[index];
-    if (normalizeForMatch(layoutLine.text) !== normalizeForMatch(resumeLine.text)) return empty;
-    if (layoutLine.cell) cellRefsByLine.set(resumeLine.lineIndex, layoutLine.cell);
-  }
+  pairs.forEach((resumeIndex, layoutIndex) => {
+    const cell = layoutLines[layoutIndex].cell;
+    if (cell) cellRefsByLine.set(resumeLines[resumeIndex].lineIndex, cell);
+  });
   return cellRefsByLine;
 };
 

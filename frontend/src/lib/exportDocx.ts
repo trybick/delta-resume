@@ -14,6 +14,7 @@ import {
   TableLayoutType,
   TableRow,
   TextRun,
+  UnderlineType,
   WidthType,
 } from 'docx';
 import { formatCoverLetterDate, formatCoverLetterSubject } from './formatCoverLetter';
@@ -36,6 +37,7 @@ const HEADING_SIZE = 22;
 const CONTACT_SIZE = 20;
 const ACCENT_COLOR = '1F4E79';
 const MUTED_COLOR = '595959';
+const LINK_COLOR = '0563C1';
 const RULE_COLOR = 'C9CED6';
 const RESUME_MARGIN = 720;
 const RESUME_PAGE_WIDTH = 12240;
@@ -304,7 +306,14 @@ const linkedRuns = (text: string, options: RunOptions, anchorHrefs?: AnchorHrefs
       ? new TextRun({ text: segment.text, ...options })
       : new ExternalHyperlink({
           link: segment.href,
-          children: [new TextRun({ text: segment.text, ...options })],
+          children: [
+            new TextRun({
+              text: segment.text,
+              ...options,
+              color: LINK_COLOR,
+              underline: { type: UnderlineType.SINGLE, color: LINK_COLOR },
+            }),
+          ],
         }),
   );
 
@@ -616,6 +625,9 @@ export const buildTemplateDocx = async (
 
 type RenderedItem = {
   cell: DocxCellRef | null;
+  // True when one block swallowed lines from several cells, which means the
+  // grid cannot be rebuilt faithfully and the whole table should stay flat.
+  spansCells: boolean;
   element: Paragraph | Table;
 };
 
@@ -680,7 +692,11 @@ const restoreTables = (items: RenderedItem[], tables: DocxTableInfo[]): (Paragra
     if (!cell) return elements;
     const info = tables[cell.tableIndex];
     const columnCount = info?.columnCount ?? cell.columnCount;
-    if (columnCount < 2 || group.length > items.length * MAX_TABLE_SHARE_OF_DOCUMENT) {
+    if (
+      columnCount < 2 ||
+      group.some((item) => item.spansCells) ||
+      group.length > items.length * MAX_TABLE_SHARE_OF_DOCUMENT
+    ) {
       return elements;
     }
     return [layoutTable(group, columnCount, info?.columnWidths ?? null)];
@@ -699,17 +715,20 @@ export const buildDocumentDocx = async (
   // Bullets added for requirement gaps have no source lines, so they stay in
   // whichever cell the block they were anchored to came from.
   let lastCell: DocxCellRef | null = null;
-  const cellFor = (sourceLines: number[]): DocxCellRef | null => {
-    if (sourceLines.length === 0) return lastCell;
-    lastCell =
-      sourceLines
-        .map((lineIndex) => layout?.cellRefsByLine.get(lineIndex) ?? null)
-        .find((cell) => cell !== null) ?? null;
-    return lastCell;
+  const placementFor = (sourceLines: number[]) => {
+    if (sourceLines.length === 0) return { cell: lastCell, spansCells: false };
+    const cells = sourceLines.map((lineIndex) => layout?.cellRefsByLine.get(lineIndex) ?? null);
+    const distinct = new Set(
+      cells.map((cell) =>
+        cell ? `${cell.tableIndex}:${cell.rowIndex}:${cell.columnIndex}` : 'none',
+      ),
+    );
+    lastCell = cells.find((cell) => cell !== undefined && cell !== null) ?? null;
+    return { cell: lastCell, spansCells: distinct.size > 1 };
   };
 
   const push = (sourceLines: number[], element: Paragraph | Table) => {
-    items.push({ cell: cellFor(sourceLines), element });
+    items.push({ ...placementFor(sourceLines), element });
   };
 
   const bulletParagraph = (text: string): Paragraph =>
