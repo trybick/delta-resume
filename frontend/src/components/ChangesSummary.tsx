@@ -44,8 +44,14 @@ const ChangesSummary = ({ bulletCount, skillCount, paragraphCount }: ChangesSumm
   ].filter((stat) => stat.count > 0);
 
   return (
-    <Group className="changes-summary" gap={10} wrap="nowrap" align="flex-start">
-      <ThemeIcon size={30} radius="xl" variant="light" color="green" style={{ flexShrink: 0 }}>
+    <Group className="changes-summary" gap={10} wrap="nowrap" align="center">
+      <ThemeIcon
+        size={30}
+        radius="xl"
+        variant="light"
+        color="green"
+        style={{ flexShrink: 0, color: 'var(--mantine-color-green-5)' }}
+      >
         <IconCircleCheck size={18} stroke={1.8} />
       </ThemeIcon>
       <Stack gap={3} style={{ minWidth: 0 }}>

@@ -83,10 +83,10 @@ const ResumeUploadPanel = ({
   if (attachedFile) {
     return (
       <Stack gap="xs" h="100%" justify="center">
-        <Paper withBorder p="sm" radius="md" bg="dark.5">
+        <Paper withBorder px="md" py="lg" radius="md" bg="dark.5">
           <Group justify="space-between" wrap="nowrap">
             <Group gap="sm" wrap="nowrap">
-              <IconFileText size={22} color="var(--mantine-primary-color-filled)" />
+              <IconFileText size={26} color="var(--mantine-primary-color-filled)" />
               <div>
                 <Text size="sm" fw={600} lineClamp={1}>
                   {attachedFile.name}
