@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ActionIcon, Group, Paper, ScrollArea, Stack, Text } from '@mantine/core';
+import { ActionIcon, Group, Paper, Stack, Text } from '@mantine/core';
 import { Dropzone, type FileRejection } from '@mantine/dropzone';
 import { IconFileText, IconFileUpload, IconX } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
@@ -23,14 +23,12 @@ const formatFileSize = (bytes: number): string => {
 };
 
 type ResumeUploadPanelProps = {
-  resumeText: string;
   attachedFile: AttachedFile | null;
   onFileAttach: (file: AttachedFile, text: string, sourceFile: File) => void;
   onClear: () => void;
 };
 
 const ResumeUploadPanel = ({
-  resumeText,
   attachedFile,
   onFileAttach,
   onClear,
@@ -84,7 +82,7 @@ const ResumeUploadPanel = ({
 
   if (attachedFile) {
     return (
-      <Stack gap="xs" h="100%" style={{ minHeight: 0 }}>
+      <Stack gap="xs" h="100%" justify="center">
         <Paper withBorder p="sm" radius="md" bg="dark.5">
           <Group justify="space-between" wrap="nowrap">
             <Group gap="sm" wrap="nowrap">
@@ -110,28 +108,6 @@ const ResumeUploadPanel = ({
               <IconX size={16} />
             </ActionIcon>
           </Group>
-        </Paper>
-        <Paper
-          withBorder
-          p="sm"
-          radius="md"
-          style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}
-        >
-          <Text size="xs" c="dimmed" fw={600} mb={4}>
-            Extracted text
-          </Text>
-          <ScrollArea type="auto" offsetScrollbars style={{ flex: 1, minHeight: 0 }}>
-            <Text
-              size="xs"
-              c="dimmed"
-              style={{
-                whiteSpace: 'pre-wrap',
-                fontFamily: 'ui-monospace, monospace',
-              }}
-            >
-              {resumeText}
-            </Text>
-          </ScrollArea>
         </Paper>
       </Stack>
     );

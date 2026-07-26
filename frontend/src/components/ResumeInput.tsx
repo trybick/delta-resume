@@ -26,7 +26,7 @@ type ResumeInputProps = {
 
 type InputMode = 'upload' | 'paste' | 'saved';
 
-const TAB_PANEL_HEIGHT = '15rem';
+const TAB_PANEL_HEIGHT = '9rem';
 
 const ResumeInput = ({
   resumeText,
@@ -75,7 +75,6 @@ const ResumeInput = ({
         <Box h={TAB_PANEL_HEIGHT} style={{ minHeight: TAB_PANEL_HEIGHT }}>
           {mode === 'upload' && (
             <ResumeUploadPanel
-              resumeText={resumeText}
               attachedFile={attachedFile}
               onFileAttach={onFileAttach}
               onClear={onClear}
