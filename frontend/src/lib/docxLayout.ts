@@ -164,6 +164,7 @@ const collectHyperlinks = (
 
 type LayoutWalker = {
   lines: DocxLayoutLine[];
+  sources: Element[];
   tables: DocxTableInfo[];
 };
 
@@ -224,6 +225,7 @@ const walkContainer = (
     if (child.namespaceURI !== WORD_NS) return;
     if (child.localName === 'p') {
       walker.lines.push({ text: paragraphText(child), cell });
+      walker.sources.push(child);
       return;
     }
     if (child.localName === 'tbl') {
@@ -234,6 +236,151 @@ const walkContainer = (
       const content = firstChildElement(child, 'sdtContent');
       if (content) walkContainer(walker, content, cell);
     }
+  });
+};
+
+type ColumnSection = {
+  paragraphs: Element[];
+  columnCount: number;
+  columnWidths: number[] | null;
+};
+
+const sectionColumns = (
+  sectionProperties: Element,
+): { columnCount: number; columnWidths: number[] | null } => {
+  const columns = firstChildElement(sectionProperties, 'cols');
+  if (!columns) return { columnCount: 1, columnWidths: null };
+  const specs = childElements(columns, 'col');
+  const columnCount = Math.max(intAttribute(columns, 'num') ?? 0, specs.length, 1);
+  const widths = specs
+    .map((column) => intAttribute(column, 'w'))
+    .filter((width): width is number => width !== null && width > 0);
+  return { columnCount, columnWidths: widths.length === columnCount ? widths : null };
+};
+
+// A sectPr describes the section that ends with it, so body content accumulates
+// until one shows up: either on the last paragraph of the section or, for the
+// final section, as the last child of the body.
+const readColumnSections = (body: Element): ColumnSection[] => {
+  const sections: ColumnSection[] = [];
+  let current: Element[] = [];
+
+  Array.from(body.childNodes).forEach((node) => {
+    if (node.nodeType !== 1) return;
+    const child = node as Element;
+    if (child.namespaceURI !== WORD_NS) return;
+
+    if (child.localName === 'sectPr') {
+      sections.push({ paragraphs: current, ...sectionColumns(child) });
+      current = [];
+      return;
+    }
+
+    current.push(child);
+    if (child.localName !== 'p') return;
+    const properties = firstChildElement(child, 'pPr');
+    const sectionProperties = properties ? firstChildElement(properties, 'sectPr') : null;
+    if (!sectionProperties) return;
+    sections.push({ paragraphs: current, ...sectionColumns(sectionProperties) });
+    current = [];
+  });
+
+  return sections.filter((section) => section.columnCount > 1);
+};
+
+const hasColumnBreak = (paragraph: Element): boolean =>
+  Array.from(paragraph.getElementsByTagNameNS(WORD_NS, 'br')).some(
+    (lineBreak) => lineBreak.getAttributeNS(WORD_NS, 'type') === 'column',
+  );
+
+const isBoldParagraph = (paragraph: Element): boolean => {
+  const runs = childElements(paragraph, 'r').filter((run) => runText(run).trim().length > 0);
+  if (runs.length === 0) return false;
+  return runs.every((run) => {
+    const properties = firstChildElement(run, 'rPr');
+    const bold = properties ? firstChildElement(properties, 'b') : null;
+    if (!bold) return false;
+    const value = bold.getAttributeNS(WORD_NS, 'val');
+    return value === null || value === '1' || value === 'true' || value === 'on';
+  });
+};
+
+const balancedColumnStarts = (total: number, columnCount: number): number[] => {
+  const base = Math.floor(total / columnCount);
+  const remainder = total % columnCount;
+  const starts: number[] = [];
+  let cursor = 0;
+  for (let column = 0; column < columnCount; column += 1) {
+    starts.push(cursor);
+    cursor += base + (column < remainder ? 1 : 0);
+  }
+  return starts;
+};
+
+// Word decides where newspaper columns break at render time, so recover the
+// split from an explicit column break, then from bold group headings, and only
+// fall back to the even balance Word itself applies to a continuous section.
+const columnStartsFor = (
+  entries: { paragraph: Element; breakBefore: boolean }[],
+  columnCount: number,
+): number[] => {
+  const breakStarts = entries.flatMap((entry, index) =>
+    index === 0 || entry.breakBefore ? [index] : [],
+  );
+  if (breakStarts.length === columnCount) return breakStarts;
+
+  const boldStarts = entries.flatMap((entry, index) =>
+    isBoldParagraph(entry.paragraph) ? [index] : [],
+  );
+  if (boldStarts.length === columnCount && boldStarts[0] === 0) return boldStarts;
+
+  return balancedColumnStarts(entries.length, columnCount);
+};
+
+const applyColumnSections = (walker: LayoutWalker, body: Element): void => {
+  const lineIndexBySource = new Map<Element, number>();
+  walker.sources.forEach((source, index) => {
+    if (!lineIndexBySource.has(source)) lineIndexBySource.set(source, index);
+  });
+
+  readColumnSections(body).forEach((section) => {
+    const entries: { lineIndex: number; paragraph: Element; breakBefore: boolean }[] = [];
+    let pendingBreak = false;
+
+    section.paragraphs.forEach((paragraph) => {
+      if (paragraph.localName !== 'p') return;
+      const breakHere = hasColumnBreak(paragraph);
+      const lineIndex = lineIndexBySource.get(paragraph);
+      const line = lineIndex === undefined ? null : walker.lines[lineIndex];
+      if (lineIndex === undefined || !line || line.cell !== null || line.text.length === 0) {
+        pendingBreak = pendingBreak || breakHere;
+        return;
+      }
+      entries.push({ lineIndex, paragraph, breakBefore: pendingBreak || breakHere });
+      pendingBreak = false;
+    });
+
+    if (entries.length < section.columnCount) return;
+
+    const starts = columnStartsFor(entries, section.columnCount);
+    const tableIndex = walker.tables.length;
+    walker.tables.push({
+      columnCount: section.columnCount,
+      columnWidths: section.columnWidths,
+    });
+
+    entries.forEach((entry, index) => {
+      const columnIndex = starts.reduce(
+        (found, start, column) => (index >= start ? column : found),
+        0,
+      );
+      walker.lines[entry.lineIndex].cell = {
+        tableIndex,
+        rowIndex: 0,
+        columnIndex,
+        columnCount: section.columnCount,
+      };
+    });
   });
 };
 
@@ -253,8 +400,9 @@ const readLayout = async (file: File): Promise<DocxLayout> => {
   const body = parsed.getElementsByTagNameNS(WORD_NS, 'body')[0];
   if (!body) throw new Error('missing document body');
 
-  const walker: LayoutWalker = { lines: [], tables: [] };
+  const walker: LayoutWalker = { lines: [], sources: [], tables: [] };
   walkContainer(walker, body, null);
+  applyColumnSections(walker, body);
 
   return {
     lines: walker.lines,

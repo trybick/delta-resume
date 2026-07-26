@@ -156,6 +156,154 @@ const resolveInsertText = (rawText: string, template: Element): string => {
   return `- ${stripped}`;
 };
 
+const RELATIONSHIPS_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+const PACKAGE_RELATIONSHIPS_NS = 'http://schemas.openxmlformats.org/package/2006/relationships';
+const HYPERLINK_RELATIONSHIP_TYPE = `${RELATIONSHIPS_NS}/hyperlink`;
+
+const firstChildNamed = (element: Element, localName: string): Element | null =>
+  Array.from(element.childNodes).find(
+    (node): node is Element =>
+      node.nodeType === 1 &&
+      (node as Element).namespaceURI === WORD_NS &&
+      (node as Element).localName === localName,
+  ) ?? null;
+
+const isInsideHyperlink = (run: Element): boolean => {
+  let ancestor = run.parentElement;
+  while (ancestor) {
+    if (ancestor.namespaceURI === WORD_NS && ancestor.localName === 'hyperlink') return true;
+    ancestor = ancestor.parentElement;
+  }
+  return false;
+};
+
+const applyLinkAppearance = (run: Element, document: XMLDocument): void => {
+  let properties = firstChildNamed(run, 'rPr');
+  if (!properties) {
+    properties = document.createElementNS(WORD_NS, 'w:rPr');
+    run.insertBefore(properties, run.firstChild);
+  }
+  ['color', 'u'].forEach((localName) => {
+    Array.from(properties.getElementsByTagNameNS(WORD_NS, localName)).forEach((node) =>
+      node.parentNode?.removeChild(node),
+    );
+  });
+  const color = document.createElementNS(WORD_NS, 'w:color');
+  color.setAttributeNS(WORD_NS, 'w:val', LINK_COLOR);
+  const underline = document.createElementNS(WORD_NS, 'w:u');
+  underline.setAttributeNS(WORD_NS, 'w:val', 'single');
+  underline.setAttributeNS(WORD_NS, 'w:color', LINK_COLOR);
+  properties.appendChild(color);
+  properties.appendChild(underline);
+};
+
+const relationshipIdResolver = (relationships: XMLDocument | null) => {
+  if (!relationships) return null;
+  const root = relationships.documentElement;
+  if (!root) return null;
+  const existing = new Map<string, string>();
+  const used = new Set<string>();
+  Array.from(
+    relationships.getElementsByTagNameNS(PACKAGE_RELATIONSHIPS_NS, 'Relationship'),
+  ).forEach((relationship) => {
+    const id = relationship.getAttribute('Id');
+    if (id) used.add(id);
+    const target = relationship.getAttribute('Target');
+    if (
+      id &&
+      target &&
+      relationship.getAttribute('Type') === HYPERLINK_RELATIONSHIP_TYPE &&
+      relationship.getAttribute('TargetMode') === 'External'
+    ) {
+      existing.set(target, id);
+    }
+  });
+
+  let counter = 0;
+  return (href: string): string => {
+    const found = existing.get(href);
+    if (found) return found;
+    counter += 1;
+    let id = `rIdLink${counter}`;
+    while (used.has(id)) {
+      counter += 1;
+      id = `rIdLink${counter}`;
+    }
+    used.add(id);
+    const relationship = relationships.createElementNS(PACKAGE_RELATIONSHIPS_NS, 'Relationship');
+    relationship.setAttribute('Id', id);
+    relationship.setAttribute('Type', HYPERLINK_RELATIONSHIP_TYPE);
+    relationship.setAttribute('Target', href);
+    relationship.setAttribute('TargetMode', 'External');
+    root.appendChild(relationship);
+    existing.set(href, id);
+    return id;
+  };
+};
+
+// Splitting a run only stays faithful when its text is the run's whole payload,
+// so runs carrying tabs or breaks alongside the text are left untouched.
+const isSplittableTextRun = (run: Element, textNode: Element): boolean =>
+  Array.from(run.childNodes).every(
+    (node) =>
+      node.nodeType !== 1 ||
+      node === textNode ||
+      ((node as Element).namespaceURI === WORD_NS && (node as Element).localName === 'rPr'),
+  );
+
+const setRunText = (run: Element, text: string): void => {
+  const textNode = firstChildNamed(run, 't');
+  if (!textNode) return;
+  textNode.textContent = text;
+  textNode.setAttributeNS(XML_NS, 'xml:space', 'preserve');
+};
+
+const linkifyDocument = (parsed: XMLDocument, relationships: XMLDocument | null): void => {
+  Array.from(parsed.getElementsByTagNameNS(WORD_NS, 'hyperlink')).forEach((hyperlink) => {
+    if (!hyperlink.getAttributeNS(RELATIONSHIPS_NS, 'id')) return;
+    Array.from(hyperlink.getElementsByTagNameNS(WORD_NS, 'r')).forEach((run) =>
+      applyLinkAppearance(run, parsed),
+    );
+  });
+
+  const resolveRelationshipId = relationshipIdResolver(relationships);
+  if (!resolveRelationshipId) return;
+
+  Array.from(parsed.getElementsByTagNameNS(WORD_NS, 't')).forEach((textNode) => {
+    const run = textNode.parentElement;
+    if (!run || run.namespaceURI !== WORD_NS || run.localName !== 'r') return;
+    if (isInsideHyperlink(run) || !isSplittableTextRun(run, textNode)) return;
+
+    const segments = splitLinkSegments(textNode.textContent ?? '');
+    if (!segments.some((segment) => segment.href !== null)) return;
+
+    const parent = run.parentNode;
+    if (!parent) return;
+    segments.forEach((segment) => {
+      const clone = run.cloneNode(true) as Element;
+      setRunText(clone, segment.text);
+      if (segment.href === null) {
+        parent.insertBefore(clone, run);
+        return;
+      }
+      applyLinkAppearance(clone, parsed);
+      const hyperlink = parsed.createElementNS(WORD_NS, 'w:hyperlink');
+      hyperlink.setAttributeNS(RELATIONSHIPS_NS, 'r:id', resolveRelationshipId(segment.href));
+      hyperlink.appendChild(clone);
+      parent.insertBefore(hyperlink, run);
+    });
+    parent.removeChild(run);
+  });
+};
+
+const readRelationships = async (zip: JSZip): Promise<XMLDocument | null> => {
+  const entry = zip.file('word/_rels/document.xml.rels');
+  if (!entry) return null;
+  const parsed = new DOMParser().parseFromString(await entry.async('string'), 'application/xml');
+  if (parsed.getElementsByTagName('parsererror').length > 0) return null;
+  return parsed;
+};
+
 const findBulletTemplate = (paragraphs: Element[], anchorIndex: number): Element => {
   for (let offset = 0; offset < paragraphs.length; offset += 1) {
     const candidates = [anchorIndex - offset, anchorIndex + offset].filter(
@@ -248,6 +396,21 @@ export const patchOriginalDocx = async (
   }
   if (replacementMap.size === 0 && insertions.length > 0 && insertedCount === 0) {
     throw new Error('no matching paragraphs found');
+  }
+
+  // Linking is a bonus on top of a patch that already succeeded, so a failure
+  // here must not cost the user their preserved formatting.
+  const relationships = await readRelationships(zip);
+  try {
+    linkifyDocument(parsed, relationships);
+    if (relationships) {
+      zip.file(
+        'word/_rels/document.xml.rels',
+        new XMLSerializer().serializeToString(relationships),
+      );
+    }
+  } catch {
+    /* keep the patched document as-is */
   }
 
   zip.file('word/document.xml', new XMLSerializer().serializeToString(parsed));
