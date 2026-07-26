@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { notifications } from '@mantine/notifications';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { copyResumeRichText } from '../lib/copyResume';
@@ -18,12 +18,7 @@ import { buildExportFilename, extractCandidateNameFromResume } from '../lib/expo
 import { PdfConversionError, convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
 import { readCleanLayout, type DocxCleanLayout } from '../lib/docxLayout';
 import { applyDecisionsAndInsertions, createLookup, lineAnchorIndex } from '../lib/resumeModel';
-import type {
-  AddedBullet,
-  ChangeDecision,
-  OriginalDocx,
-  TailorResult,
-} from '../lib/types';
+import type { AddedBullet, ChangeDecision, OriginalDocx, TailorResult } from '../lib/types';
 
 type UseResumeExportOptions = {
   result: TailorResult | null;
@@ -59,7 +54,7 @@ export const useResumeExport = ({
   const [fitToOnePage, setFitToOnePageState] = useState(false);
   const [fitScale, setFitScale] = useState(EXPORT_SCALE_DEFAULT);
   const [isComputingFit, setIsComputingFit] = useState(false);
-  const fitDefaultAppliedRef = useRef<string | null>(null);
+  const autoFitResumeTextRef = useRef<string | null>(null);
   const fitTouchedRef = useRef(false);
 
   const exportScale = fitToOnePage ? fitScale : manualScale;
@@ -75,7 +70,7 @@ export const useResumeExport = ({
     setFitToOnePageState(enabled);
   };
 
-  const buildMergedResume = () => {
+  const buildMergedResume = useCallback(() => {
     if (!result) {
       return {
         lines: [] as string[],
@@ -90,7 +85,7 @@ export const useResumeExport = ({
       decisions,
       activeAddedBullets,
     );
-  };
+  }, [result, decisions, activeAddedBullets]);
 
   const canPatchOriginal =
     result !== null &&
@@ -98,7 +93,7 @@ export const useResumeExport = ({
     normalizeResumeTextForComparison(originalDocx.parsedText) ===
       normalizeResumeTextForComparison(result.resumeText);
 
-  const buildKeepReplacements = (): DocxReplacement[] => {
+  const buildKeepReplacements = useCallback((): DocxReplacement[] => {
     if (!result) return [];
     return result.changes
       .filter((change) => decisions[change.id] !== 'reverted')
@@ -118,9 +113,9 @@ export const useResumeExport = ({
           })),
         ];
       });
-  };
+  }, [result, decisions]);
 
-  const buildKeepInsertions = (): DocxInsertion[] => {
+  const buildKeepInsertions = useCallback((): DocxInsertion[] => {
     if (!result || activeAddedBullets.length === 0) return [];
     const resumeLines = result.resumeText.split('\n');
     const lookup = createLookup(result.resumeText, result.document ?? null);
@@ -142,31 +137,37 @@ export const useResumeExport = ({
         return { afterOriginal, text };
       })
       .filter((insertion) => insertion.afterOriginal.trim().length > 0);
-  };
+  }, [result, activeAddedBullets]);
 
-  const loadCleanLayout = async (): Promise<DocxCleanLayout | null> => {
+  const loadCleanLayout = useCallback(async (): Promise<DocxCleanLayout | null> => {
     if (!result || !originalDocx) return null;
     try {
       return await readCleanLayout(originalDocx.file, result.resumeText);
     } catch {
       return null;
     }
-  };
+  }, [result, originalDocx]);
 
   useEffect(() => {
-    if (!result) return;
+    if (!result || autoFitResumeTextRef.current === result.resumeText) return;
+    autoFitResumeTextRef.current = result.resumeText;
     fitTouchedRef.current = false;
-    fitDefaultAppliedRef.current = null;
-  }, [result?.resumeText]);
 
-  useEffect(() => {
-    if (!result || isExample || !originalDocx || fitTouchedRef.current) return;
-    if (fitDefaultAppliedRef.current === result.resumeText) return;
-    fitDefaultAppliedRef.current = result.resumeText;
+    if (isExample || !originalDocx) return;
 
-    void isOriginalSinglePage(originalDocx.file).then((singlePage) => {
-      if (singlePage) setFitToOnePageState(true);
-    });
+    let cancelled = false;
+    void isOriginalSinglePage(originalDocx.file)
+      .then((singlePage) => {
+        if (cancelled || fitTouchedRef.current || !singlePage) return;
+        setFitToOnePageState(true);
+      })
+      .catch(() => {
+        /* leave the checkbox off when the original cannot be measured */
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [result, isExample, originalDocx]);
 
   useEffect(() => {
@@ -184,11 +185,13 @@ export const useResumeExport = ({
           resumeText: merged.lines.join('\n'),
           textsByNodeId: merged.textsByNodeId,
           layout,
-          originalFile: originalDocx?.file ?? null,
+          originalFile: canPatchOriginal ? (originalDocx?.file ?? null) : null,
           replacements: buildKeepReplacements(),
           insertions: buildKeepInsertions(),
         });
         if (!cancelled) setFitScale(scale);
+      } catch {
+        if (!cancelled) setFitScale(EXPORT_SCALE_DEFAULT);
       } finally {
         if (!cancelled) setIsComputingFit(false);
       }
@@ -197,7 +200,17 @@ export const useResumeExport = ({
     return () => {
       cancelled = true;
     };
-  }, [fitToOnePage, result, isExample, originalDocx, decisions, activeAddedBullets]);
+  }, [
+    fitToOnePage,
+    result,
+    isExample,
+    canPatchOriginal,
+    originalDocx,
+    buildMergedResume,
+    loadCleanLayout,
+    buildKeepReplacements,
+    buildKeepInsertions,
+  ]);
 
   const resumeFilename = (format: 'docx' | 'pdf'): string => {
     const merged = buildMergedResume();
@@ -206,11 +219,7 @@ export const useResumeExport = ({
       merged.document,
       merged.textsByNodeId,
     );
-    return buildExportFilename(
-      [candidateName, companyName, 'resume'],
-      'resume',
-      format,
-    );
+    return buildExportFilename([candidateName, companyName, 'resume'], 'resume', format);
   };
 
   const buildCleanDocx = async (): Promise<Blob> => {

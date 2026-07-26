@@ -215,8 +215,12 @@ const ResultsPanel = ({
     [addedBullets],
   );
 
-  const activeAddedBullets = addedBullets.filter(
-    (bullet) => typeof bullet.text === 'string' && bullet.text.trim().length > 0,
+  const activeAddedBullets = useMemo(
+    () =>
+      addedBullets.filter(
+        (bullet) => typeof bullet.text === 'string' && bullet.text.trim().length > 0,
+      ),
+    [addedBullets],
   );
 
   const {
@@ -230,13 +234,13 @@ const ResultsPanel = ({
     handleCopy,
     handleExport,
   } = useResumeExport({
-      result,
-      isExample,
-      originalDocx,
-      companyName,
-      decisions,
-      activeAddedBullets,
-    });
+    result,
+    isExample,
+    originalDocx,
+    companyName,
+    decisions,
+    activeAddedBullets,
+  });
 
   const requirements = result?.requirements ?? [];
 

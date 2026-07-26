@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 
-const WORD_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+export const WORD_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const RELATIONSHIPS_NS = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 const PACKAGE_RELATIONSHIPS_NS = 'http://schemas.openxmlformats.org/package/2006/relationships';
 

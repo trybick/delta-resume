@@ -18,12 +18,11 @@ import {
   WidthType,
 } from 'docx';
 import { formatCoverLetterDate, formatCoverLetterSubject } from './formatCoverLetter';
-import type { DocxCellRef, DocxCleanLayout, DocxTableInfo } from './docxLayout';
+import { WORD_NS, type DocxCellRef, type DocxCleanLayout, type DocxTableInfo } from './docxLayout';
 import { splitLinkSegments, type AnchorHrefs } from './resumeLinks';
 import type { ResumeDocument } from './types';
 import { entryDisplayDate, entryDisplayLeft } from './resumeModel';
 
-const WORD_NS = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
 const XML_NS = 'http://www.w3.org/XML/1998/namespace';
 const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
 
@@ -34,11 +33,11 @@ const ACCENT_COLOR = '1F4E79';
 const MUTED_COLOR = '595959';
 const LINK_COLOR = '0563C1';
 const RULE_COLOR = 'C9CED6';
-const RESUME_MARGIN = 720;
-const PAGE_WIDTH = 12240;
-const PAGE_HEIGHT = 15840;
+export const RESUME_MARGIN = 720;
+export const PAGE_WIDTH = 12240;
+export const PAGE_HEIGHT = 15840;
 const PAGE_SIZE = { width: PAGE_WIDTH, height: PAGE_HEIGHT } as const;
-const RESUME_CONTENT_WIDTH = PAGE_WIDTH - RESUME_MARGIN * 2;
+export const RESUME_CONTENT_WIDTH = PAGE_WIDTH - RESUME_MARGIN * 2;
 const RESUME_BULLET_REF = 'resume-bullets';
 const MONTH_PATTERN =
   '(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\\.?';
@@ -152,7 +151,7 @@ export type DocxInsertion = {
   text: string;
 };
 
-const normalizeLine = (line: string): string =>
+export const normalizeResumeLine = (line: string): string =>
   line.replace(BULLET_MARKER, '').replace(/\s+/g, ' ').trim().toLowerCase();
 
 export const normalizeResumeTextForComparison = (text: string): string =>
@@ -171,12 +170,12 @@ export const isBulletLine = (line: string): boolean => {
   return stripped !== trimmed && stripped.length > 0;
 };
 
-const paragraphText = (paragraph: Element): string =>
+export const paragraphText = (paragraph: Element): string =>
   Array.from(paragraph.getElementsByTagNameNS(WORD_NS, 't'))
     .map((node) => node.textContent ?? '')
     .join('');
 
-const hasNumbering = (paragraph: Element): boolean =>
+export const hasNumbering = (paragraph: Element): boolean =>
   paragraph.getElementsByTagNameNS(WORD_NS, 'numPr').length > 0;
 
 const setParagraphText = (paragraph: Element, text: string): void => {
@@ -195,7 +194,7 @@ const setParagraphText = (paragraph: Element, text: string): void => {
   });
 };
 
-const resolveInsertText = (rawText: string, template: Element): string => {
+export const resolveInsertText = (rawText: string, template: Element): string => {
   const stripped = stripBulletMarker(rawText).trim();
   if (hasNumbering(template)) return stripped;
   const templateLine = paragraphText(template);
@@ -356,7 +355,7 @@ const readRelationships = async (zip: JSZip): Promise<XMLDocument | null> => {
   return parsed;
 };
 
-const findBulletTemplate = (paragraphs: Element[], anchorIndex: number): Element => {
+export const findBulletTemplate = (paragraphs: Element[], anchorIndex: number): Element => {
   for (let offset = 0; offset < paragraphs.length; offset += 1) {
     const candidates = [anchorIndex - offset, anchorIndex + offset].filter(
       (index) => index >= 0 && index < paragraphs.length,
@@ -452,14 +451,14 @@ export const patchOriginalDocx = async (
 
   const replacementMap = new Map<string, string>();
   replacements.forEach((replacement) => {
-    const key = normalizeLine(replacement.original);
+    const key = normalizeResumeLine(replacement.original);
     if (key.length === 0) return;
     replacementMap.set(key, stripBulletMarker(replacement.tailored).trim());
   });
 
   const insertionsByAnchor = new Map<string, string[]>();
   insertions.forEach((insertion) => {
-    const key = normalizeLine(insertion.afterOriginal);
+    const key = normalizeResumeLine(insertion.afterOriginal);
     if (key.length === 0) return;
     const group = insertionsByAnchor.get(key);
     if (group) {
@@ -478,7 +477,7 @@ export const patchOriginalDocx = async (
     const textNodes = Array.from(paragraph.getElementsByTagNameNS(WORD_NS, 't'));
     if (textNodes.length === 0) return;
     const currentText = paragraphText(paragraph);
-    const normalized = normalizeLine(currentText);
+    const normalized = normalizeResumeLine(currentText);
     const tailored = replacementMap.get(normalized);
     if (tailored !== undefined) {
       if (tailored.length === 0) {
@@ -712,8 +711,8 @@ const rightDateTabStop = {
   tabStops: [{ type: TabStopType.RIGHT, position: RESUME_CONTENT_WIDTH }],
 } as const;
 
-const DATE_CELL_WIDTH = 3600;
-const TITLE_CELL_WIDTH = RESUME_CONTENT_WIDTH - DATE_CELL_WIDTH;
+export const DATE_CELL_WIDTH = 3600;
+export const TITLE_CELL_WIDTH = RESUME_CONTENT_WIDTH - DATE_CELL_WIDTH;
 
 const invisibleBorder = { style: BorderStyle.NONE, size: 0, color: 'auto' } as const;
 
@@ -728,24 +727,31 @@ const invisibleTableBorders = {
 
 const zeroCellMargins = { top: 0, bottom: 0, left: 0, right: 0 } as const;
 
-const LAYOUT_CELL_GUTTER = 160;
+export const LAYOUT_CELL_GUTTER = 160;
 
 const layoutCellMargins = { top: 0, bottom: 0, left: 0, right: LAYOUT_CELL_GUTTER } as const;
 
 // A resume built entirely inside one layout table should keep flattening to a
 // single column; rebuilding it would turn the clean template back into the
 // original grid we are trying to normalise away.
-const MAX_TABLE_SHARE_OF_DOCUMENT = 0.8;
+export const MAX_TABLE_SHARE_OF_DOCUMENT = 0.8;
 
-const scaleColumnWidths = (columnWidths: number[] | null, columnCount: number): number[] => {
+export const distributeColumnWidths = (
+  columnWidths: number[] | null,
+  columnCount: number,
+  totalWidth: number,
+): number[] => {
   const total = columnWidths?.reduce((sum, width) => sum + width, 0) ?? 0;
   if (!columnWidths || columnWidths.length !== columnCount || total <= 0) {
-    const even = Math.floor(RESUME_CONTENT_WIDTH / columnCount);
-    return Array.from({ length: columnCount }, (_, index) =>
-      index === columnCount - 1 ? RESUME_CONTENT_WIDTH - even * (columnCount - 1) : even,
-    );
+    return Array.from({ length: columnCount }, () => totalWidth / columnCount);
   }
-  const scaled = columnWidths.map((width) => Math.floor((width / total) * RESUME_CONTENT_WIDTH));
+  return columnWidths.map((width) => (width / total) * totalWidth);
+};
+
+const scaleColumnWidths = (columnWidths: number[] | null, columnCount: number): number[] => {
+  const scaled = distributeColumnWidths(columnWidths, columnCount, RESUME_CONTENT_WIDTH).map(
+    (width) => Math.floor(width),
+  );
   scaled[scaled.length - 1] += RESUME_CONTENT_WIDTH - scaled.reduce((sum, w) => sum + w, 0);
   return scaled;
 };
@@ -965,8 +971,8 @@ const layoutTable = (
   });
 };
 
-const restoreTables = (items: RenderedItem[], tables: DocxTableInfo[]): (Paragraph | Table)[] => {
-  const groups: RenderedItem[][] = [];
+export const groupByTableRun = <T extends { cell: DocxCellRef | null }>(items: T[]): T[][] => {
+  const groups: T[][] = [];
   items.forEach((item) => {
     const current = groups[groups.length - 1];
     const currentTableIndex = current?.[0].cell?.tableIndex ?? null;
@@ -976,8 +982,11 @@ const restoreTables = (items: RenderedItem[], tables: DocxTableInfo[]): (Paragra
     }
     groups.push([item]);
   });
+  return groups;
+};
 
-  return groups.flatMap((group) => {
+const restoreTables = (items: RenderedItem[], tables: DocxTableInfo[]): (Paragraph | Table)[] =>
+  groupByTableRun(items).flatMap((group) => {
     const cell = group[0].cell;
     const elements = group.map((item) => item.element);
     if (!cell) return elements;
@@ -992,7 +1001,6 @@ const restoreTables = (items: RenderedItem[], tables: DocxTableInfo[]): (Paragra
     }
     return [layoutTable(group, columnCount, info?.columnWidths ?? null)];
   });
-};
 
 export const buildDocumentDocx = async (
   resumeDocument: ResumeDocument,
