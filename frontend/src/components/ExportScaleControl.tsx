@@ -7,9 +7,9 @@ import {
 } from '../lib/exportDocx';
 
 const SCALE_MARKS = [
-  { value: EXPORT_SCALE_MIN, label: 'Smaller' },
-  { value: EXPORT_SCALE_DEFAULT, label: 'Default' },
-  { value: EXPORT_SCALE_MAX, label: 'Larger' },
+  { value: EXPORT_SCALE_MIN },
+  { value: EXPORT_SCALE_DEFAULT },
+  { value: EXPORT_SCALE_MAX },
 ];
 
 const formatScalePercent = (scale: number): string => `${Math.round(scale * 100)}%`;
@@ -22,13 +22,13 @@ type ExportScaleControlProps = {
 
 export const ExportScaleControl = ({ scale, onChange, disabled }: ExportScaleControlProps) => (
   <Box
-    px={12}
+    px="sm"
     pt={4}
-    pb={28}
+    pb={10}
     onKeyDown={(event) => event.stopPropagation()}
     onClick={(event) => event.stopPropagation()}
   >
-    <Group justify="space-between" mb={8}>
+    <Group justify="space-between" mb={10}>
       <Text size="xs" fw={600}>
         Text size
       </Text>
@@ -48,5 +48,22 @@ export const ExportScaleControl = ({ scale, onChange, disabled }: ExportScaleCon
       label={formatScalePercent}
       aria-label="Export text size"
     />
+    <Box
+      mt={8}
+      style={{
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr 1fr',
+      }}
+    >
+      <Text size="xs" c="dimmed" ta="left">
+        Smaller
+      </Text>
+      <Text size="xs" c="dimmed" ta="center">
+        Default
+      </Text>
+      <Text size="xs" c="dimmed" ta="right">
+        Larger
+      </Text>
+    </Box>
   </Box>
 );

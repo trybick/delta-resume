@@ -60,7 +60,7 @@ const scaledHalfPoints = (base: number, scale: number): number =>
 const scaledTwips = (base: number, scale: number): number => Math.max(0, Math.round(base * scale));
 
 export const EXPORT_SCALE_MIN = 0.75;
-export const EXPORT_SCALE_MAX = 1.15;
+export const EXPORT_SCALE_MAX = 1.25;
 export const EXPORT_SCALE_STEP = 0.05;
 export const EXPORT_SCALE_DEFAULT = 1;
 

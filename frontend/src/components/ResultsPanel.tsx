@@ -219,21 +219,15 @@ const ResultsPanel = ({
     (bullet) => typeof bullet.text === 'string' && bullet.text.trim().length > 0,
   );
 
-  const {
-    isExporting,
-    canPatchOriginal,
-    exportScale,
-    setExportScale,
-    handleCopy,
-    handleExport,
-  } = useResumeExport({
-    result,
-    isExample,
-    originalDocx,
-    companyName,
-    decisions,
-    activeAddedBullets,
-  });
+  const { isExporting, canPatchOriginal, exportScale, setExportScale, handleCopy, handleExport } =
+    useResumeExport({
+      result,
+      isExample,
+      originalDocx,
+      companyName,
+      decisions,
+      activeAddedBullets,
+    });
 
   const requirements = result?.requirements ?? [];
 
@@ -420,11 +414,7 @@ const ResultsPanel = ({
           </Button>
         </Menu.Target>
         <Menu.Dropdown>
-          <Menu.Item
-            leftSection={<IconCopy size={16} />}
-            disabled={isExample}
-            onClick={handleCopy}
-          >
+          <Menu.Item leftSection={<IconCopy size={16} />} disabled={isExample} onClick={handleCopy}>
             Copy to clipboard
           </Menu.Item>
           <Menu.Divider />
@@ -434,12 +424,8 @@ const ResultsPanel = ({
               <Menu.Divider />
             </>
           )}
-          <Menu.Label>Export size</Menu.Label>
-          <ExportScaleControl
-            scale={exportScale}
-            onChange={setExportScale}
-            disabled={isExample}
-          />
+          <Menu.Label>Settings</Menu.Label>
+          <ExportScaleControl scale={exportScale} onChange={setExportScale} disabled={isExample} />
           <Menu.Divider />
           {canPatchOriginal && (
             <>
@@ -543,13 +529,7 @@ const ResultsPanel = ({
               />
               <Text size="xs" c="dimmed" lh={1.4}>
                 {nudgeCountLabel}{' '}
-                <Anchor
-                  size="xs"
-                  fw={600}
-                  component="button"
-                  type="button"
-                  onClick={onNudgeClick}
-                >
+                <Anchor size="xs" fw={600} component="button" type="button" onClick={onNudgeClick}>
                   {nudgeActionLabel}
                 </Anchor>
               </Text>
@@ -699,10 +679,7 @@ const ResultsPanel = ({
                   />
                 )}
                 {trailing.map((line, offset) => (
-                  <ContextLine
-                    key={`${segment.nodeId}-t-${offset}`}
-                    line={line}
-                  />
+                  <ContextLine key={`${segment.nodeId}-t-${offset}`} line={line} />
                 ))}
               </div>
             );
