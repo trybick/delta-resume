@@ -3,8 +3,10 @@ import { notifications } from '@mantine/notifications';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { copyResumeRichText } from '../lib/copyResume';
 import {
+  EXPORT_SCALE_DEFAULT,
   buildDocumentDocx,
   buildTemplateDocx,
+  clampExportScale,
   downloadDocx,
   normalizeResumeTextForComparison,
   patchOriginalDocx,
@@ -33,6 +35,8 @@ type UseResumeExportOptions = {
 type UseResumeExportResult = {
   isExporting: boolean;
   canPatchOriginal: boolean;
+  exportScale: number;
+  setExportScale: (scale: number) => void;
   handleCopy: () => Promise<void>;
   handleExport: (variant: 'keep' | 'clean', format: 'docx' | 'pdf') => Promise<boolean>;
 };
@@ -46,6 +50,9 @@ export const useResumeExport = ({
   activeAddedBullets,
 }: UseResumeExportOptions): UseResumeExportResult => {
   const [isExporting, setIsExporting] = useState(false);
+  const [exportScale, setExportScaleState] = useState(EXPORT_SCALE_DEFAULT);
+
+  const setExportScale = (scale: number) => setExportScaleState(clampExportScale(scale));
 
   const buildMergedResume = () => {
     if (!result) {
@@ -99,8 +106,8 @@ export const useResumeExport = ({
     const merged = buildMergedResume();
     const layout = await loadCleanLayout();
     return merged.document
-      ? buildDocumentDocx(merged.document, merged.textsByNodeId, layout)
-      : buildTemplateDocx(merged.lines.join('\n'), layout);
+      ? buildDocumentDocx(merged.document, merged.textsByNodeId, layout, exportScale)
+      : buildTemplateDocx(merged.lines.join('\n'), layout, exportScale);
   };
 
   const buildKeepInsertions = (): DocxInsertion[] => {
@@ -149,7 +156,7 @@ export const useResumeExport = ({
       });
     const insertions = buildKeepInsertions();
     try {
-      return await patchOriginalDocx(originalDocx.file, replacements, insertions);
+      return await patchOriginalDocx(originalDocx.file, replacements, insertions, exportScale);
     } catch {
       notifications.show({
         color: 'orange',
@@ -191,7 +198,7 @@ export const useResumeExport = ({
 
   const handleExport = async (variant: 'keep' | 'clean', format: 'docx' | 'pdf') => {
     if (!result || isExample || isExporting) return false;
-    trackEvent(AnalyticsEvents.ResumeExport, { variant, format });
+    trackEvent(AnalyticsEvents.ResumeExport, { variant, format, scale: exportScale });
     setIsExporting(true);
     try {
       const docxBlob = variant === 'keep' ? await buildPatchedDocx() : await buildCleanDocx();
@@ -235,6 +242,8 @@ export const useResumeExport = ({
   return {
     isExporting,
     canPatchOriginal,
+    exportScale,
+    setExportScale,
     handleCopy,
     handleExport,
   };

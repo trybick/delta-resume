@@ -30,11 +30,6 @@ const DOCX_MIME = 'application/vnd.openxmlformats-officedocument.wordprocessingm
 const BULLET_MARKER = /^[\s\u00A0]*(?:[-–—•‣◦▪▫·∙●○*+>][\s\u00A0]*|\d{1,2}[.)][\s\u00A0]+)/;
 
 const FONT = 'Arial';
-const BODY_SIZE = 19;
-const BULLET_MARKER_SIZE = 16;
-const NAME_SIZE = 36;
-const HEADING_SIZE = 20;
-const CONTACT_SIZE = 18;
 const ACCENT_COLOR = '1F4E79';
 const MUTED_COLOR = '595959';
 const LINK_COLOR = '0563C1';
@@ -57,7 +52,61 @@ const TRAILING_DATE_PATTERN = new RegExp(
   'i',
 );
 
-const resumeNumbering = {
+// Font sizes are half-points, so scaled values are rounded to whole half-points
+// (0.5pt granularity) to match what Word can actually represent.
+const scaledHalfPoints = (base: number, scale: number): number =>
+  Math.max(2, Math.round(base * scale));
+
+const scaledTwips = (base: number, scale: number): number => Math.max(0, Math.round(base * scale));
+
+export const EXPORT_SCALE_MIN = 0.75;
+export const EXPORT_SCALE_MAX = 1.15;
+export const EXPORT_SCALE_STEP = 0.05;
+export const EXPORT_SCALE_DEFAULT = 1;
+
+export const clampExportScale = (scale: number): number =>
+  Math.min(EXPORT_SCALE_MAX, Math.max(EXPORT_SCALE_MIN, scale));
+
+export type ResumeTheme = {
+  scale: number;
+  bodySize: number;
+  bulletMarkerSize: number;
+  nameSize: number;
+  headingSize: number;
+  contactSize: number;
+  bulletIndent: number;
+  nameAfter: number;
+  contactAfter: number;
+  bulletAfter: number;
+  headingBefore: number;
+  headingAfter: number;
+  blockBefore: number;
+  blockAfter: number;
+  paragraphAfter: number;
+};
+
+export const createResumeTheme = (scale = EXPORT_SCALE_DEFAULT): ResumeTheme => {
+  const clamped = clampExportScale(scale);
+  return {
+    scale: clamped,
+    bodySize: scaledHalfPoints(19, clamped),
+    bulletMarkerSize: scaledHalfPoints(16, clamped),
+    nameSize: scaledHalfPoints(36, clamped),
+    headingSize: scaledHalfPoints(20, clamped),
+    contactSize: scaledHalfPoints(18, clamped),
+    bulletIndent: scaledTwips(288, clamped),
+    nameAfter: scaledTwips(60, clamped),
+    contactAfter: scaledTwips(20, clamped),
+    bulletAfter: scaledTwips(40, clamped),
+    headingBefore: scaledTwips(260, clamped),
+    headingAfter: scaledTwips(100, clamped),
+    blockBefore: scaledTwips(120, clamped),
+    blockAfter: scaledTwips(40, clamped),
+    paragraphAfter: scaledTwips(80, clamped),
+  };
+};
+
+const resumeNumbering = (theme: ResumeTheme) => ({
   config: [
     {
       reference: RESUME_BULLET_REF,
@@ -68,14 +117,14 @@ const resumeNumbering = {
           text: '\u2022',
           alignment: AlignmentType.LEFT,
           style: {
-            run: { font: FONT, size: BULLET_MARKER_SIZE },
-            paragraph: { indent: { left: 288, hanging: 288 } },
+            run: { font: FONT, size: theme.bulletMarkerSize },
+            paragraph: { indent: { left: theme.bulletIndent, hanging: theme.bulletIndent } },
           },
         },
       ],
     },
   ],
-};
+});
 
 const bulletParagraphOptions = {
   numbering: { reference: RESUME_BULLET_REF, level: 0 },
@@ -322,10 +371,74 @@ const findBulletTemplate = (paragraphs: Element[], anchorIndex: number): Element
   return paragraphs[anchorIndex];
 };
 
+const scaleNumericAttribute = (
+  element: Element,
+  localName: string,
+  scale: number,
+  minimum: number,
+): void => {
+  const raw = element.getAttributeNS(WORD_NS, localName);
+  if (raw === null) return;
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return;
+  element.setAttributeNS(
+    WORD_NS,
+    `w:${localName}`,
+    String(Math.max(minimum, Math.round(value * scale))),
+  );
+};
+
+// Runs that carry no explicit w:sz inherit from styles.xml, so every part that can
+// declare a size has to be scaled for the whole document to shrink evenly.
+const scaleTypography = (root: XMLDocument, scale: number): void => {
+  ['sz', 'szCs'].forEach((localName) => {
+    Array.from(root.getElementsByTagNameNS(WORD_NS, localName)).forEach((node) => {
+      if (node.parentElement?.localName !== 'rPr') return;
+      scaleNumericAttribute(node, 'val', scale, 2);
+    });
+  });
+
+  Array.from(root.getElementsByTagNameNS(WORD_NS, 'spacing')).forEach((node) => {
+    if (node.parentElement?.localName !== 'pPr') return;
+    scaleNumericAttribute(node, 'before', scale, 0);
+    scaleNumericAttribute(node, 'after', scale, 0);
+    // w:line is a twip measurement only for exact/atLeast; under the default auto
+    // rule it is a 240ths-of-a-line multiplier that must be left alone.
+    const lineRule = node.getAttributeNS(WORD_NS, 'lineRule');
+    if (lineRule === 'exact' || lineRule === 'atLeast') {
+      scaleNumericAttribute(node, 'line', scale, 0);
+    }
+  });
+
+  Array.from(root.getElementsByTagNameNS(WORD_NS, 'trHeight')).forEach((node) =>
+    scaleNumericAttribute(node, 'val', scale, 0),
+  );
+};
+
+const SCALABLE_PART_PATTERN = /^word\/(styles|numbering|header\d*|footer\d*)\.xml$/;
+
+const scaleSupportingParts = async (zip: JSZip, scale: number): Promise<void> => {
+  const names = Object.keys(zip.files).filter((name) => SCALABLE_PART_PATTERN.test(name));
+  await Promise.all(
+    names.map(async (name) => {
+      const entry = zip.file(name);
+      if (!entry) return;
+      const parsedPart = new DOMParser().parseFromString(
+        await entry.async('string'),
+        'application/xml',
+      );
+      if (parsedPart.getElementsByTagName('parsererror').length > 0) return;
+      scaleTypography(parsedPart, scale);
+      zip.file(name, new XMLSerializer().serializeToString(parsedPart));
+    }),
+  );
+};
+
 export const patchOriginalDocx = async (
   file: File,
   replacements: DocxReplacement[],
   insertions: DocxInsertion[] = [],
+  scale = EXPORT_SCALE_DEFAULT,
 ): Promise<Blob> => {
   const zip = await JSZip.loadAsync(await file.arrayBuffer());
   const documentEntry = zip.file('word/document.xml');
@@ -414,6 +527,12 @@ export const patchOriginalDocx = async (
     }
   } catch {
     /* keep the patched document as-is */
+  }
+
+  const clampedScale = clampExportScale(scale);
+  if (clampedScale !== 1) {
+    scaleTypography(parsed, clampedScale);
+    await scaleSupportingParts(zip, clampedScale);
   }
 
   zip.file('word/document.xml', new XMLSerializer().serializeToString(parsed));
@@ -522,9 +641,9 @@ const labelledTextRuns = (
   return runs;
 };
 
-const headingParagraph = (texts: string[]): Paragraph =>
+const headingParagraph = (texts: string[], theme: ResumeTheme): Paragraph =>
   new Paragraph({
-    spacing: { before: 260, after: 100 },
+    spacing: { before: theme.headingBefore, after: theme.headingAfter },
     border: {
       bottom: { style: BorderStyle.SINGLE, size: 6, space: 3, color: RULE_COLOR },
     },
@@ -537,7 +656,7 @@ const headingParagraph = (texts: string[]): Paragraph =>
         new TextRun({
           text,
           font: FONT,
-          size: HEADING_SIZE,
+          size: theme.headingSize,
           bold: true,
           allCaps: true,
           characterSpacing: 16,
@@ -700,6 +819,7 @@ const buildParagraph = (
   line: string,
   index: number,
   previousBlank: boolean,
+  theme: ResumeTheme,
   anchorHrefs?: AnchorHrefs,
 ): Paragraph | Table | null => {
   const trimmed = line.trim();
@@ -708,18 +828,18 @@ const buildParagraph = (
   if (index === 0) {
     return new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 60 },
-      children: [new TextRun({ text: trimmed, font: FONT, size: NAME_SIZE, bold: true })],
+      spacing: { after: theme.nameAfter },
+      children: [new TextRun({ text: trimmed, font: FONT, size: theme.nameSize, bold: true })],
     });
   }
 
   if (index <= 3 && isContactLine(trimmed) && !isBulletLine(line)) {
     return new Paragraph({
       alignment: AlignmentType.CENTER,
-      spacing: { after: 20 },
+      spacing: { after: theme.contactAfter },
       children: linkedRuns(
         trimmed,
-        { font: FONT, size: CONTACT_SIZE, color: MUTED_COLOR },
+        { font: FONT, size: theme.contactSize, color: MUTED_COLOR },
         anchorHrefs,
       ),
     });
@@ -728,42 +848,47 @@ const buildParagraph = (
   if (isBulletLine(line)) {
     return new Paragraph({
       ...bulletParagraphOptions,
-      spacing: { after: 40 },
+      spacing: { after: theme.bulletAfter },
       widowControl: true,
       children: labelledTextRuns(
         [stripBulletMarker(line).trim()],
-        { font: FONT, size: BODY_SIZE },
+        { font: FONT, size: theme.bodySize },
         anchorHrefs,
       ),
     });
   }
 
   if (isHeadingLine(line)) {
-    return headingParagraph([trimmed]);
+    return headingParagraph([trimmed], theme);
   }
 
   const splitDateLine = splitTrailingDate(trimmed);
   if (splitDateLine) {
     return dateLineTable(
       splitDateLine,
-      { font: FONT, size: BODY_SIZE },
-      { spacingBefore: previousBlank ? 120 : 0, spacingAfter: 40 },
+      { font: FONT, size: theme.bodySize },
+      { spacingBefore: previousBlank ? theme.blockBefore : 0, spacingAfter: theme.blockAfter },
       anchorHrefs,
     );
   }
 
   return new Paragraph({
     ...rightDateTabStop,
-    spacing: { before: previousBlank ? 120 : 0, after: 40 },
+    spacing: {
+      before: previousBlank ? theme.blockBefore : 0,
+      after: theme.blockAfter,
+    },
     widowControl: true,
-    children: dateAlignedTextRuns([trimmed], { font: FONT, size: BODY_SIZE }, anchorHrefs),
+    children: dateAlignedTextRuns([trimmed], { font: FONT, size: theme.bodySize }, anchorHrefs),
   });
 };
 
 export const buildTemplateDocx = async (
   resumeText: string,
   layout?: DocxCleanLayout | null,
+  scale = EXPORT_SCALE_DEFAULT,
 ): Promise<Blob> => {
+  const theme = createResumeTheme(scale);
   const anchorHrefs = layout?.hrefByAnchorText;
   const lines = resumeText.split('\n');
   const paragraphs: (Paragraph | Table)[] = [];
@@ -775,14 +900,14 @@ export const buildTemplateDocx = async (
       previousBlank = true;
       return;
     }
-    const paragraph = buildParagraph(line, contentIndex, previousBlank, anchorHrefs);
+    const paragraph = buildParagraph(line, contentIndex, previousBlank, theme, anchorHrefs);
     if (paragraph) paragraphs.push(paragraph);
     contentIndex += 1;
     previousBlank = false;
   });
 
   const document = new Document({
-    numbering: resumeNumbering,
+    numbering: resumeNumbering(theme),
     sections: [{ properties: resumeSectionProperties, children: paragraphs }],
   });
 
@@ -873,7 +998,9 @@ export const buildDocumentDocx = async (
   resumeDocument: ResumeDocument,
   textsByNodeId: Map<string, string>,
   layout?: DocxCleanLayout | null,
+  scale = EXPORT_SCALE_DEFAULT,
 ): Promise<Blob> => {
+  const theme = createResumeTheme(scale);
   const anchorHrefs = layout?.hrefByAnchorText;
   const items: RenderedItem[] = [];
   const textOf = (nodeId: string): string => textsByNodeId.get(nodeId)?.trim() ?? '';
@@ -903,9 +1030,9 @@ export const buildDocumentDocx = async (
   const bulletParagraph = (text: string): Paragraph =>
     new Paragraph({
       ...bulletParagraphOptions,
-      spacing: { after: 40 },
+      spacing: { after: theme.bulletAfter },
       widowControl: true,
-      children: labelledTextRuns([text], { font: FONT, size: BODY_SIZE }, anchorHrefs),
+      children: labelledTextRuns([text], { font: FONT, size: theme.bodySize }, anchorHrefs),
     });
 
   const nameText = textOf(resumeDocument.header.name.id);
@@ -914,8 +1041,8 @@ export const buildDocumentDocx = async (
       resumeDocument.header.name.sourceLines,
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { after: 60 },
-        children: [new TextRun({ text: nameText, font: FONT, size: NAME_SIZE, bold: true })],
+        spacing: { after: theme.nameAfter },
+        children: [new TextRun({ text: nameText, font: FONT, size: theme.nameSize, bold: true })],
       }),
     );
   }
@@ -927,10 +1054,10 @@ export const buildDocumentDocx = async (
       item.sourceLines,
       new Paragraph({
         alignment: AlignmentType.CENTER,
-        spacing: { after: 20 },
+        spacing: { after: theme.contactAfter },
         children: linkedRuns(
           text,
-          { font: FONT, size: CONTACT_SIZE, color: MUTED_COLOR },
+          { font: FONT, size: theme.contactSize, color: MUTED_COLOR },
           anchorHrefs,
         ),
       }),
@@ -940,7 +1067,7 @@ export const buildDocumentDocx = async (
   resumeDocument.sections.forEach((section) => {
     if (section.heading) {
       const headingText = textOf(section.heading.id);
-      if (headingText) push(section.heading.sourceLines, headingParagraph([headingText]));
+      if (headingText) push(section.heading.sourceLines, headingParagraph([headingText], theme));
     }
 
     section.blocks.forEach((block) => {
@@ -952,8 +1079,12 @@ export const buildDocumentDocx = async (
             block.headingSourceLines,
             dateLineTable(
               { left, right: dateText },
-              { font: FONT, size: BODY_SIZE, bold: true },
-              { spacingBefore: 120, spacingAfter: 40, keepNext: true },
+              { font: FONT, size: theme.bodySize, bold: true },
+              {
+                spacingBefore: theme.blockBefore,
+                spacingAfter: theme.blockAfter,
+                keepNext: true,
+              },
               anchorHrefs,
             ),
           );
@@ -961,12 +1092,12 @@ export const buildDocumentDocx = async (
           push(
             block.headingSourceLines,
             new Paragraph({
-              spacing: { before: 120, after: 40 },
+              spacing: { before: theme.blockBefore, after: theme.blockAfter },
               keepNext: true,
               keepLines: true,
               children: linkedRuns(
                 left || dateText || '',
-                { font: FONT, size: BODY_SIZE, bold: true },
+                { font: FONT, size: theme.bodySize, bold: true },
                 anchorHrefs,
               ),
             }),
@@ -992,11 +1123,13 @@ export const buildDocumentDocx = async (
       push(
         block.sourceLines,
         new Paragraph({
-          spacing: { after: block.kind === 'skillsGroup' ? 40 : 80 },
+          spacing: {
+            after: block.kind === 'skillsGroup' ? theme.blockAfter : theme.paragraphAfter,
+          },
           widowControl: true,
           children: labelledTextRuns(
             [text],
-            { font: FONT, size: BODY_SIZE, bold: wasBold(block.sourceLines) },
+            { font: FONT, size: theme.bodySize, bold: wasBold(block.sourceLines) },
             anchorHrefs,
           ),
         }),
@@ -1005,7 +1138,7 @@ export const buildDocumentDocx = async (
   });
 
   const document = new Document({
-    numbering: resumeNumbering,
+    numbering: resumeNumbering(theme),
     sections: [
       {
         properties: resumeSectionProperties,

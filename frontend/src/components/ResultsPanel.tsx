@@ -29,6 +29,7 @@ import {
 } from '@tabler/icons-react';
 import { useMediaQuery } from '@mantine/hooks';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { ExportScaleControl } from './ExportScaleControl';
 import { hasDraftBullet } from '../lib/hasDraftBullet';
 import { LOCKED_GAP_PLACEHOLDERS } from '../lib/lockedGapPlaceholders';
 import { proAccent } from '../lib/proAccent';
@@ -218,7 +219,14 @@ const ResultsPanel = ({
     (bullet) => typeof bullet.text === 'string' && bullet.text.trim().length > 0,
   );
 
-  const { isExporting, canPatchOriginal, handleCopy, handleExport } = useResumeExport({
+  const {
+    isExporting,
+    canPatchOriginal,
+    exportScale,
+    setExportScale,
+    handleCopy,
+    handleExport,
+  } = useResumeExport({
     result,
     isExample,
     originalDocx,
@@ -426,6 +434,13 @@ const ResultsPanel = ({
               <Menu.Divider />
             </>
           )}
+          <Menu.Label>Export size</Menu.Label>
+          <ExportScaleControl
+            scale={exportScale}
+            onChange={setExportScale}
+            disabled={isExample}
+          />
+          <Menu.Divider />
           {canPatchOriginal && (
             <>
               <Menu.Label>Keep my formatting</Menu.Label>
