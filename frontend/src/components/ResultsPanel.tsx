@@ -219,8 +219,17 @@ const ResultsPanel = ({
     (bullet) => typeof bullet.text === 'string' && bullet.text.trim().length > 0,
   );
 
-  const { isExporting, canPatchOriginal, exportScale, setExportScale, handleCopy, handleExport } =
-    useResumeExport({
+  const {
+    isExporting,
+    canPatchOriginal,
+    exportScale,
+    setExportScale,
+    fitToOnePage,
+    setFitToOnePage,
+    isComputingFit,
+    handleCopy,
+    handleExport,
+  } = useResumeExport({
       result,
       isExample,
       originalDocx,
@@ -425,7 +434,14 @@ const ResultsPanel = ({
             </>
           )}
           <Menu.Label>Settings</Menu.Label>
-          <ExportScaleControl scale={exportScale} onChange={setExportScale} disabled={isExample} />
+          <ExportScaleControl
+            scale={exportScale}
+            onChange={setExportScale}
+            fitToOnePage={fitToOnePage}
+            onFitToOnePageChange={setFitToOnePage}
+            isComputingFit={isComputingFit}
+            disabled={isExample}
+          />
           <Menu.Divider />
           {canPatchOriginal && (
             <>
