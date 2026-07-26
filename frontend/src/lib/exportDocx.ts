@@ -894,6 +894,9 @@ export const buildDocumentDocx = async (
     items.push({ ...placementFor(sourceLines), element });
   };
 
+  const wasBold = (sourceLines: number[]): boolean =>
+    sourceLines.length > 0 && sourceLines.every((lineIndex) => layout?.boldLines.has(lineIndex));
+
   const bulletParagraph = (text: string): Paragraph =>
     new Paragraph({
       ...bulletParagraphOptions,
@@ -988,7 +991,11 @@ export const buildDocumentDocx = async (
         new Paragraph({
           spacing: { after: block.kind === 'skillsGroup' ? 40 : 80 },
           widowControl: true,
-          children: labelledTextRuns([text], { font: FONT, size: BODY_SIZE }, anchorHrefs),
+          children: labelledTextRuns(
+            [text],
+            { font: FONT, size: BODY_SIZE, bold: wasBold(block.sourceLines) },
+            anchorHrefs,
+          ),
         }),
       );
     });

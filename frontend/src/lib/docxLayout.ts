@@ -19,6 +19,7 @@ export type DocxTableInfo = {
 export type DocxLayoutLine = {
   text: string;
   cell: DocxCellRef | null;
+  bold: boolean;
 };
 
 export type DocxLayout = {
@@ -29,6 +30,7 @@ export type DocxLayout = {
 
 export type DocxCleanLayout = {
   cellRefsByLine: Map<number, DocxCellRef>;
+  boldLines: Set<number>;
   tables: DocxTableInfo[];
   hrefByAnchorText: Map<string, string>;
 };
@@ -177,6 +179,20 @@ const tableColumnWidths = (table: Element): number[] | null => {
   return widths.length > 0 ? widths : null;
 };
 
+// A line counts as bold only when every one of its text runs is bold, which is
+// what distinguishes a group heading from a sentence with emphasis in it.
+const isBoldParagraph = (paragraph: Element): boolean => {
+  const runs = childElements(paragraph, 'r').filter((run) => runText(run).trim().length > 0);
+  if (runs.length === 0) return false;
+  return runs.every((run) => {
+    const properties = firstChildElement(run, 'rPr');
+    const bold = properties ? firstChildElement(properties, 'b') : null;
+    if (!bold) return false;
+    const value = bold.getAttributeNS(WORD_NS, 'val');
+    return value === null || value === '1' || value === 'true' || value === 'on';
+  });
+};
+
 const cellSpan = (cell: Element): number => {
   const properties = firstChildElement(cell, 'tcPr');
   if (!properties) return 1;
@@ -224,7 +240,7 @@ const walkContainer = (
     const child = node as Element;
     if (child.namespaceURI !== WORD_NS) return;
     if (child.localName === 'p') {
-      walker.lines.push({ text: paragraphText(child), cell });
+      walker.lines.push({ text: paragraphText(child), cell, bold: isBoldParagraph(child) });
       walker.sources.push(child);
       return;
     }
@@ -292,18 +308,6 @@ const hasColumnBreak = (paragraph: Element): boolean =>
   Array.from(paragraph.getElementsByTagNameNS(WORD_NS, 'br')).some(
     (lineBreak) => lineBreak.getAttributeNS(WORD_NS, 'type') === 'column',
   );
-
-const isBoldParagraph = (paragraph: Element): boolean => {
-  const runs = childElements(paragraph, 'r').filter((run) => runText(run).trim().length > 0);
-  if (runs.length === 0) return false;
-  return runs.every((run) => {
-    const properties = firstChildElement(run, 'rPr');
-    const bold = properties ? firstChildElement(properties, 'b') : null;
-    if (!bold) return false;
-    const value = bold.getAttributeNS(WORD_NS, 'val');
-    return value === null || value === '1' || value === 'true' || value === 'on';
-  });
-};
 
 const balancedColumnStarts = (total: number, columnCount: number): number[] => {
   const base = Math.floor(total / columnCount);
@@ -464,10 +468,10 @@ const alignSequences = (left: string[], right: string[]): Map<number, number> =>
 
 // The layout is keyed by position in the original document while the rest of the
 // app is keyed by line index in the extracted resume text.
-export const buildCellRefsByLine = (
+export const buildLineMetadata = (
   layout: DocxLayout,
   resumeText: string,
-): Map<number, DocxCellRef> => {
+): { cellRefsByLine: Map<number, DocxCellRef>; boldLines: Set<number> } => {
   const layoutLines = layout.lines.filter((line) => line.text.trim().length > 0);
   const resumeLines = resumeText
     .split('\n')
@@ -480,17 +484,20 @@ export const buildCellRefsByLine = (
   );
 
   const cellRefsByLine = new Map<number, DocxCellRef>();
+  const boldLines = new Set<number>();
   pairs.forEach((resumeIndex, layoutIndex) => {
-    const cell = layoutLines[layoutIndex].cell;
-    if (cell) cellRefsByLine.set(resumeLines[resumeIndex].lineIndex, cell);
+    const layoutLine = layoutLines[layoutIndex];
+    const { lineIndex } = resumeLines[resumeIndex];
+    if (layoutLine.cell) cellRefsByLine.set(lineIndex, layoutLine.cell);
+    if (layoutLine.bold) boldLines.add(lineIndex);
   });
-  return cellRefsByLine;
+  return { cellRefsByLine, boldLines };
 };
 
 export const readCleanLayout = async (file: File, resumeText: string): Promise<DocxCleanLayout> => {
   const layout = await readDocxLayout(file);
   return {
-    cellRefsByLine: buildCellRefsByLine(layout, resumeText),
+    ...buildLineMetadata(layout, resumeText),
     tables: layout.tables,
     hrefByAnchorText: layout.hrefByAnchorText,
   };
