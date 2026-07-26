@@ -4,17 +4,6 @@ body {
   min-height: 100vh;
 }
 
-.docx-pane p::marker {
-  font-size: 0.7em;
-}
-
-.docx-pane p::before {
-  font-size: 0.7em !important;
-  display: inline-block;
-  width: 24px;
-  white-space: pre;
-}
-
 .saved-resume-card {
   transition:
     border-color 120ms ease,

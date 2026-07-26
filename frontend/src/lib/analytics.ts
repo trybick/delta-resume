@@ -45,9 +45,6 @@ export const AnalyticsEvents = {
   GapsToggle: 'gaps_toggle',
 
   ResumeExportMenuOpen: 'resume_export_menu_open',
-  ResumePreviewOpen: 'resume_preview_open',
-  ResumePreviewClose: 'resume_preview_close',
-  ResumePreviewVariantChange: 'resume_preview_variant_change',
   ResumeCopy: 'resume_copy',
   ResumeExport: 'resume_export',
   ShowHiddenLines: 'show_hidden_lines',

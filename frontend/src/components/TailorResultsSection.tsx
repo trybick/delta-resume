@@ -199,7 +199,6 @@ const TailorResultsSection = ({
             lowCredits={lowCredits}
             credits={credits}
             originalDocx={showingExample ? null : originalDocx}
-            jobTitle={showingExample ? undefined : coverLetterResult?.jobTitle}
             companyName={showingExample ? undefined : coverLetterResult?.companyName}
             onShowExample={status === 'idle' ? onShowExample : undefined}
             onUpgradeClick={onGapsUpgradeClick}

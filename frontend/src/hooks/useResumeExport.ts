@@ -12,6 +12,7 @@ import {
 } from '../lib/exportDocx';
 import { buildExportFilename, extractCandidateNameFromResume } from '../lib/exportFilename';
 import { PdfConversionError, convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
+import { readCleanLayout, type DocxCleanLayout } from '../lib/docxLayout';
 import { applyDecisionsAndInsertions, createLookup, lineAnchorIndex } from '../lib/resumeModel';
 import type {
   AddedBullet,
@@ -19,13 +20,11 @@ import type {
   OriginalDocx,
   TailorResult,
 } from '../lib/types';
-import type { PreviewVariant } from '../components/DocumentPreviewModal';
 
 type UseResumeExportOptions = {
   result: TailorResult | null;
   isExample: boolean;
   originalDocx: OriginalDocx | null;
-  jobTitle?: string;
   companyName?: string;
   decisions: Record<string, ChangeDecision>;
   activeAddedBullets: AddedBullet[];
@@ -33,26 +32,20 @@ type UseResumeExportOptions = {
 
 type UseResumeExportResult = {
   isExporting: boolean;
-  previewOpen: boolean;
   canPatchOriginal: boolean;
   handleCopy: () => Promise<void>;
   handleExport: (variant: 'keep' | 'clean', format: 'docx' | 'pdf') => Promise<boolean>;
-  buildPreviewDocx: (variant: PreviewVariant) => Promise<Blob>;
-  handlePreviewOpen: () => void;
-  handlePreviewClose: () => void;
 };
 
 export const useResumeExport = ({
   result,
   isExample,
   originalDocx,
-  jobTitle,
   companyName,
   decisions,
   activeAddedBullets,
 }: UseResumeExportOptions): UseResumeExportResult => {
   const [isExporting, setIsExporting] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
 
   const buildMergedResume = () => {
     if (!result) {
@@ -91,11 +84,23 @@ export const useResumeExport = ({
     );
   };
 
-  const buildCleanDocx = (): Promise<Blob> => {
+  // Table layout and hyperlink targets are lost by text extraction, so they are
+  // recovered from the cached original .docx at export time.
+  const loadCleanLayout = async (): Promise<DocxCleanLayout | null> => {
+    if (!result || !originalDocx) return null;
+    try {
+      return await readCleanLayout(originalDocx.file, result.resumeText);
+    } catch {
+      return null;
+    }
+  };
+
+  const buildCleanDocx = async (): Promise<Blob> => {
     const merged = buildMergedResume();
+    const layout = await loadCleanLayout();
     return merged.document
-      ? buildDocumentDocx(merged.document, merged.textsByNodeId)
-      : buildTemplateDocx(merged.lines.join('\n'));
+      ? buildDocumentDocx(merged.document, merged.textsByNodeId, layout)
+      : buildTemplateDocx(merged.lines.join('\n'), layout);
   };
 
   const buildKeepInsertions = (): DocxInsertion[] => {
@@ -161,7 +166,13 @@ export const useResumeExport = ({
     trackEvent(AnalyticsEvents.ResumeCopy);
     try {
       const merged = buildMergedResume();
-      await copyResumeRichText(merged.lines, merged.document, merged.textsByNodeId);
+      const layout = await loadCleanLayout();
+      await copyResumeRichText(
+        merged.lines,
+        merged.document,
+        merged.textsByNodeId,
+        layout?.hrefByAnchorText,
+      );
       trackEvent(AnalyticsEvents.CopySuccess, { source: 'resume' });
       notifications.show({
         color: 'green',
@@ -221,29 +232,11 @@ export const useResumeExport = ({
     }
   };
 
-  const buildPreviewDocx = (variant: PreviewVariant): Promise<Blob> =>
-    variant === 'keep' ? buildPatchedDocx() : buildCleanDocx();
-
-  const handlePreviewOpen = () => {
-    if (!result) return;
-    trackEvent(AnalyticsEvents.ResumePreviewOpen, { is_example: isExample });
-    setPreviewOpen(true);
-  };
-
-  const handlePreviewClose = () => {
-    trackEvent(AnalyticsEvents.ResumePreviewClose);
-    setPreviewOpen(false);
-  };
-
   return {
     isExporting,
-    previewOpen,
     canPatchOriginal,
     handleCopy,
     handleExport,
-    buildPreviewDocx,
-    handlePreviewOpen,
-    handlePreviewClose,
   };
 };
 

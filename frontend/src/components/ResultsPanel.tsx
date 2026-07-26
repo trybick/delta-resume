@@ -13,7 +13,6 @@ import {
   Text,
   ThemeIcon,
   Title,
-  Tooltip,
 } from '@mantine/core';
 import {
   IconChevronDown,
@@ -54,7 +53,6 @@ import CollapsedContext from './CollapsedContext';
 import CollapsibleInsight from './CollapsibleInsight';
 import ContextLine from './ContextLine';
 import DiffBullet from './DiffBullet';
-import DocumentPreviewModal from './DocumentPreviewModal';
 import GapRow from './GapRow';
 import IdleStep from './IdleStep';
 import TailoringLoader from './TailoringLoader';
@@ -68,7 +66,6 @@ type ResultsPanelProps = {
   lowCredits?: boolean;
   credits?: CreditStatus | null;
   originalDocx?: OriginalDocx | null;
-  jobTitle?: string;
   companyName?: string;
   onShowExample?: () => void;
   onUpgradeClick: () => void;
@@ -154,7 +151,6 @@ const ResultsPanel = ({
   lowCredits = false,
   credits = null,
   originalDocx = null,
-  jobTitle,
   companyName,
   onShowExample,
   onUpgradeClick,
@@ -222,20 +218,10 @@ const ResultsPanel = ({
     (bullet) => typeof bullet.text === 'string' && bullet.text.trim().length > 0,
   );
 
-  const {
-    isExporting,
-    previewOpen,
-    canPatchOriginal,
-    handleCopy,
-    handleExport,
-    buildPreviewDocx,
-    handlePreviewOpen,
-    handlePreviewClose,
-  } = useResumeExport({
+  const { isExporting, canPatchOriginal, handleCopy, handleExport } = useResumeExport({
     result,
     isExample,
     originalDocx,
-    jobTitle,
     companyName,
     decisions,
     activeAddedBullets,
@@ -409,16 +395,6 @@ const ResultsPanel = ({
       preventGrowOverflow={false}
       style={{ flexShrink: 0 }}
     >
-      <Tooltip label="Preview the final document before downloading" withArrow>
-        <Button
-          size="xs"
-          variant="light"
-          leftSection={<IconEye size={16} />}
-          onClick={handlePreviewOpen}
-        >
-          Preview
-        </Button>
-      </Tooltip>
       <Menu
         position="bottom-end"
         withinPortal
@@ -718,15 +694,6 @@ const ResultsPanel = ({
           })}
         </Paper>
       </Stack>
-      <DocumentPreviewModal
-        opened={previewOpen}
-        onClose={handlePreviewClose}
-        originalFile={originalDocx?.file ?? null}
-        canPatchOriginal={canPatchOriginal}
-        isExample={isExample}
-        buildDocx={buildPreviewDocx}
-        onExport={handleExport}
-      />
     </Card>
   );
 };

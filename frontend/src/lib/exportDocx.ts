@@ -3,6 +3,7 @@ import {
   AlignmentType,
   BorderStyle,
   Document,
+  ExternalHyperlink,
   LevelFormat,
   Packer,
   Paragraph,
@@ -16,6 +17,8 @@ import {
   WidthType,
 } from 'docx';
 import { formatCoverLetterDate, formatCoverLetterSubject } from './formatCoverLetter';
+import type { DocxCellRef, DocxCleanLayout, DocxTableInfo } from './docxLayout';
+import { splitLinkSegments, type AnchorHrefs } from './resumeLinks';
 import type { ResumeDocument } from './types';
 import { entryDisplayDate, entryDisplayLeft } from './resumeModel';
 
@@ -293,6 +296,18 @@ type RunOptions = {
   color?: string;
 };
 
+type ResumeRun = TextRun | ExternalHyperlink;
+
+const linkedRuns = (text: string, options: RunOptions, anchorHrefs?: AnchorHrefs): ResumeRun[] =>
+  splitLinkSegments(text, anchorHrefs).map((segment) =>
+    segment.href === null
+      ? new TextRun({ text: segment.text, ...options })
+      : new ExternalHyperlink({
+          link: segment.href,
+          children: [new TextRun({ text: segment.text, ...options })],
+        }),
+  );
+
 const LEADING_LABEL_PATTERN = /^([^:.]{2,40}):\s+(.+)$/;
 
 type SplitLabelLine = {
@@ -311,18 +326,22 @@ const splitLeadingLabel = (text: string): SplitLabelLine | null => {
   return { label, rest };
 };
 
-const labelledTextRuns = (texts: string[], options: RunOptions): TextRun[] => {
-  const runs: TextRun[] = [];
+const labelledTextRuns = (
+  texts: string[],
+  options: RunOptions,
+  anchorHrefs?: AnchorHrefs,
+): ResumeRun[] => {
+  const runs: ResumeRun[] = [];
   texts.forEach((text, index) => {
     if (index > 0) runs.push(new TextRun({ break: 1 }));
     const splitLabelLine = splitLeadingLabel(text);
     if (!splitLabelLine) {
-      runs.push(new TextRun({ text, ...options }));
+      runs.push(...linkedRuns(text, options, anchorHrefs));
       return;
     }
     runs.push(
       new TextRun({ text: `${splitLabelLine.label}: `, ...options, bold: true }),
-      new TextRun({ text: splitLabelLine.rest, ...options }),
+      ...linkedRuns(splitLabelLine.rest, options, anchorHrefs),
     );
   });
   return runs;
@@ -368,21 +387,21 @@ const splitTrailingDate = (text: string): SplitDateLine | null => {
   return { left, right };
 };
 
-const dateAlignedTextRuns = (texts: string[], options: RunOptions): TextRun[] => {
-  const runs: TextRun[] = [];
+const dateAlignedTextRuns = (
+  texts: string[],
+  options: RunOptions,
+  anchorHrefs?: AnchorHrefs,
+): ResumeRun[] => {
+  const runs: ResumeRun[] = [];
   texts.forEach((text, index) => {
     if (index > 0) runs.push(new TextRun({ break: 1 }));
     const splitDateLine = splitTrailingDate(text);
     if (!splitDateLine) {
-      if (!options.bold) {
-        runs.push(...labelledTextRuns([text], options));
-        return;
-      }
-      runs.push(new TextRun({ text, ...options }));
+      runs.push(...labelledTextRuns([text], options, anchorHrefs));
       return;
     }
     runs.push(
-      new TextRun({ text: splitDateLine.left, ...options }),
+      ...linkedRuns(splitDateLine.left, options, anchorHrefs),
       new TextRun({
         children: [new Tab(), splitDateLine.right.replace(/ /g, '\u00A0')],
         ...options,
@@ -415,6 +434,28 @@ const invisibleTableBorders = {
 
 const zeroCellMargins = { top: 0, bottom: 0, left: 0, right: 0 } as const;
 
+const LAYOUT_CELL_GUTTER = 160;
+
+const layoutCellMargins = { top: 0, bottom: 0, left: 0, right: LAYOUT_CELL_GUTTER } as const;
+
+// A resume built entirely inside one layout table should keep flattening to a
+// single column; rebuilding it would turn the clean template back into the
+// original grid we are trying to normalise away.
+const MAX_TABLE_SHARE_OF_DOCUMENT = 0.8;
+
+const scaleColumnWidths = (columnWidths: number[] | null, columnCount: number): number[] => {
+  const total = columnWidths?.reduce((sum, width) => sum + width, 0) ?? 0;
+  if (!columnWidths || columnWidths.length !== columnCount || total <= 0) {
+    const even = Math.floor(RESUME_CONTENT_WIDTH / columnCount);
+    return Array.from({ length: columnCount }, (_, index) =>
+      index === columnCount - 1 ? RESUME_CONTENT_WIDTH - even * (columnCount - 1) : even,
+    );
+  }
+  const scaled = columnWidths.map((width) => Math.floor((width / total) * RESUME_CONTENT_WIDTH));
+  scaled[scaled.length - 1] += RESUME_CONTENT_WIDTH - scaled.reduce((sum, w) => sum + w, 0);
+  return scaled;
+};
+
 type DateLineLayout = {
   spacingBefore?: number;
   spacingAfter: number;
@@ -425,6 +466,7 @@ const dateLineTable = (
   splitDateLine: SplitDateLine,
   options: RunOptions,
   layout: DateLineLayout,
+  anchorHrefs?: AnchorHrefs,
 ): Table => {
   const spacing = { before: layout.spacingBefore ?? 0, after: layout.spacingAfter };
   return new Table({
@@ -444,7 +486,7 @@ const dateLineTable = (
                 spacing,
                 keepNext: layout.keepNext,
                 keepLines: layout.keepNext,
-                children: [new TextRun({ text: splitDateLine.left, ...options })],
+                children: linkedRuns(splitDateLine.left, options, anchorHrefs),
               }),
             ],
           }),
@@ -483,6 +525,7 @@ const buildParagraph = (
   line: string,
   index: number,
   previousBlank: boolean,
+  anchorHrefs?: AnchorHrefs,
 ): Paragraph | Table | null => {
   const trimmed = line.trim();
   if (trimmed.length === 0) return null;
@@ -499,9 +542,11 @@ const buildParagraph = (
     return new Paragraph({
       alignment: AlignmentType.CENTER,
       spacing: { after: 20 },
-      children: [
-        new TextRun({ text: trimmed, font: FONT, size: CONTACT_SIZE, color: MUTED_COLOR }),
-      ],
+      children: linkedRuns(
+        trimmed,
+        { font: FONT, size: CONTACT_SIZE, color: MUTED_COLOR },
+        anchorHrefs,
+      ),
     });
   }
 
@@ -510,10 +555,11 @@ const buildParagraph = (
       ...bulletParagraphOptions,
       spacing: { after: 40 },
       widowControl: true,
-      children: labelledTextRuns([stripBulletMarker(line).trim()], {
-        font: FONT,
-        size: BODY_SIZE,
-      }),
+      children: labelledTextRuns(
+        [stripBulletMarker(line).trim()],
+        { font: FONT, size: BODY_SIZE },
+        anchorHrefs,
+      ),
     });
   }
 
@@ -527,6 +573,7 @@ const buildParagraph = (
       splitDateLine,
       { font: FONT, size: BODY_SIZE },
       { spacingBefore: previousBlank ? 120 : 0, spacingAfter: 40 },
+      anchorHrefs,
     );
   }
 
@@ -534,11 +581,15 @@ const buildParagraph = (
     ...rightDateTabStop,
     spacing: { before: previousBlank ? 120 : 0, after: 40 },
     widowControl: true,
-    children: dateAlignedTextRuns([trimmed], { font: FONT, size: BODY_SIZE }),
+    children: dateAlignedTextRuns([trimmed], { font: FONT, size: BODY_SIZE }, anchorHrefs),
   });
 };
 
-export const buildTemplateDocx = async (resumeText: string): Promise<Blob> => {
+export const buildTemplateDocx = async (
+  resumeText: string,
+  layout?: DocxCleanLayout | null,
+): Promise<Blob> => {
+  const anchorHrefs = layout?.hrefByAnchorText;
   const lines = resumeText.split('\n');
   const paragraphs: (Paragraph | Table)[] = [];
   let previousBlank = false;
@@ -549,7 +600,7 @@ export const buildTemplateDocx = async (resumeText: string): Promise<Blob> => {
       previousBlank = true;
       return;
     }
-    const paragraph = buildParagraph(line, contentIndex, previousBlank);
+    const paragraph = buildParagraph(line, contentIndex, previousBlank, anchorHrefs);
     if (paragraph) paragraphs.push(paragraph);
     contentIndex += 1;
     previousBlank = false;
@@ -563,16 +614,116 @@ export const buildTemplateDocx = async (resumeText: string): Promise<Blob> => {
   return Packer.toBlob(document);
 };
 
+type RenderedItem = {
+  cell: DocxCellRef | null;
+  element: Paragraph | Table;
+};
+
+// Word requires a table cell (and the document body) to end with a paragraph.
+const closedWithParagraph = (elements: (Paragraph | Table)[]): (Paragraph | Table)[] =>
+  elements.length > 0 && !(elements[elements.length - 1] instanceof Table)
+    ? elements
+    : [...elements, new Paragraph({})];
+
+const layoutTable = (
+  items: RenderedItem[],
+  columnCount: number,
+  columnWidths: number[] | null,
+): Table => {
+  const widths = scaleColumnWidths(columnWidths, columnCount);
+  const cellOf = (item: RenderedItem) => item.cell as DocxCellRef;
+  const rowIndexes = [...new Set(items.map((item) => cellOf(item).rowIndex))].sort(
+    (left, right) => left - right,
+  );
+
+  return new Table({
+    width: { size: RESUME_CONTENT_WIDTH, type: WidthType.DXA },
+    columnWidths: widths,
+    layout: TableLayoutType.FIXED,
+    borders: invisibleTableBorders,
+    rows: rowIndexes.map(
+      (rowIndex) =>
+        new TableRow({
+          children: widths.map((width, columnIndex) => {
+            const children = items
+              .filter(
+                (item) =>
+                  cellOf(item).rowIndex === rowIndex && cellOf(item).columnIndex === columnIndex,
+              )
+              .map((item) => item.element);
+            return new TableCell({
+              width: { size: width, type: WidthType.DXA },
+              margins: layoutCellMargins,
+              children: closedWithParagraph(children),
+            });
+          }),
+        }),
+    ),
+  });
+};
+
+const restoreTables = (items: RenderedItem[], tables: DocxTableInfo[]): (Paragraph | Table)[] => {
+  const groups: RenderedItem[][] = [];
+  items.forEach((item) => {
+    const current = groups[groups.length - 1];
+    const currentTableIndex = current?.[0].cell?.tableIndex ?? null;
+    if (current && currentTableIndex === (item.cell?.tableIndex ?? null)) {
+      current.push(item);
+      return;
+    }
+    groups.push([item]);
+  });
+
+  return groups.flatMap((group) => {
+    const cell = group[0].cell;
+    const elements = group.map((item) => item.element);
+    if (!cell) return elements;
+    const info = tables[cell.tableIndex];
+    const columnCount = info?.columnCount ?? cell.columnCount;
+    if (columnCount < 2 || group.length > items.length * MAX_TABLE_SHARE_OF_DOCUMENT) {
+      return elements;
+    }
+    return [layoutTable(group, columnCount, info?.columnWidths ?? null)];
+  });
+};
+
 export const buildDocumentDocx = async (
   resumeDocument: ResumeDocument,
   textsByNodeId: Map<string, string>,
+  layout?: DocxCleanLayout | null,
 ): Promise<Blob> => {
-  const paragraphs: (Paragraph | Table)[] = [];
+  const anchorHrefs = layout?.hrefByAnchorText;
+  const items: RenderedItem[] = [];
   const textOf = (nodeId: string): string => textsByNodeId.get(nodeId)?.trim() ?? '';
+
+  // Bullets added for requirement gaps have no source lines, so they stay in
+  // whichever cell the block they were anchored to came from.
+  let lastCell: DocxCellRef | null = null;
+  const cellFor = (sourceLines: number[]): DocxCellRef | null => {
+    if (sourceLines.length === 0) return lastCell;
+    lastCell =
+      sourceLines
+        .map((lineIndex) => layout?.cellRefsByLine.get(lineIndex) ?? null)
+        .find((cell) => cell !== null) ?? null;
+    return lastCell;
+  };
+
+  const push = (sourceLines: number[], element: Paragraph | Table) => {
+    items.push({ cell: cellFor(sourceLines), element });
+  };
+
+  const bulletParagraph = (text: string): Paragraph =>
+    new Paragraph({
+      ...bulletParagraphOptions,
+      spacing: { after: 40 },
+      widowControl: true,
+      children: labelledTextRuns([text], { font: FONT, size: BODY_SIZE }, anchorHrefs),
+    });
 
   const nameText = textOf(resumeDocument.header.name.id);
   if (nameText) {
-    paragraphs.push(
+    push(
+      resumeDocument.header.name.sourceLines,
       new Paragraph({
         alignment: AlignmentType.CENTER,
         spacing: { after: 60 },
@@ -584,11 +735,16 @@ export const buildDocumentDocx = async (
   resumeDocument.header.contact.forEach((item) => {
     const text = textOf(item.id);
     if (!text) return;
-    paragraphs.push(
+    push(
+      item.sourceLines,
       new Paragraph({
         alignment: AlignmentType.CENTER,
         spacing: { after: 20 },
-        children: [new TextRun({ text, font: FONT, size: CONTACT_SIZE, color: MUTED_COLOR })],
+        children: linkedRuns(
+          text,
+          { font: FONT, size: CONTACT_SIZE, color: MUTED_COLOR },
+          anchorHrefs,
+        ),
       }),
     );
   });
@@ -596,51 +752,42 @@ export const buildDocumentDocx = async (
   resumeDocument.sections.forEach((section) => {
     if (section.heading) {
       const headingText = textOf(section.heading.id);
-      if (headingText) paragraphs.push(headingParagraph([headingText]));
+      if (headingText) push(section.heading.sourceLines, headingParagraph([headingText]));
     }
 
     section.blocks.forEach((block) => {
       if (block.kind === 'entry') {
         const left = entryDisplayLeft(block) || textOf(block.id);
         const dateText = entryDisplayDate(block);
-        if (left || dateText) {
-          if (left && dateText) {
-            paragraphs.push(
-              dateLineTable(
-                { left, right: dateText },
+        if (left && dateText) {
+          push(
+            block.headingSourceLines,
+            dateLineTable(
+              { left, right: dateText },
+              { font: FONT, size: BODY_SIZE, bold: true },
+              { spacingBefore: 120, spacingAfter: 40, keepNext: true },
+              anchorHrefs,
+            ),
+          );
+        } else if (left || dateText) {
+          push(
+            block.headingSourceLines,
+            new Paragraph({
+              spacing: { before: 120, after: 40 },
+              keepNext: true,
+              keepLines: true,
+              children: linkedRuns(
+                left || dateText || '',
                 { font: FONT, size: BODY_SIZE, bold: true },
-                { spacingBefore: 120, spacingAfter: 40, keepNext: true },
+                anchorHrefs,
               ),
-            );
-          } else {
-            paragraphs.push(
-              new Paragraph({
-                spacing: { before: 120, after: 40 },
-                keepNext: true,
-                keepLines: true,
-                children: [
-                  new TextRun({
-                    text: left || dateText || '',
-                    font: FONT,
-                    size: BODY_SIZE,
-                    bold: true,
-                  }),
-                ],
-              }),
-            );
-          }
+            }),
+          );
         }
         block.bullets.forEach((bullet) => {
           const text = stripBulletMarker(textOf(bullet.id)).trim();
           if (!text) return;
-          paragraphs.push(
-            new Paragraph({
-              ...bulletParagraphOptions,
-              spacing: { after: 40 },
-              widowControl: true,
-              children: labelledTextRuns([text], { font: FONT, size: BODY_SIZE }),
-            }),
-          );
+          push(bullet.sourceLines, bulletParagraph(text));
         });
         return;
       }
@@ -648,37 +795,18 @@ export const buildDocumentDocx = async (
       if (block.kind === 'bullet') {
         const text = stripBulletMarker(textOf(block.id)).trim();
         if (!text) return;
-        paragraphs.push(
-          new Paragraph({
-            ...bulletParagraphOptions,
-            spacing: { after: 40 },
-            widowControl: true,
-            children: labelledTextRuns([text], { font: FONT, size: BODY_SIZE }),
-          }),
-        );
-        return;
-      }
-
-      if (block.kind === 'skillsGroup') {
-        const text = textOf(block.id);
-        if (!text) return;
-        paragraphs.push(
-          new Paragraph({
-            spacing: { after: 40 },
-            widowControl: true,
-            children: labelledTextRuns([text], { font: FONT, size: BODY_SIZE }),
-          }),
-        );
+        push(block.sourceLines, bulletParagraph(text));
         return;
       }
 
       const text = textOf(block.id);
       if (!text) return;
-      paragraphs.push(
+      push(
+        block.sourceLines,
         new Paragraph({
-          spacing: { after: 80 },
+          spacing: { after: block.kind === 'skillsGroup' ? 40 : 80 },
           widowControl: true,
-          children: labelledTextRuns([text], { font: FONT, size: BODY_SIZE }),
+          children: labelledTextRuns([text], { font: FONT, size: BODY_SIZE }, anchorHrefs),
         }),
       );
     });
@@ -686,7 +814,12 @@ export const buildDocumentDocx = async (
 
   const document = new Document({
     numbering: resumeNumbering,
-    sections: [{ properties: resumeSectionProperties, children: paragraphs }],
+    sections: [
+      {
+        properties: resumeSectionProperties,
+        children: closedWithParagraph(restoreTables(items, layout?.tables ?? [])),
+      },
+    ],
   });
 
   return Packer.toBlob(document);
