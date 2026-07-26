@@ -84,10 +84,9 @@ export const useResumeExport = ({
       merged.document,
       merged.textsByNodeId,
     );
-    const exportDate = new Date().toLocaleDateString('en-CA');
     return buildExportFilename(
-      [candidateName, companyName, jobTitle, 'tailored-resume', exportDate],
-      `tailored-resume-${exportDate}`,
+      [candidateName, companyName, 'resume'],
+      'resume',
       format,
     );
   };
