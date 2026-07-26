@@ -48,7 +48,7 @@ import type {
 import { useProUpgradeCtaLabel } from '../hooks/useProPlan';
 import { useResumeExport } from '../hooks/useResumeExport';
 import AddedBulletRow from './AddedBulletRow';
-import ChangeStatsPill, { UpdatedBadge } from './ChangeStatsPill';
+import ChangesSummary from './ChangesSummary';
 import RequirementsCoverage from './RequirementsCoverage';
 import CollapsedContext from './CollapsedContext';
 import CollapsibleInsight from './CollapsibleInsight';
@@ -485,15 +485,14 @@ const ResultsPanel = ({
     <Card className="results-card" withBorder shadow="xs" p={{ base: 'sm', sm: 'lg' }}>
       <Stack gap="md">
         <Stack gap="sm">
-          <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
-            <UpdatedBadge />
+          <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
+            <ChangesSummary
+              bulletCount={bulletChangeCount}
+              skillCount={skillChangeCount}
+              paragraphCount={paragraphChangeCount}
+            />
             {!isNarrowMobile && actionButtons}
           </Group>
-          <ChangeStatsPill
-            bulletCount={bulletChangeCount}
-            skillCount={skillChangeCount}
-            paragraphCount={paragraphChangeCount}
-          />
           {requirements.length > 0 && (
             <RequirementsCoverage
               coveredCount={coveredCount}

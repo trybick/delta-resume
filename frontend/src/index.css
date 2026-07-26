@@ -14,7 +14,7 @@ body {
   background-color: var(--mantine-color-default-hover);
 }
 
-.change-stats-pill {
+.changes-summary {
   max-width: 100%;
 }
 
