@@ -105,16 +105,42 @@ module CreditKind =
 
 type UsagePeriod =
     | Lifetime
-    | Monthly of yearMonth: string
+    | Cycle of label: string
 
 module UsagePeriod =
     let toString (period: UsagePeriod) : string =
         match period with
         | Lifetime -> "lifetime"
-        | Monthly yearMonth -> yearMonth
+        | Cycle label -> label
 
-    let currentMonth () : UsagePeriod =
-        Monthly(DateTime.UtcNow.ToString "yyyy-MM")
+    /// Fallback when we have no real billing anchor (e.g. Clerk billing lookup
+    /// failed). Resets on the 1st of the calendar month rather than the user's
+    /// actual signup/subscription day.
+    let currentCalendarMonth () : UsagePeriod =
+        Cycle("calendar:" + DateTime.UtcNow.ToString "yyyy-MM")
+
+    /// A subscription's current billing period start, as reported by Clerk. Clerk
+    /// itself advances this value at renewal, so using it directly (rather than
+    /// recomputing month boundaries) keeps credit resets in sync with real billing.
+    let ofSubscriptionPeriodStart (periodStart: DateTimeOffset) : UsagePeriod =
+        Cycle("sub:" + periodStart.ToString "yyyy-MM-ddTHH:mm:ssZ")
+
+    /// For pro access without a real subscription (e.g. lifetime-free grants),
+    /// anchor the monthly reset to the day-of-month the user signed up on -
+    /// e.g. signing up Jan 15th resets credits on the 15th of every month -
+    /// instead of resetting on the 1st of the calendar month.
+    let ofSignupAnchor (signedUpAt: DateTimeOffset) : UsagePeriod =
+        let now = DateTimeOffset.UtcNow
+        let monthsElapsed = (now.Year - signedUpAt.Year) * 12 + (now.Month - signedUpAt.Month)
+        let candidateStart = signedUpAt.AddMonths monthsElapsed
+
+        let cycleStart =
+            if candidateStart > now then
+                signedUpAt.AddMonths(monthsElapsed - 1)
+            else
+                candidateStart
+
+        Cycle("anchor:" + cycleStart.ToString "yyyy-MM-ddTHH:mm:ssZ")
 
 type OperationId = OperationId of Guid
 

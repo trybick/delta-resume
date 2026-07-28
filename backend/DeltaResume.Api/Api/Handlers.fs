@@ -82,14 +82,18 @@ module Handlers =
                 | None -> return! next ctx
                 | Some userId ->
                     let clerkUsers = ctx.GetService<ClerkUsers>()
-                    let! publicUser = clerkUsers.GetPublicUser(userId, ctx.RequestAborted)
+
+                    let! publicUser =
+                        clerkUsers.GetPublicUser(userId, Identity.claimsProPlan ctx, ctx.RequestAborted)
 
                     let resolvedUser =
                         publicUser
                         |> Option.defaultValue
                             { UserId = userId
                               PublicMetadataJson = "{}"
-                              IsLifetimeFree = false }
+                              IsLifetimeFree = false
+                              CreatedAt = None
+                              ProPeriodStart = None }
 
                     Identity.setClerkPublicUser ctx resolvedUser
                     return! next ctx

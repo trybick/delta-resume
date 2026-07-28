@@ -39,7 +39,12 @@ type RequestIdentity =
 type ClerkPublicUser =
     { UserId: string
       PublicMetadataJson: string
-      IsLifetimeFree: bool }
+      IsLifetimeFree: bool
+      CreatedAt: DateTimeOffset option
+      /// Current billing period start for an active/past-due pro subscription, as
+      /// reported by Clerk. None when the user has no real subscription (e.g. a
+      /// lifetime-free grant) or the lookup failed.
+      ProPeriodStart: DateTimeOffset option }
 
 type IdentityOptions =
     { IpHashSalt: string
@@ -165,11 +170,19 @@ module Identity =
     let setClerkPublicUser (ctx: HttpContext) (publicUser: ClerkPublicUser) : unit =
         ctx.Items[ClerkPublicUserItemKey] <- publicUser
 
-    let private resolveUserPlan (user: ClaimsPrincipal) (isLifetimeFree: bool) : CreditPlan =
+    let private hasProPlanClaim (user: ClaimsPrincipal) : bool =
         let planClaim =
             claimValue user "pla" |> Option.defaultValue ""
 
-        if planClaim.Contains "pro" || isLifetimeFree then ProPlan else FreePlan
+        planClaim.Contains "pro"
+
+    let private resolveUserPlan (user: ClaimsPrincipal) (isLifetimeFree: bool) : CreditPlan =
+        if hasProPlanClaim user || isLifetimeFree then ProPlan else FreePlan
+
+    /// Whether the session JWT claims a pro plan. Used to decide whether it's
+    /// worth looking up the user's real Clerk billing period; lifetime-free grants
+    /// are also pro but have no subscription to look up.
+    let claimsProPlan (ctx: HttpContext) : bool = hasProPlanClaim ctx.User
 
     let guestIdentifiers (options: IdentityOptions) (ctx: HttpContext) : string option * string =
         let fingerprint =
@@ -196,6 +209,16 @@ module Identity =
         match identity with
         | AuthenticatedUser(_, plan) -> plan
         | GuestVisitor _ -> GuestPlan
+
+    /// The credit-usage period a pro user is currently in. Prefers the real Clerk
+    /// subscription's billing-period start (kept in sync with renewals) and falls
+    /// back to an anchor on the user's signup day, then finally the calendar month
+    /// if neither is known.
+    let currentProPeriod (ctx: HttpContext) : UsagePeriod =
+        match tryGetClerkPublicUser ctx with
+        | Some { ProPeriodStart = Some periodStart } -> UsagePeriod.ofSubscriptionPeriodStart periodStart
+        | Some { CreatedAt = Some createdAt } -> UsagePeriod.ofSignupAnchor createdAt
+        | _ -> UsagePeriod.currentCalendarMonth ()
 
     let ownerKey (identity: RequestIdentity) : OwnerKey =
         match identity with

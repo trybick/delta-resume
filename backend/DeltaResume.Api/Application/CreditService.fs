@@ -31,7 +31,7 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
         | AuthenticatedUser(userId, ProPlan) ->
             [ { IdentityKey = OwnerKey.forUser userId
                 Kind = User
-                Period = UsagePeriod.currentMonth ()
+                Period = Identity.currentProPeriod ctx
                 Email = Identity.tryGetEmail ctx.User } ]
         | AuthenticatedUser(userId, _) ->
             let fingerprint, _ = Identity.guestIdentifiers options ctx
