@@ -150,19 +150,27 @@ export const useResumeExport = ({
 
   useEffect(() => {
     if (!result || autoFitResumeTextRef.current === result.resumeText) return;
-    autoFitResumeTextRef.current = result.resumeText;
     fitTouchedRef.current = false;
 
-    if (isExample || !originalDocx) return;
+    if (isExample || !originalDocx) {
+      autoFitResumeTextRef.current = result.resumeText;
+      return;
+    }
 
+    // The ref is only claimed once the check actually settles (not before it
+    // starts), so a run cancelled by StrictMode's dev-only double-effect
+    // doesn't block the real run that follows it from ever completing.
     let cancelled = false;
     void isOriginalSinglePage(originalDocx.file)
       .then((singlePage) => {
-        if (cancelled || fitTouchedRef.current || !singlePage) return;
+        if (cancelled) return;
+        autoFitResumeTextRef.current = result.resumeText;
+        if (fitTouchedRef.current || !singlePage) return;
         setFitToOnePageState(true);
       })
       .catch(() => {
         /* leave the checkbox off when the original cannot be measured */
+        if (!cancelled) autoFitResumeTextRef.current = result.resumeText;
       });
 
     return () => {

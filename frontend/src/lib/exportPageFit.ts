@@ -52,7 +52,11 @@ const LINE_HEIGHT_BY_FONT: Record<string, number> = {
 const lineHeightMultiplier = (family: string): number =>
   LINE_HEIGHT_BY_FONT[family.trim().toLowerCase()] ?? DEFAULT_LINE_HEIGHT_MULTIPLIER;
 const HEADING_RULE_PT = 4;
-const FIT_SAFETY_MARGIN_PT = 10;
+// The heuristic wrap/line-height model runs a little hot versus real Word
+// layout (canvas-measured widths and generic per-font line heights both skew
+// tall), so a one-page verdict is allowed to run slightly past the literal
+// content height rather than rounding every marginal case up to a 2nd page.
+const FIT_OVERFLOW_TOLERANCE_PT = 26;
 const MIN_BLOCK_WIDTH_PT = 20;
 const DEFAULT_BODY_HALF_POINTS = 22;
 const MIN_HALF_POINTS = 2;
@@ -180,7 +184,7 @@ const addSegmentHeight = (total: number, segment: FlowSegment): number =>
     : segment.rows.reduce((sum, row) => sum + rowHeight(row), 0));
 
 const countPages = (page: FlowPage): number => {
-  const limitPt = page.contentHeightPt - FIT_SAFETY_MARGIN_PT;
+  const limitPt = page.contentHeightPt + FIT_OVERFLOW_TOLERANCE_PT;
   let pages = 1;
   let usedPt = 0;
 
