@@ -38,9 +38,11 @@ const JobDescriptionInput = ({ value, onChange }: JobDescriptionInputProps) => {
           }}
           placeholder="Paste the job description you're targeting…"
           maxLength={JOB_DESCRIPTION_MAX_LENGTH}
-          autosize
-          minRows={8}
-          maxRows={8}
+          styles={{
+            input: {
+              height: '9.35rem',
+            },
+          }}
         />
       </Stack>
     </Card>
