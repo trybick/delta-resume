@@ -74,7 +74,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
 
 export const PRIVACY_POLICY: LegalDocument = {
   title: 'Privacy Policy',
-  lastUpdated: 'July 25, 2026',
+  lastUpdated: 'July 30, 2026',
   sections: [
     {
       heading: '1. Information We Collect',
@@ -82,7 +82,7 @@ export const PRIVACY_POLICY: LegalDocument = {
         'Resume text and job descriptions you submit for tailoring, which are processed to generate suggestions. Guest runs are not stored on our servers. Job descriptions are not retained after processing.',
         'When you are signed in, your resume is saved automatically to your account after each tailor run so you can reuse it. You can rename or delete saved resumes anytime from the app.',
         'Account information such as your email address if you sign up, managed by our authentication provider, Clerk.',
-        'For guest users, a browser fingerprint and IP address used solely to enforce free credit limits.',
+        'Credit usage records for guest and signed-in users, which may include your account email (if signed in), plan tier, the feature used, a browser fingerprint, an IP-derived hash (not your raw IP address), and a truncated user-agent string.',
         'Basic usage analytics to understand how the Service is used.',
         'Error and performance diagnostics via Sentry, which may include anonymized stack traces, request metadata, and privacy-masked session replays when an error occurs.',
       ],
@@ -92,6 +92,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       paragraphs: [
         'We use your resume text and job descriptions to generate tailoring suggestions. This content is sent to Anthropic, our AI provider, to produce the suggestions.',
         'Tailoring requests are processed in memory and discarded after your results are returned. When you are signed in, your resume text is stored as a saved resume so you can reuse it across sessions.',
+        'We use credit usage records to enforce credit limits, prevent abuse (such as circumventing free limits), and understand how the Service is used.',
         'We do not sell your personal information or use your resume content to train AI models.',
       ],
     },
@@ -107,6 +108,7 @@ export const PRIVACY_POLICY: LegalDocument = {
       heading: '4. Data Retention and Deletion',
       paragraphs: [
         'Saved resumes are retained while your account is active and can be deleted anytime from the app. Guest tailor runs and job descriptions submitted for processing are not retained after results are returned.',
+        'Credit usage records are retained to enforce limits, monitor abuse, and understand usage. Failed or cancelled credit spends may remain in these records marked as refunded rather than being removed.',
         `You may request full account deletion at any time by contacting us at ${SUPPORT_EMAIL}. Upon request, we will delete your account and associated data — including all saved resumes, account information, and credit records — within 30 days, except where we are required to retain information for legal or billing purposes.`,
       ],
     },

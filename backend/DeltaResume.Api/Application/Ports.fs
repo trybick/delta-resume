@@ -91,6 +91,30 @@ type CoverLetterEngine =
         cancellationToken: CancellationToken ->
             Task<Result<CoverLetterDraft, string>>
 
+type CreditPlan =
+    | GuestPlan
+    | FreePlan
+    | ProPlan
+
+module CreditPlan =
+    let toString (plan: CreditPlan) : string =
+        match plan with
+        | GuestPlan -> "guest"
+        | FreePlan -> "free"
+        | ProPlan -> "pro"
+
+    let creditLimit (plan: CreditPlan) : int =
+        match plan with
+        | GuestPlan
+        | FreePlan -> 3
+        | ProPlan -> 100
+
+    let savedResumeLimit (plan: CreditPlan) : int =
+        match plan with
+        | GuestPlan
+        | FreePlan -> 1
+        | ProPlan -> 10
+
 type CreditKind =
     | User
     | Fingerprint
@@ -102,6 +126,30 @@ module CreditKind =
         | User -> "user"
         | Fingerprint -> "fp"
         | Ip -> "ip"
+
+type CreditFeature =
+    | Tailor
+
+module CreditFeature =
+    let toString (feature: CreditFeature) : string =
+        match feature with
+        | Tailor -> "tailor"
+
+type CreditUsageStatus =
+    | Recorded
+    | Refunded
+
+module CreditUsageStatus =
+    let toString (status: CreditUsageStatus) : string =
+        match status with
+        | Recorded -> "recorded"
+        | Refunded -> "refunded"
+
+    [<Literal>]
+    let RecordedValue = "recorded"
+
+    [<Literal>]
+    let RefundedValue = "refunded"
 
 type UsagePeriod =
     | Lifetime
@@ -153,7 +201,12 @@ type CreditUsageEntry =
     { IdentityKey: OwnerKey
       Kind: CreditKind
       Period: UsagePeriod
-      Email: string option }
+      Email: string option
+      Plan: CreditPlan
+      Feature: CreditFeature
+      IpHash: string
+      Fingerprint: string option
+      UserAgent: string option }
 
 type CreditSpendResult =
     | SpendRecorded of OperationId
@@ -167,7 +220,7 @@ type CreditStore =
         entries: CreditUsageEntry list * creditLimit: int * cancellationToken: CancellationToken ->
             Task<CreditSpendResult>
 
-    abstract member DeleteUsageByOperation:
+    abstract member MarkRefunded:
         operationId: OperationId * cancellationToken: CancellationToken -> Task<unit>
 
 type SavedResumeRepository =

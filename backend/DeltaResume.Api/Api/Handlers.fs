@@ -166,7 +166,7 @@ module Handlers =
                         let! spendResult =
                             task {
                                 try
-                                    let! result = creditService.TrySpend(ctx, ctx.RequestAborted)
+                                    let! result = creditService.TrySpend(ctx, Tailor, ctx.RequestAborted)
                                     return Ok result
                                 with
                                 | :? OperationCanceledException when ctx.RequestAborted.IsCancellationRequested ->

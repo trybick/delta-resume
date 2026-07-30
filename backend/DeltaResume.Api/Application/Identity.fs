@@ -8,30 +8,6 @@ open System.Text
 open Microsoft.AspNetCore.Http
 open DeltaResume.Domain
 
-type CreditPlan =
-    | GuestPlan
-    | FreePlan
-    | ProPlan
-
-module CreditPlan =
-    let toString (plan: CreditPlan) : string =
-        match plan with
-        | GuestPlan -> "guest"
-        | FreePlan -> "free"
-        | ProPlan -> "pro"
-
-    let creditLimit (plan: CreditPlan) : int =
-        match plan with
-        | GuestPlan
-        | FreePlan -> 3
-        | ProPlan -> 100
-
-    let savedResumeLimit (plan: CreditPlan) : int =
-        match plan with
-        | GuestPlan
-        | FreePlan -> 1
-        | ProPlan -> 10
-
 type RequestIdentity =
     | AuthenticatedUser of userId: string * plan: CreditPlan
     | GuestVisitor of fingerprint: string option * ipHash: string
