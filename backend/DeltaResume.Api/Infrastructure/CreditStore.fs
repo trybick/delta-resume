@@ -22,10 +22,17 @@ type PostgresCreditStore(connectionString: string) =
                 return!
                     connection.ExecuteScalarAsync<int>(
                         CommandDefinition(
-                        "SELECT COUNT(*)::int FROM credit_usage WHERE identity_key = @IdentityKey AND period = @Period",
-                        {| IdentityKey = OwnerKey.value identityKey
-                           Period = UsagePeriod.toString period |},
-                        cancellationToken = cancellationToken
+                            """
+                            SELECT COUNT(*)::int
+                            FROM credit_usage
+                            WHERE identity_key = @IdentityKey
+                              AND period = @Period
+                              AND status = @Status
+                            """,
+                            {| IdentityKey = OwnerKey.value identityKey
+                               Period = UsagePeriod.toString period
+                               Status = CreditUsageStatus.RecordedValue |},
+                            cancellationToken = cancellationToken
                         )
                     )
             }
@@ -68,10 +75,13 @@ type PostgresCreditStore(connectionString: string) =
                                 """
                                 SELECT COUNT(*)::int
                                 FROM credit_usage
-                                WHERE identity_key = @IdentityKey AND period = @Period
+                                WHERE identity_key = @IdentityKey
+                                  AND period = @Period
+                                  AND status = @Status
                                 """,
                                 {| IdentityKey = OwnerKey.value entry.IdentityKey
-                                   Period = UsagePeriod.toString entry.Period |},
+                                   Period = UsagePeriod.toString entry.Period
+                                   Status = CreditUsageStatus.RecordedValue |},
                                 transaction,
                                 cancellationToken = cancellationToken
                             )
@@ -92,9 +102,11 @@ type PostgresCreditStore(connectionString: string) =
                                 CommandDefinition(
                                     """
                                     INSERT INTO credit_usage
-                                        (id, identity_key, kind, period, used_at, operation_id, email)
+                                        (id, identity_key, kind, period, used_at, operation_id, email,
+                                         plan, feature, ip_hash, fingerprint, user_agent, status)
                                     VALUES
-                                        (@Id, @IdentityKey, @Kind, @Period, @UsedAt, @OperationId, @Email)
+                                        (@Id, @IdentityKey, @Kind, @Period, @UsedAt, @OperationId, @Email,
+                                         @Plan, @Feature, @IpHash, @Fingerprint, @UserAgent, @Status)
                                     """,
                                     {| Id = Guid.NewGuid()
                                        IdentityKey = OwnerKey.value entry.IdentityKey
@@ -102,7 +114,13 @@ type PostgresCreditStore(connectionString: string) =
                                        Period = UsagePeriod.toString entry.Period
                                        UsedAt = usedAt
                                        OperationId = OperationId.value operationId
-                                       Email = entry.Email |> Option.toObj |},
+                                       Email = entry.Email |> Option.toObj
+                                       Plan = CreditPlan.toString entry.Plan
+                                       Feature = CreditFeature.toString entry.Feature
+                                       IpHash = entry.IpHash
+                                       Fingerprint = entry.Fingerprint |> Option.toObj
+                                       UserAgent = entry.UserAgent |> Option.toObj
+                                       Status = CreditUsageStatus.RecordedValue |},
                                     transaction,
                                     cancellationToken = cancellationToken
                                 )
@@ -114,7 +132,7 @@ type PostgresCreditStore(connectionString: string) =
                     return SpendRecorded operationId
             }
 
-        member _.DeleteUsageByOperation
+        member _.MarkRefunded
             (operationId: OperationId, cancellationToken: CancellationToken)
             : Task<unit> =
             task {
@@ -124,8 +142,15 @@ type PostgresCreditStore(connectionString: string) =
                 let! _ =
                     connection.ExecuteAsync(
                         CommandDefinition(
-                            "DELETE FROM credit_usage WHERE operation_id = @OperationId",
-                            {| OperationId = OperationId.value operationId |},
+                            """
+                            UPDATE credit_usage
+                            SET status = @RefundedStatus
+                            WHERE operation_id = @OperationId
+                              AND status = @RecordedStatus
+                            """,
+                            {| OperationId = OperationId.value operationId
+                               RefundedStatus = CreditUsageStatus.RefundedValue
+                               RecordedStatus = CreditUsageStatus.RecordedValue |},
                             cancellationToken = cancellationToken
                         )
                     )

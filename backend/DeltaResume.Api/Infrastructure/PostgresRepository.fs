@@ -22,7 +22,13 @@ module Schema =
                 period TEXT NOT NULL,
                 used_at TIMESTAMPTZ NOT NULL,
                 operation_id UUID NOT NULL,
-                email TEXT
+                email TEXT,
+                plan TEXT,
+                feature TEXT,
+                ip_hash TEXT,
+                fingerprint TEXT,
+                user_agent TEXT,
+                status TEXT NOT NULL DEFAULT 'recorded'
             );
 
             ALTER TABLE credit_usage
@@ -31,8 +37,40 @@ module Schema =
             ALTER TABLE credit_usage
                 ADD COLUMN IF NOT EXISTS email TEXT;
 
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS plan TEXT;
+
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS feature TEXT;
+
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS ip_hash TEXT;
+
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS fingerprint TEXT;
+
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS user_agent TEXT;
+
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS status TEXT;
+
+            UPDATE credit_usage
+            SET status = 'recorded'
+            WHERE status IS NULL;
+
+            ALTER TABLE credit_usage
+                ALTER COLUMN status SET DEFAULT 'recorded';
+
+            ALTER TABLE credit_usage
+                ALTER COLUMN status SET NOT NULL;
+
             CREATE INDEX IF NOT EXISTS idx_credit_usage_key_period
                 ON credit_usage (identity_key, period);
+
+            CREATE INDEX IF NOT EXISTS idx_credit_usage_key_period_recorded
+                ON credit_usage (identity_key, period)
+                WHERE status = 'recorded';
 
             CREATE INDEX IF NOT EXISTS idx_credit_usage_operation
                 ON credit_usage (operation_id);
@@ -42,6 +80,12 @@ module Schema =
 
             CREATE INDEX IF NOT EXISTS idx_credit_usage_email
                 ON credit_usage (email);
+
+            CREATE INDEX IF NOT EXISTS idx_credit_usage_ip_hash
+                ON credit_usage (ip_hash);
+
+            CREATE INDEX IF NOT EXISTS idx_credit_usage_status
+                ON credit_usage (status);
 
             CREATE TABLE IF NOT EXISTS saved_resumes (
                 id UUID PRIMARY KEY,
