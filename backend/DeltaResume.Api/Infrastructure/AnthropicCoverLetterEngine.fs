@@ -114,6 +114,28 @@ Rules for the letter:
         with :? JsonException as ex ->
             Error(sprintf "Failed to parse Claude structured response: %s" ex.Message)
 
+    let tryReadUsage (root: JsonElement) : LlmUsage option =
+        match root.TryGetProperty "usage" with
+        | true, usage ->
+            let inputTokens =
+                match usage.TryGetProperty "input_tokens" with
+                | true, value -> value.GetInt32()
+                | _ -> 0
+
+            let outputTokens =
+                match usage.TryGetProperty "output_tokens" with
+                | true, value -> value.GetInt32()
+                | _ -> 0
+
+            Some
+                { InputTokens = inputTokens
+                  OutputTokens = outputTokens }
+        | _ -> None
+
+    let coverLetterOutcome (result: Result<CoverLetterDraft, string>) (usage: LlmUsage option) : CoverLetterOutcome =
+        { Result = result
+          Usage = usage }
+
     interface CoverLetterEngine with
 
         member _.GenerateCoverLetter
@@ -124,10 +146,10 @@ Rules for the letter:
                 settings: CoverLetterSettings,
                 cancellationToken: CancellationToken
             )
-            : Task<Result<CoverLetterDraft, string>> =
+            : Task<CoverLetterOutcome> =
             task {
                 match apiKey with
-                | None -> return Error "ANTHROPIC_API_KEY is not set on the server."
+                | None -> return coverLetterOutcome (Error "ANTHROPIC_API_KEY is not set on the server.") None
                 | Some apiKey ->
                     let maxTokens =
                         match settings.Length with
@@ -185,30 +207,20 @@ Rules for the letter:
                             )
                             ClaudeSentry.captureApiFailure "cover_letter" statusCode bodyPreview
 
-                            return Error(sprintf "Claude API returned %d: %s" statusCode bodyPreview)
+                            let usage =
+                                try
+                                    use document = JsonDocument.Parse body
+                                    tryReadUsage document.RootElement
+                                with _ ->
+                                    None
+
+                            return
+                                coverLetterOutcome
+                                    (Error(sprintf "Claude API returned %d: %s" statusCode bodyPreview))
+                                    usage
                         else
                             use document = JsonDocument.Parse body
-
-                            match document.RootElement.TryGetProperty "usage" with
-                            | true, usage ->
-                                let inputTokens =
-                                    match usage.TryGetProperty "input_tokens" with
-                                    | true, value -> value.GetInt32()
-                                    | _ -> 0
-
-                                let outputTokens =
-                                    match usage.TryGetProperty "output_tokens" with
-                                    | true, value -> value.GetInt32()
-                                    | _ -> 0
-
-                                logger.LogInformation(
-                                    "Claude cover letter usage input_tokens={InputTokens} output_tokens={OutputTokens} model={Model}",
-                                    inputTokens,
-                                    outputTokens,
-                                    model
-                                )
-                            | _ ->
-                                logger.LogWarning("Claude cover letter response missing usage object")
+                            let usage = tryReadUsage document.RootElement
 
                             let textContent =
                                 document.RootElement.GetProperty("content").EnumerateArray()
@@ -226,14 +238,19 @@ Rules for the letter:
 
                             match stopReason, textContent with
                             | Some "max_tokens", _ ->
-                                return Error "Claude response was truncated while writing the cover letter."
-                            | Some "refusal", _ -> return Error "Claude refused to generate the cover letter."
-                            | _, None -> return Error "Claude response contained no text content."
-                            | _, Some text -> return parseDraft text
+                                return
+                                    coverLetterOutcome
+                                        (Error "Claude response was truncated while writing the cover letter.")
+                                        usage
+                            | Some "refusal", _ ->
+                                return coverLetterOutcome (Error "Claude refused to generate the cover letter.") usage
+                            | _, None ->
+                                return coverLetterOutcome (Error "Claude response contained no text content.") usage
+                            | _, Some text -> return coverLetterOutcome (parseDraft text) usage
                     with
                     | :? OperationCanceledException as ex when cancellationToken.IsCancellationRequested ->
                         return raise ex
                     | ex ->
                         ClaudeSentry.captureApiException "cover_letter" ex
-                        return Error(sprintf "Failed to reach the Claude API: %s" ex.Message)
+                        return coverLetterOutcome (Error(sprintf "Failed to reach the Claude API: %s" ex.Message)) None
             }

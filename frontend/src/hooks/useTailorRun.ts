@@ -21,6 +21,7 @@ type UseTailorRunResult = {
     jobDescription: string,
     resumeName: string,
     resumeDocument?: ResumeDocument | null,
+    runId?: string,
   ) => Promise<boolean>;
 };
 
@@ -51,6 +52,7 @@ export const useTailorRun = ({
     jobDescription: string,
     resumeName: string,
     resumeDocument?: ResumeDocument | null,
+    runId?: string,
   ): Promise<boolean> => {
     if (inFlightRef.current) return false;
     inFlightRef.current = true;
@@ -65,6 +67,7 @@ export const useTailorRun = ({
         resumeName,
         resumeDocument,
         abortController.signal,
+        runId,
       );
       resultRef.current = tailorResult;
       setResult(tailorResult);

@@ -7,13 +7,14 @@ import type { CoverLetterResult, CoverLetterStatus } from '../lib/types';
 type CoverLetterInputs = {
   resumeText: string;
   jobDescription: string;
+  runId?: string;
 };
 
 type UseCoverLetterResult = {
   status: CoverLetterStatus;
   result: CoverLetterResult | null;
   errorMessage: string | null;
-  runCoverLetter: (resumeText: string, jobDescription: string) => Promise<void>;
+  runCoverLetter: (resumeText: string, jobDescription: string, runId?: string) => Promise<void>;
   retryCoverLetter: () => void;
 };
 
@@ -32,13 +33,17 @@ export const useCoverLetter = (): UseCoverLetterResult => {
     [],
   );
 
-  const runCoverLetter = async (resumeText: string, jobDescription: string): Promise<void> => {
+  const runCoverLetter = async (
+    resumeText: string,
+    jobDescription: string,
+    runId?: string,
+  ): Promise<void> => {
     abortControllerRef.current?.abort();
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
-    lastInputsRef.current = { resumeText, jobDescription };
+    lastInputsRef.current = { resumeText, jobDescription, runId };
     setStatus('loading');
     setResult(null);
     setErrorMessage(null);
@@ -48,6 +53,7 @@ export const useCoverLetter = (): UseCoverLetterResult => {
         jobDescription,
         undefined,
         abortController.signal,
+        runId,
       );
       if (requestIdRef.current !== requestId) return;
       setResult(coverLetterResult);
@@ -69,7 +75,7 @@ export const useCoverLetter = (): UseCoverLetterResult => {
   const retryCoverLetter = () => {
     const inputs = lastInputsRef.current;
     if (!inputs) return;
-    void runCoverLetter(inputs.resumeText, inputs.jobDescription);
+    void runCoverLetter(inputs.resumeText, inputs.jobDescription, inputs.runId);
   };
 
   return { status, result, errorMessage, runCoverLetter, retryCoverLetter };

@@ -9,7 +9,8 @@ type TailorRequestDto =
     { ResumeText: string
       JobDescription: string
       ResumeName: string option
-      ResumeDocument: string option }
+      ResumeDocument: string option
+      RunId: Guid option }
 
 [<CLIMutable>]
 type RenameSavedResumeRequestDto = { Name: string }
@@ -18,7 +19,8 @@ type RenameSavedResumeRequestDto = { Name: string }
 type CoverLetterRequestDto =
     { ResumeText: string
       JobDescription: string
-      CandidateName: string option }
+      CandidateName: string option
+      RunId: Guid option }
 
 type CoverLetterResponseDto =
     { JobTitle: string

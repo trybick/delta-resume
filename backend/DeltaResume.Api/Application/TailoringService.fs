@@ -5,6 +5,10 @@ open System.Threading
 open System.Threading.Tasks
 open DeltaResume.Domain
 
+type TailorOutcome =
+    { Result: Result<TailorRun, TailorError>
+      Usage: LlmUsage option }
+
 type TailoringService(engine: TailoringEngine) =
 
     member _.ValidateInputs
@@ -25,7 +29,7 @@ type TailoringService(engine: TailoringEngine) =
             jobDescription: string,
             existingDocument: ResumeDocument option,
             cancellationToken: CancellationToken
-        ) : Task<Result<TailorRun, TailorError>> =
+        ) : Task<TailorOutcome> =
         task {
             let bullets = Bullets.extract resumeText
 
@@ -35,11 +39,14 @@ type TailoringService(engine: TailoringEngine) =
                     let validLineIndexes = bullets |> List.map _.LineIndex |> Set.ofList
                     ResumeDocument.validate validLineIndexes document)
 
-            let! engineResult =
+            let! engineOutcome =
                 engine.ProposeChanges(bullets, jobDescription, validatedExisting, cancellationToken)
 
-            match engineResult with
-            | Error message -> return Error(EngineFailure message)
+            match engineOutcome.Result with
+            | Error message ->
+                return
+                    { Result = Error(EngineFailure message)
+                      Usage = engineOutcome.Usage }
             | Ok proposal ->
                 let document =
                     match validatedExisting with
@@ -58,5 +65,7 @@ type TailoringService(engine: TailoringEngine) =
                       Requirements = proposal.Requirements
                       Document = document }
 
-                return Ok run
+                return
+                    { Result = Ok run
+                      Usage = engineOutcome.Usage }
         }

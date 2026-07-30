@@ -1,6 +1,7 @@
 namespace DeltaResume.Api
 
 open System
+open System.Diagnostics
 open System.IO
 open System.Threading
 open Giraffe
@@ -149,6 +150,32 @@ module Handlers =
                 SentrySdk.CaptureException(ex) |> ignore
         }
 
+    let private recordResumeOutcome
+        (creditService: CreditService)
+        (operationId: OperationId)
+        (usage: LlmUsage option)
+        (durationMs: int)
+        =
+        task {
+            try
+                do! creditService.RecordResumeOutcome(operationId, usage, durationMs, CancellationToken.None)
+            with ex ->
+                SentrySdk.CaptureException(ex) |> ignore
+        }
+
+    let private recordCoverLetterOutcome
+        (creditService: CreditService)
+        (runId: Guid)
+        (usage: LlmUsage option)
+        (durationMs: int)
+        =
+        task {
+            try
+                do! creditService.RecordCoverLetterOutcome(runId, usage, durationMs, CancellationToken.None)
+            with ex ->
+                SentrySdk.CaptureException(ex) |> ignore
+        }
+
     let tailor: HttpHandler =
         fun next ctx ->
             task {
@@ -166,7 +193,8 @@ module Handlers =
                         let! spendResult =
                             task {
                                 try
-                                    let! result = creditService.TrySpend(ctx, Tailor, ctx.RequestAborted)
+                                    let! result =
+                                        creditService.TrySpend(ctx, Tailor, request.RunId, ctx.RequestAborted)
                                     return Ok result
                                 with
                                 | :? OperationCanceledException when ctx.RequestAborted.IsCancellationRequested ->
@@ -194,12 +222,14 @@ module Handlers =
                             | Some status -> return! creditsExhaustedResponse status next ctx
                             | None -> return! persistenceFailureResponse next ctx
                         | Ok(SpendRecorded operationId) ->
+                            let stopwatch = Stopwatch.StartNew()
+
                             try
                                 let existingDocument =
                                     request.ResumeDocument
                                     |> Option.bind ResumeDocumentJson.tryParse
 
-                                let! result =
+                                let! outcome =
                                     service.TailorResume(
                                         request.ResumeText,
                                         request.JobDescription,
@@ -207,7 +237,10 @@ module Handlers =
                                         ctx.RequestAborted
                                     )
 
-                                match result with
+                                stopwatch.Stop()
+                                do! recordResumeOutcome creditService operationId outcome.Usage (int stopwatch.ElapsedMilliseconds)
+
+                                match outcome.Result with
                                 | Ok run ->
                                     try
                                         let savedResumeService = ctx.GetService<SavedResumeService>()
@@ -232,9 +265,13 @@ module Handlers =
                                     return! tailorErrorToResponse error next ctx
                             with
                             | :? OperationCanceledException when ctx.RequestAborted.IsCancellationRequested ->
+                                stopwatch.Stop()
+                                do! recordResumeOutcome creditService operationId None (int stopwatch.ElapsedMilliseconds)
                                 do! refundCredit creditService operationId
                                 return! earlyReturn ctx
                             | ex ->
+                                stopwatch.Stop()
+                                do! recordResumeOutcome creditService operationId None (int stopwatch.ElapsedMilliseconds)
                                 SentrySdk.CaptureException(ex) |> ignore
                                 do! refundCredit creditService operationId
                                 return! errorResponse StatusCodes.Status500InternalServerError tailoringFailureMessage next ctx
@@ -276,13 +313,16 @@ module Handlers =
                                     ctx
                         | Ok() ->
                             let engine = ctx.GetService<CoverLetterEngine>()
+                            let creditService = ctx.GetService<CreditService>()
                             let settingsRepository = ctx.GetService<UserSettingsRepository>()
                             let! storedSettings = settingsRepository.Get(Identity.ownerKey identity)
 
                             let settings =
                                 storedSettings |> Option.defaultValue UserSettings.defaults
 
-                            let! result =
+                            let stopwatch = Stopwatch.StartNew()
+
+                            let! outcome =
                                 engine.GenerateCoverLetter(
                                     request.ResumeText,
                                     request.JobDescription,
@@ -291,7 +331,19 @@ module Handlers =
                                     ctx.RequestAborted
                                 )
 
-                            match result with
+                            stopwatch.Stop()
+
+                            match request.RunId with
+                            | Some runId ->
+                                do!
+                                    recordCoverLetterOutcome
+                                        creditService
+                                        runId
+                                        outcome.Usage
+                                        (int stopwatch.ElapsedMilliseconds)
+                            | None -> ()
+
+                            match outcome.Result with
                             | Ok draft ->
                                 let response: CoverLetterResponseDto =
                                     { JobTitle = draft.JobTitle

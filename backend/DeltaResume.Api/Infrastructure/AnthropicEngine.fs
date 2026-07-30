@@ -510,6 +510,28 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
         with ex ->
             Error(sprintf "Failed to parse Claude response as JSON: %s" ex.Message)
 
+    let tryReadUsage (root: JsonElement) : LlmUsage option =
+        match root.TryGetProperty "usage" with
+        | true, usage ->
+            let inputTokens =
+                match usage.TryGetProperty "input_tokens" with
+                | true, value -> value.GetInt32()
+                | _ -> 0
+
+            let outputTokens =
+                match usage.TryGetProperty "output_tokens" with
+                | true, value -> value.GetInt32()
+                | _ -> 0
+
+            Some
+                { InputTokens = inputTokens
+                  OutputTokens = outputTokens }
+        | _ -> None
+
+    let engineOutcome (result: Result<EngineProposal, string>) (usage: LlmUsage option) : EngineOutcome =
+        { Result = result
+          Usage = usage }
+
     interface TailoringEngine with
 
         member _.ProposeChanges
@@ -518,10 +540,10 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                 jobDescription: string,
                 existingDocument: ResumeDocument option,
                 cancellationToken: CancellationToken
-            ) : Task<Result<EngineProposal, string>> =
+            ) : Task<EngineOutcome> =
             task {
                 match apiKey with
-                | None -> return Error "ANTHROPIC_API_KEY is not set on the server."
+                | None -> return engineOutcome (Error "ANTHROPIC_API_KEY is not set on the server.") None
                 | Some apiKey ->
                     let modeInstructions =
                         if existingDocument.IsSome then
@@ -597,30 +619,20 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                             )
                             ClaudeSentry.captureApiFailure "tailor" statusCode bodyPreview
 
-                            return Error(sprintf "Claude API returned %d: %s" statusCode bodyPreview)
+                            let usage =
+                                try
+                                    use document = JsonDocument.Parse body
+                                    tryReadUsage document.RootElement
+                                with _ ->
+                                    None
+
+                            return
+                                engineOutcome
+                                    (Error(sprintf "Claude API returned %d: %s" statusCode bodyPreview))
+                                    usage
                         else
                             use document = JsonDocument.Parse body
-
-                            match document.RootElement.TryGetProperty "usage" with
-                            | true, usage ->
-                                let inputTokens =
-                                    match usage.TryGetProperty "input_tokens" with
-                                    | true, value -> value.GetInt32()
-                                    | _ -> 0
-
-                                let outputTokens =
-                                    match usage.TryGetProperty "output_tokens" with
-                                    | true, value -> value.GetInt32()
-                                    | _ -> 0
-
-                                logger.LogInformation(
-                                    "Claude tailor usage input_tokens={InputTokens} output_tokens={OutputTokens} model={Model}",
-                                    inputTokens,
-                                    outputTokens,
-                                    model
-                                )
-                            | _ ->
-                                logger.LogWarning("Claude tailor response missing usage object")
+                            let usage = tryReadUsage document.RootElement
 
                             let textContent =
                                 document.RootElement.GetProperty("content").EnumerateArray()
@@ -630,13 +642,15 @@ Respond with ONLY a JSON object in exactly this shape, no prose, no code fences:
                                     | false, _ -> None)
 
                             match textContent with
-                            | None -> return Error "Claude response contained no text content."
-                            | Some text -> return parseProposals bullets existingDocument text
+                            | None ->
+                                return engineOutcome (Error "Claude response contained no text content.") usage
+                            | Some text ->
+                                return engineOutcome (parseProposals bullets existingDocument text) usage
                     with
                     | :? OperationCanceledException as ex when cancellationToken.IsCancellationRequested ->
                         return raise ex
                     | ex ->
                         logger.LogError(ex, "Claude tailor API request failed")
                         ClaudeSentry.captureApiException "tailor" ex
-                        return Error(sprintf "Failed to reach the Claude API: %s" ex.Message)
+                        return engineOutcome (Error(sprintf "Failed to reach the Claude API: %s" ex.Message)) None
             }

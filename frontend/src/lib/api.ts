@@ -108,6 +108,7 @@ export const postTailor = async (
   resumeName: string,
   resumeDocument?: ResumeDocument | null,
   signal?: AbortSignal,
+  runId?: string,
 ): Promise<TailorResponse> => {
   const response = await fetch(`${API_BASE_URL}/api/tailor`, {
     method: 'POST',
@@ -117,6 +118,7 @@ export const postTailor = async (
       jobDescription,
       resumeName,
       resumeDocument: resumeDocument ? JSON.stringify(resumeDocument) : null,
+      runId: runId ?? null,
     }),
     signal,
   });
@@ -151,11 +153,17 @@ export const postCoverLetter = async (
   jobDescription: string,
   candidateName?: string,
   signal?: AbortSignal,
+  runId?: string,
 ): Promise<CoverLetterResult> => {
   const response = await fetch(`${API_BASE_URL}/api/cover-letter`, {
     method: 'POST',
     headers: await buildHeaders(),
-    body: JSON.stringify({ resumeText, jobDescription, candidateName: candidateName ?? null }),
+    body: JSON.stringify({
+      resumeText,
+      jobDescription,
+      candidateName: candidateName ?? null,
+      runId: runId ?? null,
+    }),
     signal,
   });
   if (!response.ok) {

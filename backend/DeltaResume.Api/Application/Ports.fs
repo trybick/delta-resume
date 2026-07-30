@@ -11,13 +11,21 @@ type EngineProposal =
       Requirements: JobRequirement list
       Document: ResumeDocument option }
 
+type LlmUsage =
+    { InputTokens: int
+      OutputTokens: int }
+
+type EngineOutcome =
+    { Result: Result<EngineProposal, string>
+      Usage: LlmUsage option }
+
 type TailoringEngine =
     abstract member ProposeChanges:
         bullets: BulletLine list *
         jobDescription: string *
         existingDocument: ResumeDocument option *
         cancellationToken: CancellationToken ->
-            Task<Result<EngineProposal, string>>
+            Task<EngineOutcome>
 
 type CoverLetterDraft =
     { JobTitle: string
@@ -82,6 +90,10 @@ type UserSettingsRepository =
     abstract member Get: ownerKey: OwnerKey -> Task<UserSettings option>
     abstract member Upsert: ownerKey: OwnerKey * settings: UserSettings -> Task<unit>
 
+type CoverLetterOutcome =
+    { Result: Result<CoverLetterDraft, string>
+      Usage: LlmUsage option }
+
 type CoverLetterEngine =
     abstract member GenerateCoverLetter:
         resumeText: string *
@@ -89,7 +101,7 @@ type CoverLetterEngine =
         candidateName: string option *
         settings: CoverLetterSettings *
         cancellationToken: CancellationToken ->
-            Task<Result<CoverLetterDraft, string>>
+            Task<CoverLetterOutcome>
 
 type CreditPlan =
     | GuestPlan
@@ -206,11 +218,17 @@ type CreditUsageEntry =
       Feature: CreditFeature
       IpHash: string
       Fingerprint: string option
-      UserAgent: string option }
+      UserAgent: string option
+      RunId: Guid option }
 
 type CreditSpendResult =
     | SpendRecorded of OperationId
     | SpendExhausted
+
+type CreditUsageOutcome =
+    { InputTokens: int option
+      OutputTokens: int option
+      DurationMs: int }
 
 type CreditStore =
     abstract member CountUsage:
@@ -222,6 +240,12 @@ type CreditStore =
 
     abstract member MarkRefunded:
         operationId: OperationId * cancellationToken: CancellationToken -> Task<unit>
+
+    abstract member RecordResumeOutcome:
+        operationId: OperationId * outcome: CreditUsageOutcome * cancellationToken: CancellationToken -> Task<unit>
+
+    abstract member RecordCoverLetterOutcome:
+        runId: Guid * outcome: CreditUsageOutcome * cancellationToken: CancellationToken -> Task<unit>
 
 type SavedResumeRepository =
     abstract member ListByOwner: ownerKey: OwnerKey -> Task<SavedResume list>

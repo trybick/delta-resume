@@ -34,6 +34,7 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
         (fingerprint: string option)
         (ipHash: string)
         (userAgent: string option)
+        (runId: Guid option)
         : CreditUsageEntry =
         { IdentityKey = identityKey
           Kind = kind
@@ -43,13 +44,15 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
           Feature = feature
           IpHash = ipHash
           Fingerprint = fingerprint
-          UserAgent = userAgent }
+          UserAgent = userAgent
+          RunId = runId }
 
     let guestUsageEntries
         (ctx: HttpContext)
         (feature: CreditFeature)
         (fingerprint: string option)
         (ipHash: string)
+        (runId: Guid option)
         : CreditUsageEntry list =
         let userAgent = truncateUserAgent ctx
 
@@ -65,6 +68,7 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
                   fingerprint
                   ipHash
                   userAgent
+                  runId
           | None -> ()
           baseEntry
               (OwnerKey.forIpHash ipHash)
@@ -75,9 +79,15 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
               None
               fingerprint
               ipHash
-              userAgent ]
+              userAgent
+              runId ]
 
-    let usageEntries (ctx: HttpContext) (identity: RequestIdentity) (feature: CreditFeature) : CreditUsageEntry list =
+    let usageEntries
+        (ctx: HttpContext)
+        (identity: RequestIdentity)
+        (feature: CreditFeature)
+        (runId: Guid option)
+        : CreditUsageEntry list =
         match identity with
         | AuthenticatedUser(userId, ProPlan) ->
             let fingerprint, ipHash = Identity.guestIdentifiers options ctx
@@ -93,7 +103,8 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
                   email
                   fingerprint
                   ipHash
-                  userAgent ]
+                  userAgent
+                  runId ]
         | AuthenticatedUser(userId, plan) ->
             let fingerprint, ipHash = Identity.guestIdentifiers options ctx
             let email = Identity.tryGetEmail ctx.User
@@ -110,6 +121,7 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
                       fingerprint
                       ipHash
                       userAgent
+                      runId
               match fingerprint with
               | Some fp ->
                   yield
@@ -123,8 +135,9 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
                           fingerprint
                           ipHash
                           userAgent
+                          runId
               | None -> () ]
-        | GuestVisitor(fingerprint, ipHash) -> guestUsageEntries ctx feature fingerprint ipHash
+        | GuestVisitor(fingerprint, ipHash) -> guestUsageEntries ctx feature fingerprint ipHash runId
 
     let isUnlimited (identity: RequestIdentity) : bool =
         options.UnlimitedGuestCredits && Identity.plan identity <> ProPlan
@@ -133,6 +146,11 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
         match identity with
         | AuthenticatedUser _ -> true
         | GuestVisitor _ -> false
+
+    let toOutcome (usage: LlmUsage option) (durationMs: int) : CreditUsageOutcome =
+        { InputTokens = usage |> Option.map _.InputTokens
+          OutputTokens = usage |> Option.map _.OutputTokens
+          DurationMs = durationMs }
 
     member _.GetStatus(ctx: HttpContext, cancellationToken: CancellationToken) : Task<CreditStatus> =
         task {
@@ -151,7 +169,7 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
 
             let mutable used = 0
 
-            for entry in usageEntries ctx identity Tailor do
+            for entry in usageEntries ctx identity Tailor None do
                 let! count = store.CountUsage(entry.IdentityKey, entry.Period, cancellationToken)
                 used <- max used count
 
@@ -165,7 +183,7 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
         }
 
     member _.TrySpend
-        (ctx: HttpContext, feature: CreditFeature, cancellationToken: CancellationToken)
+        (ctx: HttpContext, feature: CreditFeature, runId: Guid option, cancellationToken: CancellationToken)
         : Task<CreditSpendResult> =
         let identity = Identity.resolve options ctx
 
@@ -173,10 +191,20 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
             Task.FromResult(SpendRecorded(OperationId.create ()))
         else
             store.TryRecordUsage(
-                usageEntries ctx identity feature,
+                usageEntries ctx identity feature runId,
                 CreditPlan.creditLimit (Identity.plan identity),
                 cancellationToken
             )
 
     member _.Refund(operationId: OperationId, cancellationToken: CancellationToken) : Task<unit> =
         store.MarkRefunded(operationId, cancellationToken)
+
+    member _.RecordResumeOutcome
+        (operationId: OperationId, usage: LlmUsage option, durationMs: int, cancellationToken: CancellationToken)
+        : Task<unit> =
+        store.RecordResumeOutcome(operationId, toOutcome usage durationMs, cancellationToken)
+
+    member _.RecordCoverLetterOutcome
+        (runId: Guid, usage: LlmUsage option, durationMs: int, cancellationToken: CancellationToken)
+        : Task<unit> =
+        store.RecordCoverLetterOutcome(runId, toOutcome usage durationMs, cancellationToken)

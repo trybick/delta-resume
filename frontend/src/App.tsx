@@ -204,8 +204,9 @@ const App = () => {
     try {
       setShowingExample(false);
       setActiveTab('resume');
+      const runId = crypto.randomUUID();
       if (isProPlan) {
-        void runCoverLetter(resumeText, jobDescription);
+        void runCoverLetter(resumeText, jobDescription, runId);
       }
       const succeeded = await runTailor(
         resumeText,
@@ -216,6 +217,7 @@ const App = () => {
           savedResumes.map((resume) => resume.name),
         ),
         result?.document ?? resumeDocument,
+        runId,
       );
       if (succeeded) {
         setLastSuccessfulInputs({

@@ -103,10 +103,10 @@ type PostgresCreditStore(connectionString: string) =
                                     """
                                     INSERT INTO credit_usage
                                         (id, identity_key, kind, period, used_at, operation_id, email,
-                                         plan, feature, ip_hash, fingerprint, user_agent, status)
+                                         plan, feature, ip_hash, fingerprint, user_agent, status, run_id)
                                     VALUES
                                         (@Id, @IdentityKey, @Kind, @Period, @UsedAt, @OperationId, @Email,
-                                         @Plan, @Feature, @IpHash, @Fingerprint, @UserAgent, @Status)
+                                         @Plan, @Feature, @IpHash, @Fingerprint, @UserAgent, @Status, @RunId)
                                     """,
                                     {| Id = Guid.NewGuid()
                                        IdentityKey = OwnerKey.value entry.IdentityKey
@@ -120,7 +120,8 @@ type PostgresCreditStore(connectionString: string) =
                                        IpHash = entry.IpHash
                                        Fingerprint = entry.Fingerprint |> Option.toObj
                                        UserAgent = entry.UserAgent |> Option.toObj
-                                       Status = CreditUsageStatus.RecordedValue |},
+                                       Status = CreditUsageStatus.RecordedValue
+                                       RunId = entry.RunId |> Option.toNullable |},
                                     transaction,
                                     cancellationToken = cancellationToken
                                 )
@@ -151,6 +152,62 @@ type PostgresCreditStore(connectionString: string) =
                             {| OperationId = OperationId.value operationId
                                RefundedStatus = CreditUsageStatus.RefundedValue
                                RecordedStatus = CreditUsageStatus.RecordedValue |},
+                            cancellationToken = cancellationToken
+                        )
+                    )
+
+                return ()
+            }
+
+        member _.RecordResumeOutcome
+            (operationId: OperationId, outcome: CreditUsageOutcome, cancellationToken: CancellationToken)
+            : Task<unit> =
+            task {
+                use connection = new NpgsqlConnection(connectionString)
+                do! connection.OpenAsync(cancellationToken)
+
+                let! _ =
+                    connection.ExecuteAsync(
+                        CommandDefinition(
+                            """
+                            UPDATE credit_usage
+                            SET resume_input_tokens = @InputTokens,
+                                resume_output_tokens = @OutputTokens,
+                                resume_duration_ms = @DurationMs
+                            WHERE operation_id = @OperationId
+                            """,
+                            {| OperationId = OperationId.value operationId
+                               InputTokens = outcome.InputTokens |> Option.toNullable
+                               OutputTokens = outcome.OutputTokens |> Option.toNullable
+                               DurationMs = outcome.DurationMs |},
+                            cancellationToken = cancellationToken
+                        )
+                    )
+
+                return ()
+            }
+
+        member _.RecordCoverLetterOutcome
+            (runId: Guid, outcome: CreditUsageOutcome, cancellationToken: CancellationToken)
+            : Task<unit> =
+            task {
+                use connection = new NpgsqlConnection(connectionString)
+                do! connection.OpenAsync(cancellationToken)
+
+                let! _ =
+                    connection.ExecuteAsync(
+                        CommandDefinition(
+                            """
+                            UPDATE credit_usage
+                            SET cover_letter_input_tokens = @InputTokens,
+                                cover_letter_output_tokens = @OutputTokens,
+                                cover_letter_duration_ms = @DurationMs
+                            WHERE run_id = @RunId
+                            """,
+                            {| RunId = runId
+                               InputTokens = outcome.InputTokens |> Option.toNullable
+                               OutputTokens = outcome.OutputTokens |> Option.toNullable
+                               DurationMs = outcome.DurationMs |},
                             cancellationToken = cancellationToken
                         )
                     )

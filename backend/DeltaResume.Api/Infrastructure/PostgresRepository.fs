@@ -28,7 +28,14 @@ module Schema =
                 ip_hash TEXT,
                 fingerprint TEXT,
                 user_agent TEXT,
-                status TEXT NOT NULL DEFAULT 'recorded'
+                status TEXT NOT NULL DEFAULT 'recorded',
+                run_id UUID,
+                resume_input_tokens INTEGER,
+                resume_output_tokens INTEGER,
+                resume_duration_ms INTEGER,
+                cover_letter_input_tokens INTEGER,
+                cover_letter_output_tokens INTEGER,
+                cover_letter_duration_ms INTEGER
             );
 
             ALTER TABLE credit_usage
@@ -54,6 +61,57 @@ module Schema =
 
             ALTER TABLE credit_usage
                 ADD COLUMN IF NOT EXISTS status TEXT;
+
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS run_id UUID;
+
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS resume_input_tokens INTEGER;
+
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS resume_output_tokens INTEGER;
+
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS resume_duration_ms INTEGER;
+
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS cover_letter_input_tokens INTEGER;
+
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS cover_letter_output_tokens INTEGER;
+
+            ALTER TABLE credit_usage
+                ADD COLUMN IF NOT EXISTS cover_letter_duration_ms INTEGER;
+
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = 'credit_usage' AND column_name = 'input_tokens'
+                ) THEN
+                    UPDATE credit_usage
+                    SET resume_input_tokens = COALESCE(resume_input_tokens, input_tokens);
+                    ALTER TABLE credit_usage DROP COLUMN input_tokens;
+                END IF;
+
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = 'credit_usage' AND column_name = 'output_tokens'
+                ) THEN
+                    UPDATE credit_usage
+                    SET resume_output_tokens = COALESCE(resume_output_tokens, output_tokens);
+                    ALTER TABLE credit_usage DROP COLUMN output_tokens;
+                END IF;
+
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = 'credit_usage' AND column_name = 'duration_ms'
+                ) THEN
+                    UPDATE credit_usage
+                    SET resume_duration_ms = COALESCE(resume_duration_ms, duration_ms);
+                    ALTER TABLE credit_usage DROP COLUMN duration_ms;
+                END IF;
+            END $$;
 
             UPDATE credit_usage
             SET status = 'recorded'
@@ -86,6 +144,9 @@ module Schema =
 
             CREATE INDEX IF NOT EXISTS idx_credit_usage_status
                 ON credit_usage (status);
+
+            CREATE INDEX IF NOT EXISTS idx_credit_usage_run_id
+                ON credit_usage (run_id);
 
             CREATE TABLE IF NOT EXISTS saved_resumes (
                 id UUID PRIMARY KEY,
