@@ -59,7 +59,7 @@ const JobDescriptionInput = ({ value, onChange }: JobDescriptionInputProps) => {
           maxLength={JOB_DESCRIPTION_MAX_LENGTH}
           styles={{
             input: {
-              height: '9.35rem',
+              height: '9.3rem',
             },
           }}
         />
