@@ -30,6 +30,7 @@ export const AnalyticsEvents = {
   UpgradeToSaveMore: 'upgrade_to_save_more',
 
   EditJobDescription: 'edit_job_description',
+  ClearJobDescription: 'clear_job_description',
 
   TailorResumeClick: 'tailor_resume_click',
   GetMoreCredits: 'get_more_credits',
