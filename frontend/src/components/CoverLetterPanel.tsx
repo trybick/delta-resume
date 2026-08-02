@@ -44,6 +44,7 @@ type CoverLetterPanelProps = {
   result: CoverLetterResult | null;
   errorMessage: string | null;
   isExample?: boolean;
+  exportMenuKey?: string | null;
   exampleResult?: CoverLetterResult;
   onRetry: () => void;
   onUpgradeClick: () => void;
@@ -56,6 +57,7 @@ const CoverLetterPanel = ({
   result,
   errorMessage,
   isExample = false,
+  exportMenuKey = null,
   exampleResult,
   onRetry,
   onUpgradeClick,
@@ -280,6 +282,7 @@ const CoverLetterPanel = ({
           onSettingsChange={handleSettingsChange}
           trailing={
             <Menu
+              key={exportMenuKey ?? undefined}
               position="bottom-end"
               withinPortal
               onOpen={() => trackEvent(AnalyticsEvents.CoverLetterExportMenuOpen)}

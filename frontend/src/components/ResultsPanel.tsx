@@ -62,6 +62,7 @@ type ResultsPanelProps = {
   status: TailorStatus;
   result: TailorResult | null;
   isExample?: boolean;
+  exportMenuKey?: string | null;
   isProPlan: boolean;
   isGuest?: boolean;
   lowCredits?: boolean;
@@ -147,6 +148,7 @@ const ResultsPanel = ({
   status,
   result,
   isExample = false,
+  exportMenuKey = null,
   isProPlan,
   isGuest = false,
   lowCredits = false,
@@ -411,6 +413,7 @@ const ResultsPanel = ({
       style={{ flexShrink: 0 }}
     >
       <Menu
+        key={exportMenuKey ?? undefined}
         position="bottom-end"
         withinPortal
         onOpen={() => trackEvent(AnalyticsEvents.ResumeExportMenuOpen)}

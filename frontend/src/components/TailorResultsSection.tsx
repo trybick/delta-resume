@@ -155,6 +155,7 @@ const TailorResultsSection = ({
       <Tabs
         className="results-tabs"
         value={activeTab}
+        keepMountedMode="display-none"
         onChange={(tab) => {
           if (tab === 'resume') {
             trackEvent(AnalyticsEvents.ResultsTabResume);
@@ -194,6 +195,7 @@ const TailorResultsSection = ({
             status={showingExample ? 'done' : status}
             result={showingExample ? SAMPLE_TAILOR_RESULT : result}
             isExample={showingExample}
+            exportMenuKey={activeTab}
             isProPlan={isProPlan}
             isGuest={isGuest}
             lowCredits={lowCredits}
@@ -212,6 +214,7 @@ const TailorResultsSection = ({
             result={coverLetterResult}
             errorMessage={coverLetterError}
             isExample={showingExample}
+            exportMenuKey={activeTab}
             exampleResult={SAMPLE_COVER_LETTER_RESULT}
             onRetry={onRetryCoverLetter}
             onUpgradeClick={onUpgradeClick}
