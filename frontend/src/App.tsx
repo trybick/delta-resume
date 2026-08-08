@@ -7,6 +7,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import AppHeader from './components/AppHeader';
 import AppFooter from './components/AppFooter';
 import LandingStrip from './components/LandingStrip';
+import MobileHero from './components/MobileHero';
 import TailorForm from './components/TailorForm';
 import TailorResultsSection from './components/TailorResultsSection';
 import PaywallModal from './components/PaywallModal';
@@ -69,7 +70,11 @@ const App = () => {
     enabled: isSignedIn === true,
   });
   const theme = useMantineTheme();
-  const isStackedLayout = useMediaQuery(`(max-width: ${theme.breakpoints.md})`);
+  const isStackedLayout = useMediaQuery(
+    `(max-width: ${theme.breakpoints.md})`,
+    false,
+    { getInitialValueInEffect: false },
+  );
   const [jobDescription, setJobDescription] = useState('');
   const [lastSuccessfulInputs, setLastSuccessfulInputs] = useState<{
     resumeText: string;
@@ -78,6 +83,7 @@ const App = () => {
   const [showingExample, setShowingExample] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>('resume');
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
+  const [mobileToolRevealed, setMobileToolRevealed] = useState(false);
   const tailorActionInFlightRef = useRef(false);
   const resultsSectionRef = useRef<HTMLDivElement>(null);
 
@@ -166,6 +172,9 @@ const App = () => {
     jobDescription.trim().length > 0 &&
     !inputsUnchangedSinceLastRun;
 
+  const showMobileLanding =
+    isStackedLayout === true && !mobileToolRevealed && status === 'idle' && runCount === 0;
+
   useEffect(() => {
     registerTokenGetter(() => getToken());
     return () => registerTokenGetter(null);
@@ -184,6 +193,11 @@ const App = () => {
     resultsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [status, isStackedLayout]);
 
+  useEffect(() => {
+    if (!showMobileLanding) return;
+    trackEvent(AnalyticsEvents.MobileLandingView);
+  }, [showMobileLanding]);
+
   const handleShowExample = () => {
     setShowingExample(true);
   };
@@ -191,6 +205,11 @@ const App = () => {
   const handleDismissExample = () => {
     setShowingExample(false);
     setActiveTab('resume');
+  };
+
+  const handleRevealMobileTool = () => {
+    setMobileToolRevealed(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleTailor = async () => {
@@ -263,70 +282,75 @@ const App = () => {
             {rateLimitMessage}
           </Alert>
         )}
-        <Grid gap="xl">
-          <Grid.Col span={{ base: 12, md: 5 }}>
-            <TailorForm
-              resumeText={resumeText}
-              pasteFieldText={pasteFieldText}
-              attachedFile={attachedFile}
-              savedResumes={savedResumes}
-              isLoadingSavedResumes={isLoadingSavedResumes}
-              isSignedIn={isSignedIn === true}
-              isProPlan={isProPlan}
-              jobDescription={jobDescription}
-              onJobDescriptionChange={setJobDescription}
-              onResumeTextChange={handleResumeTextChange}
-              onFileAttach={handleFileAttach}
-              onClearResume={handleClearResume}
-              onSelectSaved={handleSelectSaved}
-              onRenameSaved={renameResume}
-              onDeleteSaved={deleteResume}
-              onUpgradeClick={() => openPaywall('savedLimit')}
-              canTailor={canTailor}
-              status={status}
-              outOfCredits={outOfCredits}
-              credits={credits}
-              creditsError={creditsError}
-              inputsUnchangedSinceLastRun={inputsUnchangedSinceLastRun}
-              freeTrialLabel={freeTrialLabel}
-              onTailor={handleTailor}
-              onRetryCredits={() => void loadCredits()}
-            />
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, md: 7 }} ref={resultsSectionRef}>
-            <TailorResultsSection
-              errorMessage={errorMessage}
-              onClearError={clearError}
-              showingExample={showingExample}
-              onDismissExample={handleDismissExample}
-              activeTab={activeTab}
-              onActiveTabChange={setActiveTab}
-              status={status}
-              result={result}
-              runCount={runCount}
-              originalDocx={originalDocx}
-              onShowExample={handleShowExample}
-              planLoaded={planLoaded}
-              isProPlan={isProPlan}
-              isGuest={isGuest}
-              lowCredits={lowCredits}
-              credits={credits}
-              coverLetterStatus={coverLetterStatus}
-              coverLetterResult={coverLetterResult}
-              coverLetterError={coverLetterError}
-              onRetryCoverLetter={retryCoverLetter}
-              onUpgradeClick={() => openPaywall('coverLetter')}
-              onGapsUpgradeClick={() => openPaywall('gaps')}
-              onNudgeClick={() => openPaywall(isGuest ? 'signUp' : 'upgrade')}
-            />
-          </Grid.Col>
-        </Grid>
+        {showMobileLanding ? (
+          <MobileHero freeTrialLabel={freeTrialLabel} onStartClick={handleRevealMobileTool} />
+        ) : (
+          <Grid gap="xl">
+            <Grid.Col span={{ base: 12, md: 5 }}>
+              <TailorForm
+                resumeText={resumeText}
+                pasteFieldText={pasteFieldText}
+                attachedFile={attachedFile}
+                savedResumes={savedResumes}
+                isLoadingSavedResumes={isLoadingSavedResumes}
+                isSignedIn={isSignedIn === true}
+                isProPlan={isProPlan}
+                jobDescription={jobDescription}
+                onJobDescriptionChange={setJobDescription}
+                onResumeTextChange={handleResumeTextChange}
+                onFileAttach={handleFileAttach}
+                onClearResume={handleClearResume}
+                onSelectSaved={handleSelectSaved}
+                onRenameSaved={renameResume}
+                onDeleteSaved={deleteResume}
+                onUpgradeClick={() => openPaywall('savedLimit')}
+                canTailor={canTailor}
+                status={status}
+                outOfCredits={outOfCredits}
+                credits={credits}
+                creditsError={creditsError}
+                inputsUnchangedSinceLastRun={inputsUnchangedSinceLastRun}
+                freeTrialLabel={freeTrialLabel}
+                onTailor={handleTailor}
+                onRetryCredits={() => void loadCredits()}
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 7 }} ref={resultsSectionRef}>
+              <TailorResultsSection
+                errorMessage={errorMessage}
+                onClearError={clearError}
+                showingExample={showingExample}
+                onDismissExample={handleDismissExample}
+                activeTab={activeTab}
+                onActiveTabChange={setActiveTab}
+                status={status}
+                result={result}
+                runCount={runCount}
+                originalDocx={originalDocx}
+                onShowExample={handleShowExample}
+                planLoaded={planLoaded}
+                isProPlan={isProPlan}
+                isGuest={isGuest}
+                lowCredits={lowCredits}
+                credits={credits}
+                coverLetterStatus={coverLetterStatus}
+                coverLetterResult={coverLetterResult}
+                coverLetterError={coverLetterError}
+                onRetryCoverLetter={retryCoverLetter}
+                onUpgradeClick={() => openPaywall('coverLetter')}
+                onGapsUpgradeClick={() => openPaywall('gaps')}
+                onNudgeClick={() => openPaywall(isGuest ? 'signUp' : 'upgrade')}
+              />
+            </Grid.Col>
+          </Grid>
+        )}
       </Container>
 
       <LandingStrip
-        collapsible={status !== 'idle' || runCount > 0}
+        collapsible={!showMobileLanding && (status !== 'idle' || runCount > 0)}
         freeCreditTotal={freeCreditTotal}
         onUpgradeClick={() => openPaywall('upgrade')}
+        onStartClick={showMobileLanding ? handleRevealMobileTool : undefined}
       />
 
       <AppFooter />

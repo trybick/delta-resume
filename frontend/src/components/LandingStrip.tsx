@@ -38,12 +38,14 @@ import { SAVED_RESUME_LIMIT_FREE } from '../lib/constants';
 import { PRIVACY_POLICY } from '../lib/legalContent';
 import type { LegalDocument } from '../lib/legalContent';
 import { proAccent } from '../lib/proAccent';
+import { appTheme } from '../lib/theme';
 import { useProPlan } from '../hooks/useProPlan';
 
 type LandingStripProps = {
   collapsible: boolean;
   freeCreditTotal: number | null;
   onUpgradeClick: () => void;
+  onStartClick?: () => void;
 };
 
 type HowItWorksStep = {
@@ -107,7 +109,12 @@ const getFreePlanFeatures = (freeCreditTotal: number | null): string[] => [
   `${SAVED_RESUME_LIMIT_FREE} saved resume with a free account`,
 ];
 
-const LandingStrip = ({ collapsible, freeCreditTotal, onUpgradeClick }: LandingStripProps) => {
+const LandingStrip = ({
+  collapsible,
+  freeCreditTotal,
+  onUpgradeClick,
+  onStartClick,
+}: LandingStripProps) => {
   const [openDocument, setOpenDocument] = useState<LegalDocument | null>(null);
   const [expanded, setExpanded] = useState(false);
   const { monthlyPrice, annualMonthlyPrice, isLoading: isLoadingProPrice } = useProPlan();
@@ -129,6 +136,11 @@ const LandingStrip = ({ collapsible, freeCreditTotal, onUpgradeClick }: LandingS
   const handleUpgradeClick = () => {
     trackEvent(AnalyticsEvents.LandingUpgradeClick);
     onUpgradeClick();
+  };
+
+  const handleStartClick = () => {
+    trackEvent(AnalyticsEvents.MobileLandingCta, { placement: 'bottom' });
+    onStartClick?.();
   };
 
   const handleToggleExpanded = () => {
@@ -326,6 +338,22 @@ const LandingStrip = ({ collapsible, freeCreditTotal, onUpgradeClick }: LandingS
                 Cancel anytime. Pro credits renew every month.
               </Text>
             </Stack>
+
+            {onStartClick && (
+              <Stack gap="sm" align="center">
+                <Button
+                  size="lg"
+                  fullWidth
+                  maw={420}
+                  variant="gradient"
+                  gradient={{ ...appTheme.gradient, deg: 45 }}
+                  leftSection={<IconSparkles size={18} />}
+                  onClick={handleStartClick}
+                >
+                  Tailor my resume — free
+                </Button>
+              </Stack>
+            )}
           </Stack>
         </Collapse>
       </Container>
