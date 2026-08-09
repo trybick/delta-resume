@@ -20,6 +20,7 @@ type AppHeaderProps = {
   creditsError: boolean;
   onUpgradeClick: () => void;
   onRetryCredits: () => void;
+  onHomeClick: () => void;
 };
 
 const formatCreditsResetAt = (resetsAt: string): string =>
@@ -42,6 +43,7 @@ const AppHeader = ({
   creditsError,
   onUpgradeClick,
   onRetryCredits,
+  onHomeClick,
 }: AppHeaderProps) => {
   const handleRetryCreditsClick = () => {
     trackEvent(AnalyticsEvents.RetryCredits, { source: 'header' });
@@ -51,6 +53,12 @@ const AppHeader = ({
   const handleUpgradeClick = () => {
     trackEvent(AnalyticsEvents.UpgradeToProHeader);
     onUpgradeClick();
+  };
+
+  const handleHomeClick = (event: React.MouseEvent<HTMLElement>) => {
+    event.preventDefault();
+    trackEvent(AnalyticsEvents.HeaderLogoHome);
+    onHomeClick();
   };
 
   const mobileUpgradeLabel =
@@ -92,38 +100,45 @@ const AppHeader = ({
       }}
     >
       <Group justify="space-between" wrap="nowrap" gap="sm">
-        <Group gap="sm" align="center" wrap="nowrap" style={{ minWidth: 0 }}>
-          <Box visibleFrom="sm" lh={0}>
-            <DeltaLogo size={38} />
-          </Box>
-          <Box hiddenFrom="sm" lh={0}>
-            <DeltaLogo size={30} />
-          </Box>
-          <Stack gap={2} style={{ minWidth: 0 }}>
-            <Title
-              order={1}
-              fz={{ base: 'clamp(0.95rem, 4.8vw, 1.125rem)', sm: 'h3' }}
-              lh={1.2}
-              style={{
-                fontFamily: spaceGroteskStack,
-                letterSpacing: '-0.02em',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              <Text span inherit variant="gradient" gradient={{ ...appTheme.gradient, deg: 45 }}>
-                Delta
-              </Text>{' '}
-              <Text span inherit fw={400} c="gray.3">
-                Resume
+        <a
+          href="/"
+          aria-label="Delta Resume home"
+          onClick={handleHomeClick}
+          style={{ minWidth: 0, textDecoration: 'none', color: 'inherit' }}
+        >
+          <Group gap="sm" align="center" wrap="nowrap" style={{ minWidth: 0 }}>
+            <Box visibleFrom="sm" lh={0}>
+              <DeltaLogo size={38} />
+            </Box>
+            <Box hiddenFrom="sm" lh={0}>
+              <DeltaLogo size={30} />
+            </Box>
+            <Stack gap={2} style={{ minWidth: 0 }}>
+              <Title
+                order={1}
+                fz={{ base: 'clamp(0.95rem, 4.8vw, 1.125rem)', sm: 'h3' }}
+                lh={1.2}
+                style={{
+                  fontFamily: spaceGroteskStack,
+                  letterSpacing: '-0.02em',
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                <Text span inherit variant="gradient" gradient={{ ...appTheme.gradient, deg: 45 }}>
+                  Delta
+                </Text>{' '}
+                <Text span inherit fw={400} c="gray.3">
+                  Resume
+                </Text>
+              </Title>
+              <Text size="xs" c="dimmed" lh={1.4} visibleFrom="sm">
+                Tailor your resume to any job description in seconds
               </Text>
-            </Title>
-            <Text size="xs" c="dimmed" lh={1.4} visibleFrom="sm">
-              Tailor your resume to any job description in seconds
-            </Text>
-          </Stack>
-        </Group>
+            </Stack>
+          </Group>
+        </a>
         <Group gap="xs" justify="flex-end" align="center" visibleFrom="sm">
           {planLoaded && isProPlan && proCreditsBadge}
           {creditsLabel && (

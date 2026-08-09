@@ -138,7 +138,7 @@ const LandingStrip = ({
   };
 
   const handleStartClick = () => {
-    trackEvent(AnalyticsEvents.MobileLandingCta, { placement: 'bottom' });
+    trackEvent(AnalyticsEvents.LandingCta, { placement: 'bottom' });
     onStartClick?.();
   };
 
@@ -189,7 +189,7 @@ const LandingStrip = ({
                           <ThemeIcon size={36} radius="md" variant="light">
                             <StepIcon size={19} />
                           </ThemeIcon>
-                          <Badge size="lg" variant="light" color="gray">
+                          <Badge size="lg" variant="light" color="cyan">
                             Step {index + 1}
                           </Badge>
                         </Group>
@@ -202,7 +202,12 @@ const LandingStrip = ({
                   );
                 })}
               </SimpleGrid>
-              <Stack gap={6} align="center" w="100%">
+              <Stack
+                gap={6}
+                align="center"
+                w="100%"
+                hiddenFrom={onStartClick ? 'md' : undefined}
+              >
                 <DiffMockExample />
                 <Text size="xs" c="dimmed" ta="center">
                   Every rewrite is shown as an inline diff. Keep it or revert it with one click.

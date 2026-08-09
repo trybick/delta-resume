@@ -7,7 +7,7 @@ import { IconAlertCircle } from '@tabler/icons-react';
 import AppHeader from './components/AppHeader';
 import AppFooter from './components/AppFooter';
 import LandingStrip from './components/LandingStrip';
-import MobileHero from './components/MobileHero';
+import LandingHero from './components/LandingHero';
 import TailorForm from './components/TailorForm';
 import TailorResultsSection from './components/TailorResultsSection';
 import PaywallModal from './components/PaywallModal';
@@ -22,6 +22,25 @@ import { registerTokenGetter } from './lib/authToken';
 import { isProPlan as checkIsProPlan } from './lib/constants';
 import { subscribeToRateLimit } from './lib/rateLimitNotice';
 import { formatDefaultResumeName } from './lib/formatDefaultResumeName';
+
+const HAS_USED_TOOL_STORAGE_KEY = 'delta-resume:has-used-tool';
+const TOOL_PATH = '/app';
+
+const readHasUsedTool = (): boolean => {
+  try {
+    return localStorage.getItem(HAS_USED_TOOL_STORAGE_KEY) === 'true';
+  } catch {
+    return false;
+  }
+};
+
+const markToolUsed = () => {
+  try {
+    localStorage.setItem(HAS_USED_TOOL_STORAGE_KEY, 'true');
+  } catch {
+    return;
+  }
+};
 
 const getNextMonthlyResetAt = (periodStart: Date, now: Date = new Date()): Date => {
   const anchorDay = periodStart.getUTCDate();
@@ -83,7 +102,9 @@ const App = () => {
   const [showingExample, setShowingExample] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>('resume');
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
-  const [mobileToolRevealed, setMobileToolRevealed] = useState(false);
+  const [toolRevealed, setToolRevealed] = useState(
+    () => window.location.pathname === TOOL_PATH || readHasUsedTool(),
+  );
   const tailorActionInFlightRef = useRef(false);
   const resultsSectionRef = useRef<HTMLDivElement>(null);
 
@@ -119,6 +140,7 @@ const App = () => {
   const { status, result, runCount, errorMessage, clearError, runTailor } = useTailorRun({
     onSuccess: () => {
       trackEvent(AnalyticsEvents.TailorResume);
+      markToolUsed();
       void loadSavedResumes();
     },
     onCreditsExhausted: () => {
@@ -172,8 +194,7 @@ const App = () => {
     jobDescription.trim().length > 0 &&
     !inputsUnchangedSinceLastRun;
 
-  const showMobileLanding =
-    isStackedLayout === true && !mobileToolRevealed && status === 'idle' && runCount === 0;
+  const showLanding = !toolRevealed && status !== 'loading';
 
   useEffect(() => {
     registerTokenGetter(() => getToken());
@@ -194,9 +215,17 @@ const App = () => {
   }, [status, isStackedLayout]);
 
   useEffect(() => {
-    if (!showMobileLanding) return;
-    trackEvent(AnalyticsEvents.MobileLandingView);
-  }, [showMobileLanding]);
+    if (!showLanding) return;
+    trackEvent(AnalyticsEvents.LandingView);
+  }, [showLanding]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setToolRevealed(window.location.pathname === TOOL_PATH || readHasUsedTool());
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   const handleShowExample = () => {
     setShowingExample(true);
@@ -207,8 +236,19 @@ const App = () => {
     setActiveTab('resume');
   };
 
-  const handleRevealMobileTool = () => {
-    setMobileToolRevealed(true);
+  const handleRevealTool = () => {
+    setToolRevealed(true);
+    if (window.location.pathname !== TOOL_PATH) {
+      window.history.pushState({}, '', TOOL_PATH);
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleGoHome = () => {
+    setToolRevealed(false);
+    if (window.location.pathname !== '/') {
+      window.history.pushState({}, '', '/');
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -264,6 +304,7 @@ const App = () => {
         creditsError={creditsError}
         onUpgradeClick={() => openPaywall('upgrade')}
         onRetryCredits={() => void loadCredits()}
+        onHomeClick={handleGoHome}
       />
 
       <Container size="xl" py="xl" w="100%" style={{ flexGrow: 1 }}>
@@ -282,8 +323,8 @@ const App = () => {
             {rateLimitMessage}
           </Alert>
         )}
-        {showMobileLanding ? (
-          <MobileHero freeTrialLabel={freeTrialLabel} onStartClick={handleRevealMobileTool} />
+        {showLanding ? (
+          <LandingHero freeTrialLabel={freeTrialLabel} onStartClick={handleRevealTool} />
         ) : (
           <Grid gap="xl">
             <Grid.Col span={{ base: 12, md: 5 }}>
@@ -347,10 +388,10 @@ const App = () => {
       </Container>
 
       <LandingStrip
-        collapsible={!showMobileLanding && (status !== 'idle' || runCount > 0)}
+        collapsible={!showLanding && (status !== 'idle' || runCount > 0)}
         freeCreditTotal={freeCreditTotal}
         onUpgradeClick={() => openPaywall('upgrade')}
-        onStartClick={showMobileLanding ? handleRevealMobileTool : undefined}
+        onStartClick={showLanding ? handleRevealTool : undefined}
       />
 
       <AppFooter />

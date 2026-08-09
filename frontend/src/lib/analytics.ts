@@ -71,8 +71,9 @@ export const AnalyticsEvents = {
   LandingUpgradeClick: 'landing_upgrade_click',
   LandingPrivacyPolicy: 'landing_privacy_policy',
   LandingStripToggle: 'landing_strip_toggle',
-  MobileLandingView: 'mobile_landing_view',
-  MobileLandingCta: 'mobile_landing_cta',
+  LandingView: 'landing_view',
+  LandingCta: 'landing_cta',
+  HeaderLogoHome: 'header_logo_home',
 
   PaywallClose: 'paywall_close',
   BillingPeriodChange: 'billing_period_change',
