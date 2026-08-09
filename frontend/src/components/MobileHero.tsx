@@ -22,11 +22,14 @@ const MobileHero = ({ freeTrialLabel, onStartClick }: MobileHeroProps) => {
           ta="center"
           style={{ fontFamily: spaceGroteskStack, fontSize: '1.75rem', lineHeight: 1.2 }}
         >
-          Tailor your resume to any job in under a minute
+          Tailor your resume to any job in seconds
         </Title>
         <Text size="md" c="dimmed" ta="center" maw={420} lh={1.5}>
-          Claude rewrites your bullets to match the role. You review every change as an inline
-          diff — keep or revert with one tap.
+          AI rewrites your bullets to match the role. You review every change as an inline diff
+          and keep or revert each one with a tap.
+        </Text>
+        <Text size="sm" c="dimmed" ta="center" maw={420} lh={1.5}>
+          Need a cover letter? Pro writes one to match your tailored resume in the same run.
         </Text>
       </Stack>
       {freeTrialLabel && (
@@ -42,7 +45,7 @@ const MobileHero = ({ freeTrialLabel, onStartClick }: MobileHeroProps) => {
         leftSection={<IconSparkles size={18} />}
         onClick={handleStartClick}
       >
-        Tailor my resume — free
+        Tailor my resume for free
       </Button>
     </Stack>
   );

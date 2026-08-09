@@ -34,7 +34,6 @@ import DiffMockExample from './DiffMockExample';
 import LegalModal from './LegalModal';
 import ProFeatureList from './ProFeatureList';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
-import { SAVED_RESUME_LIMIT_FREE } from '../lib/constants';
 import { PRIVACY_POLICY } from '../lib/legalContent';
 import type { LegalDocument } from '../lib/legalContent';
 import { proAccent } from '../lib/proAccent';
@@ -69,7 +68,7 @@ const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
     icon: IconGitCompare,
     title: 'Review every change',
     description:
-      'Claude rewrites your bullets to match the role. You see each edit as an inline diff and keep or revert it.',
+      'Your bullets are rewritten to match the role. You see each edit as an inline diff and keep or revert it.',
   },
 ];
 
@@ -102,11 +101,11 @@ const PRIVACY_POINTS: PrivacyPoint[] = [
 
 const getFreePlanFeatures = (freeCreditTotal: number | null): string[] => [
   freeCreditTotal !== null
-    ? `${freeCreditTotal} free ${freeCreditTotal === 1 ? 'credit' : 'credits'} \u2014 no account needed`
-    : 'Free credits \u2014 no account needed',
+    ? `${freeCreditTotal} free ${freeCreditTotal === 1 ? 'credit' : 'credits'}, no account needed`
+    : 'Free credits, no account needed',
   'Inline diff review of every change',
-  'Copy your tailored resume',
-  `${SAVED_RESUME_LIMIT_FREE} saved resume with a free account`,
+  'Copy or export your tailored resume',
+  'Multiple export options, including fit to one page',
 ];
 
 const LandingStrip = ({
@@ -176,8 +175,8 @@ const LandingStrip = ({
                   How it works
                 </Title>
                 <Text size="sm" c="dimmed" ta="center" maw={520}>
-                  Tailor your resume to any job description in under a minute, and stay in control
-                  of every word.
+                  Three steps from job post to tailored resume. On Pro, a matching cover letter is
+                  written for you at the same time.
                 </Text>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
@@ -190,7 +189,7 @@ const LandingStrip = ({
                           <ThemeIcon size={36} radius="md" variant="light">
                             <StepIcon size={19} />
                           </ThemeIcon>
-                          <Badge size="sm" variant="light" color="gray">
+                          <Badge size="lg" variant="light" color="gray">
                             Step {index + 1}
                           </Badge>
                         </Group>
@@ -206,7 +205,7 @@ const LandingStrip = ({
               <Stack gap={6} align="center" w="100%">
                 <DiffMockExample />
                 <Text size="xs" c="dimmed" ta="center">
-                  Every rewrite is shown as an inline diff — keep it or revert it with one click.
+                  Every rewrite is shown as an inline diff. Keep it or revert it with one click.
                 </Text>
               </Stack>
             </Stack>
@@ -219,8 +218,8 @@ const LandingStrip = ({
                   Your resume stays yours
                 </Title>
                 <Text size="sm" c="dimmed" ta="center" maw={520}>
-                  We built Delta Resume so you don&apos;t have to trust a stranger with your work
-                  history.
+                  We built Delta Resume so you never have to put blind trust in AI. Every change
+                  is yours to keep or reject, and your documents stay private.
                 </Text>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
@@ -350,7 +349,7 @@ const LandingStrip = ({
                   leftSection={<IconSparkles size={18} />}
                   onClick={handleStartClick}
                 >
-                  Tailor my resume — free
+                  Tailor my resume for free
                 </Button>
               </Stack>
             )}
