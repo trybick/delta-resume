@@ -194,7 +194,7 @@ const App = () => {
     jobDescription.trim().length > 0 &&
     !inputsUnchangedSinceLastRun;
 
-  const showLanding = !toolRevealed && status !== 'loading';
+  const showLanding = !toolRevealed;
 
   useEffect(() => {
     registerTokenGetter(() => getToken());
@@ -221,7 +221,7 @@ const App = () => {
 
   useEffect(() => {
     const handlePopState = () => {
-      setToolRevealed(window.location.pathname === TOOL_PATH || readHasUsedTool());
+      setToolRevealed(window.location.pathname === TOOL_PATH);
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
