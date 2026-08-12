@@ -102,6 +102,7 @@ const App = () => {
   const [showingExample, setShowingExample] = useState(false);
   const [activeTab, setActiveTab] = useState<string | null>('resume');
   const [rateLimitMessage, setRateLimitMessage] = useState<string | null>(null);
+  const [hasUsedTool, setHasUsedTool] = useState(readHasUsedTool);
   const [toolRevealed, setToolRevealed] = useState(
     () => window.location.pathname === TOOL_PATH || readHasUsedTool(),
   );
@@ -141,6 +142,7 @@ const App = () => {
     onSuccess: () => {
       trackEvent(AnalyticsEvents.TailorResume);
       markToolUsed();
+      setHasUsedTool(true);
       void loadSavedResumes();
     },
     onCreditsExhausted: () => {
@@ -195,6 +197,7 @@ const App = () => {
     !inputsUnchangedSinceLastRun;
 
   const showLanding = !toolRevealed;
+  const showUpgradeCta = !showLanding && hasUsedTool;
 
   useEffect(() => {
     registerTokenGetter(() => getToken());
@@ -221,7 +224,11 @@ const App = () => {
 
   useEffect(() => {
     const handlePopState = () => {
-      setToolRevealed(window.location.pathname === TOOL_PATH);
+      const revealed = window.location.pathname === TOOL_PATH;
+      setToolRevealed(revealed);
+      if (!revealed) {
+        setShowingExample(false);
+      }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
@@ -237,6 +244,7 @@ const App = () => {
   };
 
   const handleRevealTool = () => {
+    setShowingExample(false);
     setToolRevealed(true);
     if (window.location.pathname !== TOOL_PATH) {
       window.history.pushState({}, '', TOOL_PATH);
@@ -244,7 +252,18 @@ const App = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const handleShowExampleFromLanding = () => {
+    handleRevealTool();
+    setShowingExample(true);
+    if (isStackedLayout) {
+      requestAnimationFrame(() => {
+        resultsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  };
+
   const handleGoHome = () => {
+    setShowingExample(false);
     setToolRevealed(false);
     if (window.location.pathname !== '/') {
       window.history.pushState({}, '', '/');
@@ -302,6 +321,7 @@ const App = () => {
         planLoaded={planLoaded}
         isLoadingCredits={isLoadingCredits}
         creditsError={creditsError}
+        showUpgradeCta={showUpgradeCta}
         onUpgradeClick={() => openPaywall('upgrade')}
         onRetryCredits={() => void loadCredits()}
         onHomeClick={handleGoHome}
@@ -324,7 +344,11 @@ const App = () => {
           </Alert>
         )}
         {showLanding ? (
-          <LandingHero freeTrialLabel={freeTrialLabel} onStartClick={handleRevealTool} />
+          <LandingHero
+            freeTrialLabel={freeTrialLabel}
+            onStartClick={handleRevealTool}
+            onExampleClick={handleShowExampleFromLanding}
+          />
         ) : (
           <Grid gap="xl">
             <Grid.Col span={{ base: 12, md: 5 }}>
@@ -390,6 +414,7 @@ const App = () => {
       <LandingStrip
         collapsible={!showLanding && (status !== 'idle' || runCount > 0)}
         freeCreditTotal={freeCreditTotal}
+        showUpgradeButton={showUpgradeCta}
         onUpgradeClick={() => openPaywall('upgrade')}
         onStartClick={showLanding ? handleRevealTool : undefined}
       />

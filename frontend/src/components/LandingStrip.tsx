@@ -43,6 +43,7 @@ import { useProPlan } from '../hooks/useProPlan';
 type LandingStripProps = {
   collapsible: boolean;
   freeCreditTotal: number | null;
+  showUpgradeButton: boolean;
   onUpgradeClick: () => void;
   onStartClick?: () => void;
 };
@@ -111,6 +112,7 @@ const getFreePlanFeatures = (freeCreditTotal: number | null): string[] => [
 const LandingStrip = ({
   collapsible,
   freeCreditTotal,
+  showUpgradeButton,
   onUpgradeClick,
   onStartClick,
 }: LandingStripProps) => {
@@ -324,17 +326,19 @@ const LandingStrip = ({
                       </Group>
                     </Stack>
                     <ProFeatureList />
-                    <Button
-                      mt="auto"
-                      size="md"
-                      fullWidth
-                      variant="gradient"
-                      gradient={{ ...proAccent.gradient, deg: 45 }}
-                      leftSection={<IconSparkles size={18} />}
-                      onClick={handleUpgradeClick}
-                    >
-                      Upgrade to Pro
-                    </Button>
+                    {showUpgradeButton && (
+                      <Button
+                        mt="auto"
+                        size="md"
+                        fullWidth
+                        variant="gradient"
+                        gradient={{ ...proAccent.gradient, deg: 45 }}
+                        leftSection={<IconSparkles size={18} />}
+                        onClick={handleUpgradeClick}
+                      >
+                        Upgrade to Pro
+                      </Button>
+                    )}
                   </Stack>
                 </Paper>
               </SimpleGrid>

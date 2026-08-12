@@ -18,6 +18,7 @@ type AppHeaderProps = {
   planLoaded: boolean;
   isLoadingCredits: boolean;
   creditsError: boolean;
+  showUpgradeCta: boolean;
   onUpgradeClick: () => void;
   onRetryCredits: () => void;
   onHomeClick: () => void;
@@ -41,6 +42,7 @@ const AppHeader = ({
   planLoaded,
   isLoadingCredits,
   creditsError,
+  showUpgradeCta,
   onUpgradeClick,
   onRetryCredits,
   onHomeClick,
@@ -167,7 +169,9 @@ const AppHeader = ({
               Credits unavailable · Retry
             </Badge>
           )}
-          {planLoaded && !isProPlan && <UpgradeHoverCard onUpgradeClick={onUpgradeClick} />}
+          {planLoaded && !isProPlan && showUpgradeCta && (
+            <UpgradeHoverCard onUpgradeClick={onUpgradeClick} />
+          )}
           <SignedOut>
             <SignInButton mode="modal">
               <ClerkAuthButton
@@ -206,7 +210,7 @@ const AppHeader = ({
             </Badge>
           )}
           {planLoaded && isProPlan && proCreditsBadge}
-          {planLoaded && !isProPlan && (
+          {planLoaded && !isProPlan && showUpgradeCta && (
             <Button
               size="xs"
               variant="gradient"
@@ -216,6 +220,19 @@ const AppHeader = ({
             >
               {mobileUpgradeLabel}
             </Button>
+          )}
+          {planLoaded && !isProPlan && !showUpgradeCta && creditsLabel && (
+            <Tooltip label={`${creditsLabel} remaining. One credit is used when tailoring starts.`}>
+              <Badge
+                size="lg"
+                variant="light"
+                color={outOfCredits ? 'red' : lowCredits ? 'orange' : undefined}
+                leftSection={<IconCoins size={14} />}
+                styles={{ label: { whiteSpace: 'nowrap' } }}
+              >
+                {creditsLabel}
+              </Badge>
+            </Tooltip>
           )}
           <SignedOut>
             <SignInButton mode="modal">

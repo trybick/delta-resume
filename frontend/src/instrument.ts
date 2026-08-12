@@ -19,5 +19,7 @@ if (dsn) {
     tracePropagationTargets: [/^\//, /^https?:\/\/localhost(:\d+)?\/api/],
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 1.0,
+    ignoreErrors: [/Java object is gone/],
+    denyUrls: [/iabjs:\/\//i, /navigation_performance_logger_android/i],
   });
 }

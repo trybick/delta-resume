@@ -7,12 +7,18 @@ import { appTheme, spaceGroteskStack } from '../lib/theme';
 type LandingHeroProps = {
   freeTrialLabel: string | null;
   onStartClick: () => void;
+  onExampleClick: () => void;
 };
 
-const LandingHero = ({ freeTrialLabel, onStartClick }: LandingHeroProps) => {
+const LandingHero = ({ freeTrialLabel, onStartClick, onExampleClick }: LandingHeroProps) => {
   const handleStartClick = () => {
     trackEvent(AnalyticsEvents.LandingCta, { placement: 'hero' });
     onStartClick();
+  };
+
+  const handleExampleClick = () => {
+    trackEvent(AnalyticsEvents.LandingCta, { placement: 'hero_example' });
+    onExampleClick();
   };
 
   return (
@@ -32,9 +38,6 @@ const LandingHero = ({ freeTrialLabel, onStartClick }: LandingHeroProps) => {
               Our AI rewrites your bullets the way recruiters want to read them. You keep only what
               sounds like you.
             </Text>
-            <Text size="sm" c="dimmed" ta="center" maw={480} lh={1.5}>
-              Need a cover letter? Pro writes one to match your tailored resume in the same run.
-            </Text>
           </Stack>
           {freeTrialLabel && (
             <Badge size="lg" variant="light" color="teal">
@@ -51,6 +54,9 @@ const LandingHero = ({ freeTrialLabel, onStartClick }: LandingHeroProps) => {
             onClick={handleStartClick}
           >
             Tailor my resume for free
+          </Button>
+          <Button variant="subtle" color="gray" size="sm" onClick={handleExampleClick}>
+            See an example result first
           </Button>
         </Stack>
       </Grid.Col>
