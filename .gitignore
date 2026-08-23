@@ -37,3 +37,7 @@ backend/data/
 
 backend/DeltaResume.Api/.env
 backend/DeltaResume.Api/out/
+
+.agents/
+skills-lock.json
+docs/
