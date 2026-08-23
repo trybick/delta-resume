@@ -8,6 +8,7 @@ type CollapsedContextProps = {
 
 const CollapsedContext = ({ hiddenCount, onExpand }: CollapsedContextProps) => (
   <UnstyledButton
+    className="collapsed-context"
     onClick={onExpand}
     my={6}
     style={{

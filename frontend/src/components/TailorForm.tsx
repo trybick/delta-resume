@@ -115,6 +115,7 @@ const TailorForm = ({
         )}
         <Tooltip label={disabledReason} disabled={disabledReason === null} withArrow>
           <Button
+            className="tailor-button"
             size="lg"
             fullWidth
             variant="gradient"

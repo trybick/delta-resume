@@ -88,6 +88,7 @@ const DiffBullet = ({ change, decision, onDecisionChange }: DiffBulletProps) => 
 
   return (
     <Paper
+      className="diff-bullet"
       withBorder
       p="sm"
       my={6}

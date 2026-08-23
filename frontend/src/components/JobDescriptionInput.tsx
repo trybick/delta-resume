@@ -13,6 +13,7 @@ type JobDescriptionInputProps = {
 const JobDescriptionInput = ({ value, onChange }: JobDescriptionInputProps) => {
   const remainingCharacters = JOB_DESCRIPTION_MAX_LENGTH - value.length;
   const hasContent = value.length > 0;
+  const isNearLimit = remainingCharacters <= 1000;
   const trackEditJobDescription = useMemo(
     () => createDebouncedTracker(AnalyticsEvents.EditJobDescription),
     [],
@@ -40,9 +41,11 @@ const JobDescriptionInput = ({ value, onChange }: JobDescriptionInputProps) => {
               >
                 Remove
               </Button>
-              <Text size="xs" c={remainingCharacters <= 0 ? 'red' : 'dimmed'}>
-                {remainingCharacters.toLocaleString()} characters left
-              </Text>
+              {isNearLimit && (
+                <Text size="xs" c={remainingCharacters <= 0 ? 'red' : 'dimmed'}>
+                  {remainingCharacters.toLocaleString()} characters left
+                </Text>
+              )}
             </Group>
           )}
         </Group>

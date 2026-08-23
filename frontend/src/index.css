@@ -1,7 +1,40 @@
 body {
   margin: 0;
   background-color: var(--mantine-color-dark-8);
+  background-image: radial-gradient(
+    ellipse 90% 42% at 50% -8%,
+    rgba(34, 184, 207, 0.07),
+    transparent
+  );
+  background-repeat: no-repeat;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: rgba(34, 184, 207, 0.35);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--mantine-color-dark-4) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--mantine-color-dark-4);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .saved-resume-card {
@@ -12,6 +45,47 @@ body {
 
 .saved-resume-card:hover {
   background-color: var(--mantine-color-default-hover);
+}
+
+.diff-bullet {
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease,
+    opacity 150ms ease;
+}
+
+.diff-bullet:hover {
+  background-color: var(--mantine-color-default-hover);
+}
+
+.collapsed-context {
+  transition:
+    border-color 150ms ease,
+    background-color 150ms ease;
+}
+
+.collapsed-context:hover {
+  border-color: var(--mantine-color-dark-3);
+  background-color: var(--mantine-color-dark-6);
+}
+
+.requirements-coverage .mantine-Progress-section {
+  transition: width 300ms ease;
+}
+
+.tailor-button {
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.tailor-button:hover:not(:disabled, [data-disabled]) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(34, 184, 207, 0.28);
+}
+
+.tailor-button:active:not(:disabled, [data-disabled]) {
+  transform: translateY(0);
 }
 
 .tailoring-loader-topbar {
