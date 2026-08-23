@@ -1,8 +1,9 @@
-import { Badge, Button, Grid, Stack, Text, Title } from '@mantine/core';
-import { IconSparkles } from '@tabler/icons-react';
+import { Badge, Button, Grid, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import { IconFileText, IconMail, IconSparkles } from '@tabler/icons-react';
 import CoverLetterMockExample from './CoverLetterMockExample';
 import DiffMockExample from './DiffMockExample';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { proAccent } from '../lib/proAccent';
 import { appTheme, spaceGroteskStack } from '../lib/theme';
 
 type LandingHeroProps = {
@@ -37,9 +38,30 @@ const LandingHero = ({ freeTrialLabel, onStartClick, onExampleClick }: LandingHe
             </Title>
             <Text size="md" c="dimmed" ta="center" maw={480} lh={1.5}>
               Paste a job post. Your bullets are rewritten the way recruiters read them, and you
-              approve every change. On Pro, the same run also writes a matching cover letter.
+              approve every change as an inline diff.
             </Text>
           </Stack>
+          <Group gap="md" justify="center">
+            <Group gap={6} wrap="nowrap">
+              <ThemeIcon size={22} radius="xl" variant="light" color="teal">
+                <IconFileText size={13} />
+              </ThemeIcon>
+              <Text size="sm" fw={600}>
+                Tailored resume
+              </Text>
+            </Group>
+            <Group gap={6} wrap="nowrap">
+              <ThemeIcon size={22} radius="xl" variant="light" color="orange">
+                <IconMail size={13} />
+              </ThemeIcon>
+              <Text size="sm" fw={600}>
+                Matching cover letter
+              </Text>
+              <Badge size="sm" variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }}>
+                Pro
+              </Badge>
+            </Group>
+          </Group>
           {freeTrialLabel && (
             <Badge size="lg" variant="light" color="teal">
               {freeTrialLabel}

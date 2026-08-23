@@ -270,7 +270,8 @@ const LandingStrip = ({
                   Simple pricing
                 </Title>
                 <Text size="sm" c="dimmed" ta="center" maw={520}>
-                  Try it free, no account needed. Upgrade when you&apos;re applying in volume.
+                  Try it free, no account needed. Upgrade when you want cover letters and gap
+                  filling on every run.
                 </Text>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" w="100%" maw={760}>
@@ -398,6 +399,9 @@ const LandingStrip = ({
                 >
                   Tailor my resume for free
                 </Button>
+                <Text size="xs" c="dimmed" ta="center">
+                  Free credits to start. No sign-up, no card.
+                </Text>
               </Stack>
             )}
           </Stack>
