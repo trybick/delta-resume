@@ -417,7 +417,6 @@ const App = () => {
         showUpgradeButton={showUpgradeCta}
         onUpgradeClick={() => openPaywall('upgrade')}
         onStartClick={showLanding ? handleRevealTool : undefined}
-        onExampleClick={showLanding ? handleShowExampleFromLanding : undefined}
       />
 
       <AppFooter />

@@ -10,27 +10,27 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'Will the rewrites sound like me?',
     answer:
-      'You have the final say on every word. Each rewrite is shown as an inline diff \u2014 keep it or revert it with one click. Nothing changes unless you approve it, so your resume stays in your voice.',
+      'You have the final say on every word. Each rewrite is shown as an inline diff. Keep it or revert it with one click. Nothing changes unless you approve it, so your resume stays in your voice.',
   },
   {
     question: 'Is my resume stored or used to train AI?',
     answer:
-      'Guest runs are processed in memory and discarded as soon as your suggestions are ready \u2014 never stored, never used to train AI models. With an account, your resume is saved so you can reuse it, and you can rename or delete it anytime.',
+      'Guest runs are processed in memory and discarded as soon as your suggestions are ready. They are never stored and never used to train AI models. With an account, your resume is saved so you can reuse it, and you can rename or delete it anytime.',
   },
   {
     question: 'What can I upload, and what can I export?',
     answer:
-      'Upload a .docx or .pdf, or paste plain text. Export your tailored resume as a DOCX or PDF \u2014 keeping your original formatting or using a clean template, with an option to fit it to one page \u2014 or copy it to your clipboard.',
+      'Upload a .docx or .pdf, or paste plain text. Export your tailored resume as a DOCX or PDF, keeping your original formatting or using a clean template, with an option to fit it to one page, or copy it to your clipboard.',
   },
   {
     question: 'Do I need an account to try it?',
     answer:
-      'No. You get free credits the moment you open the app \u2014 paste your resume and a job post and you\u2019ll see suggested rewrites in seconds. No sign-up, no card.',
+      'No. You get free credits the moment you open the app. Paste your resume and a job post and you\u2019ll see suggested rewrites in seconds. No sign-up, no card.',
   },
   {
     question: 'Does the free plan include cover letters?',
     answer:
-      'No \u2014 cover letters are a Pro feature, and they\u2019re labeled that way wherever they appear. On Pro, every tailor run also writes a matching cover letter in your choice of length and tone, from the same resume and job post.',
+      'No. Cover letters are a Pro feature, and they\u2019re labeled that way wherever they appear. On Pro, every tailor run also writes a matching cover letter in your choice of length and tone, from the same resume and job post.',
   },
   {
     question: 'What does one credit cover?',

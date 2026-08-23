@@ -31,8 +31,6 @@ import {
   IconSparkles,
 } from '@tabler/icons-react';
 import DiffMockExample from './DiffMockExample';
-import LandingAtsSection from './LandingAtsSection';
-import LandingCoverLetter from './LandingCoverLetter';
 import LandingFaqSection from './LandingFaqSection';
 import LegalModal from './LegalModal';
 import ProFeatureList from './ProFeatureList';
@@ -49,7 +47,6 @@ type LandingStripProps = {
   showUpgradeButton: boolean;
   onUpgradeClick: () => void;
   onStartClick?: () => void;
-  onExampleClick?: () => void;
 };
 
 type HowItWorksStep = {
@@ -111,7 +108,6 @@ const getFreePlanFeatures = (freeCreditTotal: number | null): string[] => [
   'Inline diff review of every change',
   'Copy or export your tailored resume',
   'Multiple export options, including fit to one page',
-  'Guest runs are never stored or used for AI training',
 ];
 
 const LandingStrip = ({
@@ -120,7 +116,6 @@ const LandingStrip = ({
   showUpgradeButton,
   onUpgradeClick,
   onStartClick,
-  onExampleClick,
 }: LandingStripProps) => {
   const [openDocument, setOpenDocument] = useState<LegalDocument | null>(null);
   const [expanded, setExpanded] = useState(false);
@@ -193,16 +188,9 @@ const LandingStrip = ({
                   How it works
                 </Title>
                 <Text size="sm" c="dimmed" ta="center" maw={520}>
-                  Three steps from job post to tailored resume.
+                  Three steps from job post to tailored resume. On Pro, a matching cover letter is
+                  written for you at the same time.
                 </Text>
-                <Group gap={8} justify="center" pt={4}>
-                  <Badge size="sm" variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }}>
-                    Pro
-                  </Badge>
-                  <Text size="sm" c="dimmed">
-                    The same run also writes your cover letter.
-                  </Text>
-                </Group>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
                 {HOW_IT_WORKS_STEPS.map((step, index) => {
@@ -227,7 +215,12 @@ const LandingStrip = ({
                   );
                 })}
               </SimpleGrid>
-              <Stack gap={6} align="center" w="100%" hiddenFrom={onStartClick ? 'md' : undefined}>
+              <Stack
+                gap={6}
+                align="center"
+                w="100%"
+                hiddenFrom={onStartClick ? 'md' : undefined}
+              >
                 <DiffMockExample />
                 <Text size="xs" c="dimmed" ta="center">
                   Every rewrite is shown as an inline diff. Keep it or revert it with one click.
@@ -237,22 +230,14 @@ const LandingStrip = ({
 
             <Divider />
 
-            <LandingAtsSection onStartClick={onStartClick} />
-
-            <Divider />
-
-            <LandingCoverLetter onExampleClick={onExampleClick} />
-
-            <Divider />
-
             <Stack gap="xl" align="center">
               <Stack gap={4} align="center">
                 <Title order={2} ta="center">
                   Your resume stays yours
                 </Title>
                 <Text size="sm" c="dimmed" ta="center" maw={520}>
-                  We built Delta Resume so you never have to put blind trust in AI. Every change is
-                  yours to keep or reject, and your documents stay private.
+                  We built Delta Resume so you never have to put blind trust in AI. Every change
+                  is yours to keep or reject, and your documents stay private.
                 </Text>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
@@ -286,8 +271,7 @@ const LandingStrip = ({
                   Simple pricing
                 </Title>
                 <Text size="sm" c="dimmed" ta="center" maw={520}>
-                  Try it free, no account needed. Upgrade for the full application package: resume,
-                  cover letter, and gap detection in every run.
+                  Try it free, no account needed. Upgrade when you&apos;re applying in volume.
                 </Text>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" w="100%" maw={760}>
@@ -302,9 +286,6 @@ const LandingStrip = ({
                           $0
                         </Text>
                       </Group>
-                      <Text size="xs" c="dimmed" lh={1.4}>
-                        Every run tailors your resume — you review each change.
-                      </Text>
                     </Stack>
                     <List
                       spacing="xs"
@@ -329,7 +310,7 @@ const LandingStrip = ({
                         leftSection={<IconSparkles size={18} />}
                         onClick={handleFreeStartClick}
                       >
-                        Start free &mdash; no account needed
+                        Start free, no account needed
                       </Button>
                     )}
                   </Stack>
@@ -367,10 +348,6 @@ const LandingStrip = ({
                           </Text>
                         )}
                       </Group>
-                      <Text size="xs" c="dimmed" lh={1.4}>
-                        The full application package — tailored resume, cover letter, and gap
-                        detection in every run.
-                      </Text>
                     </Stack>
                     <ProFeatureList />
                     {showUpgradeButton && (
@@ -394,7 +371,7 @@ const LandingStrip = ({
                         variant="default"
                         onClick={handleProStartClick}
                       >
-                        Start free &mdash; upgrade anytime
+                        Start free, upgrade anytime
                       </Button>
                     )}
                   </Stack>
