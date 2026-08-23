@@ -30,6 +30,7 @@ import {
   IconRobotOff,
   IconSparkles,
 } from '@tabler/icons-react';
+import CoverLetterMockExample from './CoverLetterMockExample';
 import DiffMockExample from './DiffMockExample';
 import LandingFaqSection from './LandingFaqSection';
 import LegalModal from './LegalModal';
@@ -215,16 +216,14 @@ const LandingStrip = ({
                   );
                 })}
               </SimpleGrid>
-              <Stack
-                gap={6}
-                align="center"
-                w="100%"
-                hiddenFrom={onStartClick ? 'md' : undefined}
-              >
-                <DiffMockExample />
-                <Text size="xs" c="dimmed" ta="center">
-                  Every rewrite is shown as an inline diff. Keep it or revert it with one click.
-                </Text>
+              <Stack gap="sm" align="center" w="100%" hiddenFrom={onStartClick ? 'md' : undefined}>
+                <Stack gap={6} align="center" w="100%">
+                  <DiffMockExample />
+                  <Text size="xs" c="dimmed" ta="center">
+                    Every rewrite is shown as an inline diff. Keep it or revert it with one click.
+                  </Text>
+                </Stack>
+                <CoverLetterMockExample />
               </Stack>
             </Stack>
 
@@ -236,8 +235,8 @@ const LandingStrip = ({
                   Your resume stays yours
                 </Title>
                 <Text size="sm" c="dimmed" ta="center" maw={520}>
-                  We built Delta Resume so you never have to put blind trust in AI. Every change
-                  is yours to keep or reject, and your documents stay private.
+                  We built Delta Resume so you never have to put blind trust in AI. Every change is
+                  yours to keep or reject, and your documents stay private.
                 </Text>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
@@ -271,7 +270,8 @@ const LandingStrip = ({
                   Simple pricing
                 </Title>
                 <Text size="sm" c="dimmed" ta="center" maw={520}>
-                  Try it free, no account needed. Upgrade when you&apos;re applying in volume.
+                  Try it free, no account needed. Upgrade when you want cover letters and gap
+                  filling on every run.
                 </Text>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" w="100%" maw={760}>
@@ -399,6 +399,9 @@ const LandingStrip = ({
                 >
                   Tailor my resume for free
                 </Button>
+                <Text size="xs" c="dimmed" ta="center">
+                  Free credits to start. No sign-up, no card.
+                </Text>
               </Stack>
             )}
           </Stack>
