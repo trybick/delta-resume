@@ -31,6 +31,8 @@ import {
   IconSparkles,
 } from '@tabler/icons-react';
 import DiffMockExample from './DiffMockExample';
+import LandingAtsSection from './LandingAtsSection';
+import LandingFaqSection from './LandingFaqSection';
 import LegalModal from './LegalModal';
 import ProFeatureList from './ProFeatureList';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
@@ -144,6 +146,16 @@ const LandingStrip = ({
     onStartClick?.();
   };
 
+  const handleFreeStartClick = () => {
+    trackEvent(AnalyticsEvents.LandingCta, { placement: 'pricing_free' });
+    onStartClick?.();
+  };
+
+  const handleProStartClick = () => {
+    trackEvent(AnalyticsEvents.LandingCta, { placement: 'pricing_pro' });
+    onStartClick?.();
+  };
+
   const handleToggleExpanded = () => {
     trackEvent(AnalyticsEvents.LandingStripToggle, { expanded: !expanded });
     setExpanded(!expanded);
@@ -204,12 +216,7 @@ const LandingStrip = ({
                   );
                 })}
               </SimpleGrid>
-              <Stack
-                gap={6}
-                align="center"
-                w="100%"
-                hiddenFrom={onStartClick ? 'md' : undefined}
-              >
+              <Stack gap={6} align="center" w="100%" hiddenFrom={onStartClick ? 'md' : undefined}>
                 <DiffMockExample />
                 <Text size="xs" c="dimmed" ta="center">
                   Every rewrite is shown as an inline diff. Keep it or revert it with one click.
@@ -219,14 +226,18 @@ const LandingStrip = ({
 
             <Divider />
 
+            <LandingAtsSection onStartClick={onStartClick} />
+
+            <Divider />
+
             <Stack gap="xl" align="center">
               <Stack gap={4} align="center">
                 <Title order={2} ta="center">
                   Your resume stays yours
                 </Title>
                 <Text size="sm" c="dimmed" ta="center" maw={520}>
-                  We built Delta Resume so you never have to put blind trust in AI. Every change
-                  is yours to keep or reject, and your documents stay private.
+                  We built Delta Resume so you never have to put blind trust in AI. Every change is
+                  yours to keep or reject, and your documents stay private.
                 </Text>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
@@ -289,6 +300,19 @@ const LandingStrip = ({
                         <List.Item key={feature}>{feature}</List.Item>
                       ))}
                     </List>
+                    {onStartClick && (
+                      <Button
+                        mt="auto"
+                        size="md"
+                        fullWidth
+                        variant="light"
+                        color="teal"
+                        leftSection={<IconSparkles size={18} />}
+                        onClick={handleFreeStartClick}
+                      >
+                        Start free &mdash; no account needed
+                      </Button>
+                    )}
                   </Stack>
                 </Card>
                 <Paper
@@ -339,6 +363,17 @@ const LandingStrip = ({
                         Upgrade to Pro
                       </Button>
                     )}
+                    {!showUpgradeButton && onStartClick && (
+                      <Button
+                        mt="auto"
+                        size="md"
+                        fullWidth
+                        variant="default"
+                        onClick={handleProStartClick}
+                      >
+                        Start free &mdash; upgrade anytime
+                      </Button>
+                    )}
                   </Stack>
                 </Paper>
               </SimpleGrid>
@@ -346,6 +381,10 @@ const LandingStrip = ({
                 Cancel anytime. Pro credits renew every month.
               </Text>
             </Stack>
+
+            <Divider />
+
+            <LandingFaqSection />
 
             {onStartClick && (
               <Stack gap="sm" align="center">
