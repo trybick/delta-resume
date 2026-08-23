@@ -71,7 +71,7 @@ const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
     icon: IconGitCompare,
     title: 'Review every change',
     description:
-      'Your bullets are rewritten to match the role. You see each edit as an inline diff and keep or revert it.',
+      'Your resume bullets are rewritten to match the role. You see each edit as an inline diff and keep or revert it.',
   },
 ];
 
@@ -216,7 +216,7 @@ const LandingStrip = ({
                   );
                 })}
               </SimpleGrid>
-              <Stack gap="md" align="center" w="100%" hiddenFrom={onStartClick ? 'md' : undefined}>
+              <Stack gap="xl" align="center" w="100%" hiddenFrom={onStartClick ? 'md' : undefined}>
                 <Stack gap={6} align="center" w="100%">
                   <DiffMockExample />
                   <Text size="xs" c="dimmed" ta="center">

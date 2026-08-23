@@ -1,18 +1,23 @@
 import { Badge, Button, Grid, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
-import { IconFileText, IconMail, IconSparkles } from '@tabler/icons-react';
+import { IconEye, IconFileText, IconMail, IconSparkles } from '@tabler/icons-react';
 import CoverLetterMockExample from './CoverLetterMockExample';
 import DiffMockExample from './DiffMockExample';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { proAccent } from '../lib/proAccent';
-import { appTheme, spaceGroteskStack } from '../lib/theme';
+import { appTheme } from '../lib/theme';
 
 type LandingHeroProps = {
-  freeTrialLabel: string | null;
+  freeCreditsRemaining: number | null;
   onStartClick: () => void;
   onExampleClick: () => void;
 };
 
-const LandingHero = ({ freeTrialLabel, onStartClick, onExampleClick }: LandingHeroProps) => {
+const LandingHero = ({ freeCreditsRemaining, onStartClick, onExampleClick }: LandingHeroProps) => {
+  const startLabel =
+    freeCreditsRemaining !== null
+      ? `Tailor my resume for free · ${freeCreditsRemaining} ${freeCreditsRemaining === 1 ? 'credit' : 'credits'}`
+      : 'Tailor my resume for free';
+
   const handleStartClick = () => {
     trackEvent(AnalyticsEvents.LandingCta, { placement: 'hero' });
     onStartClick();
@@ -31,14 +36,23 @@ const LandingHero = ({ freeTrialLabel, onStartClick, onExampleClick }: LandingHe
             <Title
               order={1}
               ta="center"
+              fw={800}
+              maw={520}
               fz={{ base: '1.75rem', md: '2.375rem' }}
-              style={{ fontFamily: spaceGroteskStack, lineHeight: 1.2 }}
+              style={{ lineHeight: 1.2, letterSpacing: '-0.02em', textWrap: 'balance' }}
             >
               Tailor your resume and cover letter to any job in seconds
             </Title>
-            <Text size="md" c="dimmed" ta="center" maw={480} lh={1.5}>
-              Paste a job post. Your bullets are rewritten the way recruiters read them, and you
-              approve every change as an inline diff.
+            <Text
+              size="md"
+              c="dimmed"
+              ta="center"
+              maw={480}
+              lh={1.5}
+              style={{ textWrap: 'balance' }}
+            >
+              Paste a job post. Your bullets are rewritten to hit the skills and keywords it asks
+              for.
             </Text>
           </Stack>
           <Group gap="md" justify="center">
@@ -51,7 +65,7 @@ const LandingHero = ({ freeTrialLabel, onStartClick, onExampleClick }: LandingHe
               </Text>
             </Group>
             <Group gap={6} wrap="nowrap">
-              <ThemeIcon size={22} radius="xl" variant="light" color="orange">
+              <ThemeIcon size={22} radius="xl" variant="light" color="teal">
                 <IconMail size={13} />
               </ThemeIcon>
               <Text size="sm" fw={600}>
@@ -62,11 +76,6 @@ const LandingHero = ({ freeTrialLabel, onStartClick, onExampleClick }: LandingHe
               </Badge>
             </Group>
           </Group>
-          {freeTrialLabel && (
-            <Badge size="lg" variant="light" color="teal">
-              {freeTrialLabel}
-            </Badge>
-          )}
           <Button
             size="lg"
             fullWidth
@@ -76,18 +85,23 @@ const LandingHero = ({ freeTrialLabel, onStartClick, onExampleClick }: LandingHe
             leftSection={<IconSparkles size={18} />}
             onClick={handleStartClick}
           >
-            Tailor my resume for free
+            {startLabel}
           </Button>
           <Text size="xs" c="dimmed" ta="center">
-            No card required. Your resume is never used to train AI.
+            No sign-up, no card. Your resume is never used to train AI.
           </Text>
-          <Button variant="subtle" color="gray" size="sm" onClick={handleExampleClick}>
+          <Button
+            variant="default"
+            size="md"
+            leftSection={<IconEye size={16} />}
+            onClick={handleExampleClick}
+          >
             See an example result first
           </Button>
         </Stack>
       </Grid.Col>
       <Grid.Col span={6} visibleFrom="md">
-        <Stack gap="md" align="center">
+        <Stack gap="xl" align="center">
           <Stack gap={6} align="center" w="100%">
             <DiffMockExample />
             <Text size="xs" c="dimmed" ta="center">
