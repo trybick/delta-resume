@@ -14,18 +14,22 @@ const CoverLetterMockExample = () => {
         radius="md"
         maw={560}
         w="100%"
-        pos="relative"
         style={{ borderLeft: '3px solid var(--mantine-color-cyan-6)' }}
       >
-        <Group gap={6} pos="absolute" top={10} right={10} align="center" wrap="nowrap">
-          {proPrice && (
-            <Text size="xs" c="dimmed" fw={500}>
-              from {proPrice}/mo
-            </Text>
-          )}
-          <Badge size="sm" variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }}>
-            Pro
-          </Badge>
+        <Group justify="space-between" align="center" mb={6} wrap="nowrap">
+          <Text size="xs" c="dimmed" fw={600}>
+            Matching cover letter
+          </Text>
+          <Group gap={6} align="center" wrap="nowrap">
+            {proPrice && (
+              <Text size="xs" c="dimmed" fw={500}>
+                from {proPrice}/mo
+              </Text>
+            )}
+            <Badge size="sm" variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }}>
+              Pro
+            </Badge>
+          </Group>
         </Group>
         <Box
           style={{
@@ -33,12 +37,7 @@ const CoverLetterMockExample = () => {
             WebkitMaskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
           }}
         >
-          <Text
-            size="sm"
-            c="dimmed"
-            lineClamp={3}
-            style={{ lineHeight: 1.6, paddingRight: proPrice ? 128 : 44 }}
-          >
+          <Text size="sm" c="dimmed" lineClamp={3} style={{ lineHeight: 1.6 }}>
             Dear Hiring Team,
             <br />
             When I read that you need a frontend lead who can own dashboards end to end, it sounded
