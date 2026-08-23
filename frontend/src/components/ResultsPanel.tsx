@@ -48,7 +48,6 @@ import type {
 import { useProUpgradeCtaLabel } from '../hooks/useProPlan';
 import { useResumeExport } from '../hooks/useResumeExport';
 import AddedBulletRow from './AddedBulletRow';
-import ChangesSummary from './ChangesSummary';
 import RequirementsCoverage from './RequirementsCoverage';
 import CollapsedContext from './CollapsedContext';
 import CollapsibleInsight from './CollapsibleInsight';
@@ -346,11 +345,6 @@ const ResultsPanel = ({
 
   if (!result) return null;
 
-  const bulletChangeCount = result.changes.filter((change) => change.kind === 'bullet').length;
-  const skillChangeCount = result.changes.filter((change) => change.kind === 'skill').length;
-  const paragraphChangeCount = result.changes.filter(
-    (change) => change.kind === 'paragraph',
-  ).length;
   const reviewSegments = buildReviewSegments(
     result.resumeText,
     result.document,
@@ -499,23 +493,20 @@ const ResultsPanel = ({
       <Stack gap="md">
         <Stack gap="sm">
           <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
-            <ChangesSummary
-              bulletCount={bulletChangeCount}
-              skillCount={skillChangeCount}
-              paragraphCount={paragraphChangeCount}
-            />
+            {requirements.length > 0 && (
+              <Box style={{ flex: 1, minWidth: 0 }}>
+                <RequirementsCoverage
+                  coveredCount={coveredCount}
+                  totalCount={requirements.length}
+                  baseCoveredCount={baseCoveredCount}
+                  coveredByChangesCount={coveredByChangesCount}
+                  coveredByAddedCount={coveredByAddedCount}
+                  availableFillerCount={availableFillerCount}
+                />
+              </Box>
+            )}
             {!isNarrowMobile && actionButtons}
           </Group>
-          {requirements.length > 0 && (
-            <RequirementsCoverage
-              coveredCount={coveredCount}
-              totalCount={requirements.length}
-              baseCoveredCount={baseCoveredCount}
-              coveredByChangesCount={coveredByChangesCount}
-              coveredByAddedCount={coveredByAddedCount}
-              availableFillerCount={availableFillerCount}
-            />
-          )}
           {(showGuestNudge || showFreeUpgradeNudge) && (
             <Group
               gap={6}

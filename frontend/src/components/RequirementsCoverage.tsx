@@ -55,13 +55,13 @@ const RequirementsCoverage = ({
       label="How many of the job's key requirements your resume demonstrates: what your original resume already covered, what the tailored changes now cover, and gaps you can still fill with suggested bullets."
       multiline
       maw={340}
+      w="100%"
     >
       <Box
         className="requirements-coverage"
         px="sm"
         py={8}
         w="100%"
-        maw={420}
         style={{
           borderRadius: 10,
           border: '1px solid color-mix(in srgb, var(--mantine-color-green-6) 25%, transparent)',

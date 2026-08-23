@@ -14,10 +14,6 @@ body {
   background-color: var(--mantine-color-default-hover);
 }
 
-.changes-summary {
-  max-width: 100%;
-}
-
 .tailoring-loader-topbar {
   position: absolute;
   top: 0;
