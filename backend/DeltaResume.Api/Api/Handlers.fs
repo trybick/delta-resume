@@ -250,7 +250,8 @@ module Handlers =
                                                 ctx,
                                                 request.ResumeText,
                                                 request.ResumeName,
-                                                run.Document
+                                                run.Document,
+                                                request.ResumeLayout
                                             )
                                     with ex ->
                                         SentrySdk.CaptureException(ex) |> ignore
@@ -259,7 +260,7 @@ module Handlers =
                                     let identity = Identity.resolve identityOptions ctx
                                     let isProPlan = Identity.plan identity = ProPlan
 
-                                    return! json (Mapping.toResponseDto isProPlan run) next ctx
+                                    return! json (Mapping.toResponseDto isProPlan request.ResumeLayout run) next ctx
                                 | Error error ->
                                     do! refundCredit creditService operationId
                                     return! tailorErrorToResponse error next ctx

@@ -27,12 +27,18 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
                 name)
         |> Option.defaultValue (fallbackName now)
 
-    // Called after a successful tailor only - upload/paste never hits the server.
     // Formatting lives primarily in the browser: .docx originals are kept in IndexedDB
     // so export can restore layout. The backend stores plain text plus an optional typed
     // document so later runs can reuse structure without re-extraction.
+    // Called after a successful tailor only - upload/paste never hits the server.
     member _.AutoSave
-        (ctx: HttpContext, resumeText: string, requestedName: string option, resumeDocument: ResumeDocument option)
+        (
+            ctx: HttpContext,
+            resumeText: string,
+            requestedName: string option,
+            resumeDocument: ResumeDocument option,
+            resumeLayout: string option
+        )
         : Task<unit> =
         task {
             let identity = Identity.resolve options ctx
@@ -49,10 +55,21 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
                     let! existing = repository.FindByHash(ownerKey, contentHash)
 
                     match existing with
-                    | Some existingResume when existingResume.ResumeDocument.IsSome || resumeDocument.IsNone ->
-                        ()
                     | Some existingResume ->
-                        do! repository.UpdateDocument(existingResume.Id, ownerKey, resumeDocument)
+                        let shouldUpdateDocument =
+                            existingResume.ResumeDocument.IsNone && resumeDocument.IsSome
+
+                        let shouldUpdateLayout =
+                            existingResume.ResumeLayout.IsNone && resumeLayout.IsSome
+
+                        if shouldUpdateDocument || shouldUpdateLayout then
+                            do!
+                                repository.UpdateMetadata(
+                                    existingResume.Id,
+                                    ownerKey,
+                                    resumeDocument,
+                                    resumeLayout
+                                )
                     | None ->
                         do!
                             repository.Insert
@@ -61,6 +78,7 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
                                   Name = sanitizeName requestedName now
                                   ResumeText = resumeText
                                   ResumeDocument = resumeDocument
+                                  ResumeLayout = resumeLayout
                                   ContentHash = contentHash
                                   CreatedAt = now
                                   UpdatedAt = now }

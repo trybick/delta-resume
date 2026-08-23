@@ -10,6 +10,7 @@ type TailorRequestDto =
       JobDescription: string
       ResumeName: string option
       ResumeDocument: string option
+      ResumeLayout: string option
       RunId: Guid option }
 
 [<CLIMutable>]
@@ -41,6 +42,7 @@ type SavedResumeDto =
       Name: string
       ResumeText: string
       ResumeDocument: string option
+      ResumeLayout: string option
       CreatedAt: DateTimeOffset }
 
 type BulletChangeDto =
@@ -67,7 +69,8 @@ type TailorResponseDto =
       Summary: string
       Changes: BulletChangeDto list
       Requirements: JobRequirementDto list
-      Document: string option }
+      Document: string option
+      ResumeLayout: string option }
 
 type ErrorResponseDto = { Message: string }
 
@@ -138,7 +141,7 @@ module Mapping =
             0
         |> fst
 
-    let toResponseDto (isProPlan: bool) (run: TailorRun) : TailorResponseDto =
+    let toResponseDto (isProPlan: bool) (resumeLayout: string option) (run: TailorRun) : TailorResponseDto =
         let (RunId runId) = run.Id
 
         { RunId = runId
@@ -150,7 +153,8 @@ module Mapping =
                 run.Requirements |> List.map toRequirementDto
             else
                 toGatedRequirementDtos run
-          Document = run.Document |> Option.map ResumeDocumentJson.serialize }
+          Document = run.Document |> Option.map ResumeDocumentJson.serialize
+          ResumeLayout = resumeLayout }
 
     let toUserSettingsDto (settings: UserSettings) : UserSettingsDto =
         { CoverLetter =
@@ -164,4 +168,5 @@ module Mapping =
           Name = resume.Name
           ResumeText = resume.ResumeText
           ResumeDocument = resume.ResumeDocument |> Option.map ResumeDocumentJson.serialize
+          ResumeLayout = resume.ResumeLayout
           CreatedAt = resume.CreatedAt }

@@ -18,7 +18,7 @@ const ACCEPTED_MIME_TYPES = [
 
 type ResumeUploadPanelProps = {
   attachedFile: AttachedFile | null;
-  onFileAttach: (file: AttachedFile, text: string, sourceFile: File) => void;
+  onFileAttach: (file: AttachedFile, text: string, sourceFile: File) => Promise<void>;
   onClear: () => void;
 };
 
@@ -45,7 +45,7 @@ const ResumeUploadPanel = ({
       trackEvent(AnalyticsEvents.FileParseSuccess, {
         file_type: file.type || 'unknown',
       });
-      onFileAttach(attached, text, file);
+      await onFileAttach(attached, text, file);
     } catch (error) {
       trackEvent(AnalyticsEvents.FileParseFailure, {
         file_type: file.type || 'unknown',

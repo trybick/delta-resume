@@ -35,6 +35,117 @@ export type DocxCleanLayout = {
   hrefByAnchorText: Map<string, string>;
 };
 
+type PersistedDocxCellRef = DocxCellRef & {
+  lineIndex: number;
+};
+
+export type PersistedDocxLayout = {
+  version: 1;
+  cells: PersistedDocxCellRef[];
+  boldLines: number[];
+  tables: DocxTableInfo[];
+  links: { anchorText: string; href: string }[];
+};
+
+const MAX_PERSISTED_LAYOUT_ITEMS = 5_000;
+
+const isUnknownRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const isNonNegativeInteger = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isInteger(value) && value >= 0;
+
+const isPositiveInteger = (value: unknown): value is number =>
+  isNonNegativeInteger(value) && value > 0;
+
+const isPositiveNumber = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value) && value > 0;
+
+const isPersistedCell = (value: unknown): value is PersistedDocxCellRef =>
+  isUnknownRecord(value) &&
+  isNonNegativeInteger(value.lineIndex) &&
+  isNonNegativeInteger(value.tableIndex) &&
+  isNonNegativeInteger(value.rowIndex) &&
+  isNonNegativeInteger(value.columnIndex) &&
+  isPositiveInteger(value.columnCount) &&
+  value.columnIndex < value.columnCount;
+
+const isPersistedTable = (value: unknown): value is DocxTableInfo => {
+  if (!isUnknownRecord(value) || !isPositiveInteger(value.columnCount)) return false;
+  if (value.columnWidths === null) return true;
+  return (
+    Array.isArray(value.columnWidths) &&
+    value.columnWidths.length === value.columnCount &&
+    value.columnWidths.every(isPositiveNumber)
+  );
+};
+
+const isPersistedLink = (value: unknown): value is PersistedDocxLayout['links'][number] =>
+  isUnknownRecord(value) &&
+  typeof value.anchorText === 'string' &&
+  value.anchorText.length > 0 &&
+  typeof value.href === 'string' &&
+  value.href.length > 0;
+
+const parsePersistedLayoutValue = (value: unknown): DocxCleanLayout | null => {
+  if (!isUnknownRecord(value) || value.version !== 1) return null;
+  if (
+    !Array.isArray(value.cells) ||
+    !Array.isArray(value.boldLines) ||
+    !Array.isArray(value.tables) ||
+    !Array.isArray(value.links)
+  ) {
+    return null;
+  }
+  if (
+    value.cells.length > MAX_PERSISTED_LAYOUT_ITEMS ||
+    value.boldLines.length > MAX_PERSISTED_LAYOUT_ITEMS ||
+    value.tables.length > MAX_PERSISTED_LAYOUT_ITEMS ||
+    value.links.length > MAX_PERSISTED_LAYOUT_ITEMS
+  ) {
+    return null;
+  }
+  if (
+    !value.cells.every(isPersistedCell) ||
+    !value.boldLines.every(isNonNegativeInteger) ||
+    !value.tables.every(isPersistedTable) ||
+    !value.links.every(isPersistedLink)
+  ) {
+    return null;
+  }
+
+  return {
+    cellRefsByLine: new Map(
+      value.cells.map(({ lineIndex, tableIndex, rowIndex, columnIndex, columnCount }) => [
+        lineIndex,
+        { tableIndex, rowIndex, columnIndex, columnCount },
+      ]),
+    ),
+    boldLines: new Set(value.boldLines),
+    tables: value.tables,
+    hrefByAnchorText: new Map(value.links.map(({ anchorText, href }) => [anchorText, href])),
+  };
+};
+
+export const parsePersistedDocxLayout = (value: unknown): DocxCleanLayout | null => {
+  if (typeof value !== 'string') return parsePersistedLayoutValue(value);
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return parsePersistedLayoutValue(parsed);
+  } catch {
+    return null;
+  }
+};
+
+export const serializeDocxLayout = (layout: DocxCleanLayout): string =>
+  JSON.stringify({
+    version: 1,
+    cells: [...layout.cellRefsByLine].map(([lineIndex, cell]) => ({ lineIndex, ...cell })),
+    boldLines: [...layout.boldLines],
+    tables: layout.tables,
+    links: [...layout.hrefByAnchorText].map(([anchorText, href]) => ({ anchorText, href })),
+  } satisfies PersistedDocxLayout);
+
 const normalizeForMatch = (text: string): string =>
   text
     .replace(/\u00A0/g, ' ')

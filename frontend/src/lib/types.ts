@@ -1,3 +1,5 @@
+import type { DocxCleanLayout } from './docxLayout';
+
 export type TailorStatus = 'idle' | 'loading' | 'done';
 
 export type ChangeKind = 'bullet' | 'skill' | 'paragraph';
@@ -105,6 +107,7 @@ export type TailorResult = {
   changes: BulletChange[];
   requirements: JobRequirement[];
   document?: ResumeDocument | null;
+  resumeLayout?: DocxCleanLayout | null;
 };
 
 export type ChangeDecision = 'accepted' | 'reverted';
@@ -162,6 +165,7 @@ export type SavedResume = {
   name: string;
   resumeText: string;
   resumeDocument: ResumeDocument | null;
+  resumeLayout: DocxCleanLayout | null;
   createdAt: string;
 };
 

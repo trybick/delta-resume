@@ -3,6 +3,7 @@ import { ApiError, CreditsExhaustedError, postTailor } from '../lib/api';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { NETWORK_ERROR_MESSAGE } from '../lib/constants';
 import type { ResumeDocument, TailorResult, TailorStatus } from '../lib/types';
+import type { DocxCleanLayout } from '../lib/docxLayout';
 
 type UseTailorRunOptions = {
   onSuccess: () => void;
@@ -21,6 +22,7 @@ type UseTailorRunResult = {
     jobDescription: string,
     resumeName: string,
     resumeDocument?: ResumeDocument | null,
+    resumeLayout?: DocxCleanLayout | null,
     runId?: string,
   ) => Promise<boolean>;
 };
@@ -52,6 +54,7 @@ export const useTailorRun = ({
     jobDescription: string,
     resumeName: string,
     resumeDocument?: ResumeDocument | null,
+    resumeLayout?: DocxCleanLayout | null,
     runId?: string,
   ): Promise<boolean> => {
     if (inFlightRef.current) return false;
@@ -66,6 +69,7 @@ export const useTailorRun = ({
         jobDescription,
         resumeName,
         resumeDocument,
+        resumeLayout,
         abortController.signal,
         runId,
       );

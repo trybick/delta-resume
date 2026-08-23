@@ -157,11 +157,12 @@ export const useResumeExport = ({
   }, [result, activeAddedBullets]);
 
   const loadCleanLayout = useCallback(async (): Promise<DocxCleanLayout | null> => {
-    if (!result || !originalDocx) return null;
+    if (!result) return null;
+    if (!originalDocx) return result.resumeLayout ?? null;
     try {
       return await readCleanLayout(originalDocx.file, result.resumeText);
     } catch {
-      return null;
+      return result.resumeLayout ?? null;
     }
   }, [result, originalDocx]);
 

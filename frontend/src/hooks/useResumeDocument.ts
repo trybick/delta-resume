@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { cleanupOriginalDocxStore, loadOriginalDocx, saveOriginalDocx } from '../lib/docxStore';
+import { readCleanLayout, type DocxCleanLayout } from '../lib/docxLayout';
 import { normalizeResumeTextForComparison } from '../lib/exportDocx';
 import type { AttachedFile, OriginalDocx, ResumeDocument, SavedResume } from '../lib/types';
 
@@ -14,10 +15,11 @@ type UseResumeDocumentResult = {
   pasteFieldText: string;
   setResumeText: (text: string) => void;
   resumeDocument: ResumeDocument | null;
+  resumeLayout: DocxCleanLayout | null;
   attachedFile: AttachedFile | null;
   originalDocx: OriginalDocx | null;
   handleResumeTextChange: (text: string) => void;
-  handleFileAttach: (file: AttachedFile, text: string, sourceFile: File) => void;
+  handleFileAttach: (file: AttachedFile, text: string, sourceFile: File) => Promise<void>;
   handleClearResume: () => void;
   handleSelectSaved: (resume: SavedResume) => void;
   persistOriginalDocx: () => void;
@@ -31,9 +33,10 @@ export const useResumeDocument = ({
   const [resumeText, setResumeText] = useState('');
   const [pasteFieldText, setPasteFieldText] = useState('');
   const [resumeDocument, setResumeDocument] = useState<ResumeDocument | null>(null);
+  const [resumeLayout, setResumeLayout] = useState<DocxCleanLayout | null>(null);
   const [attachedFile, setAttachedFile] = useState<AttachedFile | null>(null);
   const [originalDocx, setOriginalDocx] = useState<OriginalDocx | null>(null);
-  const pendingDocxRestoreRef = useRef<string | null>(null);
+  const docxRestoreIdRef = useRef(0);
 
   useEffect(() => {
     if (!hasLoadedSavedResumes || isLoadingSavedResumes) return;
@@ -43,32 +46,38 @@ export const useResumeDocument = ({
   }, [hasLoadedSavedResumes, isLoadingSavedResumes, savedResumes, originalDocx]);
 
   const handleResumeTextChange = (text: string) => {
-    pendingDocxRestoreRef.current = null;
+    docxRestoreIdRef.current += 1;
     setAttachedFile(null);
     setOriginalDocx(null);
     setResumeDocument(null);
+    setResumeLayout(null);
     setPasteFieldText(text);
     setResumeText(text);
   };
 
-  const handleFileAttach = (file: AttachedFile, text: string, sourceFile: File) => {
-    pendingDocxRestoreRef.current = null;
+  const handleFileAttach = async (file: AttachedFile, text: string, sourceFile: File) => {
+    docxRestoreIdRef.current += 1;
+    const restoreId = docxRestoreIdRef.current;
+    const isDocx = sourceFile.name.toLowerCase().endsWith('.docx');
+    const layout = isDocx ? await readCleanLayout(sourceFile, text).catch(() => null) : null;
+    if (docxRestoreIdRef.current !== restoreId) return;
     setAttachedFile(file);
     setResumeText(text);
     setPasteFieldText('');
     setResumeDocument(null);
-    const isDocx = sourceFile.name.toLowerCase().endsWith('.docx');
+    setResumeLayout(layout);
     setOriginalDocx(isDocx ? { file: sourceFile, parsedText: text } : null);
     if (isDocx) {
-      void saveOriginalDocx(text, sourceFile);
+      await saveOriginalDocx(text, sourceFile);
     }
   };
 
   const handleClearResume = () => {
-    pendingDocxRestoreRef.current = null;
+    docxRestoreIdRef.current += 1;
     setAttachedFile(null);
     setOriginalDocx(null);
     setResumeDocument(null);
+    setResumeLayout(null);
     setResumeText('');
     setPasteFieldText('');
   };
@@ -81,9 +90,12 @@ export const useResumeDocument = ({
 
     setResumeText(resume.resumeText);
     setResumeDocument(resume.resumeDocument);
+    setResumeLayout(
+      matchesAttachedDocx ? (resumeLayout ?? resume.resumeLayout) : resume.resumeLayout,
+    );
 
     if (matchesAttachedDocx) {
-      pendingDocxRestoreRef.current = null;
+      docxRestoreIdRef.current += 1;
       setPasteFieldText('');
       return;
     }
@@ -91,15 +103,18 @@ export const useResumeDocument = ({
     setAttachedFile(null);
     setOriginalDocx(null);
     setPasteFieldText('');
-    pendingDocxRestoreRef.current = resume.resumeText;
+    docxRestoreIdRef.current += 1;
+    const restoreId = docxRestoreIdRef.current;
 
     void (async () => {
       const file = await loadOriginalDocx(resume.resumeText);
-      if (pendingDocxRestoreRef.current !== resume.resumeText) return;
-      pendingDocxRestoreRef.current = null;
+      if (docxRestoreIdRef.current !== restoreId) return;
       if (file) {
+        const restoredLayout = await readCleanLayout(file, resume.resumeText).catch(() => null);
+        if (docxRestoreIdRef.current !== restoreId) return;
         setAttachedFile({ name: file.name, size: file.size });
         setOriginalDocx({ file, parsedText: resume.resumeText });
+        setResumeLayout(restoredLayout ?? resume.resumeLayout);
         setPasteFieldText('');
         return;
       }
@@ -118,6 +133,7 @@ export const useResumeDocument = ({
     pasteFieldText,
     setResumeText,
     resumeDocument,
+    resumeLayout,
     attachedFile,
     originalDocx,
     handleResumeTextChange,

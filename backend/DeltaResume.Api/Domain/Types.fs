@@ -368,6 +368,7 @@ type SavedResume =
       Name: string
       ResumeText: string
       ResumeDocument: ResumeDocument option
+      ResumeLayout: string option
       ContentHash: string
       CreatedAt: DateTimeOffset
       UpdatedAt: DateTimeOffset }

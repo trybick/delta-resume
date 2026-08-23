@@ -16,7 +16,7 @@ type ResumeInputProps = {
   savedResumeLimit: number;
   isProPlan: boolean;
   onResumeTextChange: (text: string) => void;
-  onFileAttach: (file: AttachedFile, text: string, sourceFile: File) => void;
+  onFileAttach: (file: AttachedFile, text: string, sourceFile: File) => Promise<void>;
   onClear: () => void;
   onSelectSaved: (resume: SavedResume) => void;
   onRenameSaved: (resumeId: string, name: string) => void;

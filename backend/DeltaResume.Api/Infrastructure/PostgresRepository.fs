@@ -155,12 +155,16 @@ module Schema =
                 resume_text TEXT NOT NULL,
                 content_hash TEXT NOT NULL,
                 resume_document JSONB,
+                resume_layout JSONB,
                 created_at TIMESTAMPTZ NOT NULL,
                 updated_at TIMESTAMPTZ NOT NULL
             );
 
             ALTER TABLE saved_resumes
                 ADD COLUMN IF NOT EXISTS resume_document JSONB;
+
+            ALTER TABLE saved_resumes
+                ADD COLUMN IF NOT EXISTS resume_layout JSONB;
 
             ALTER TABLE saved_resumes
                 ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;
@@ -337,6 +341,7 @@ type private SavedResumeRow =
       name: string
       resume_text: string
       resume_document: string
+      resume_layout: string
       content_hash: string
       created_at: DateTimeOffset
       updated_at: DateTimeOffset }
@@ -345,7 +350,7 @@ type PostgresSavedResumeRepository(connectionString: string) =
 
     let selectColumns =
         "id, owner_key, name, resume_text, resume_document::text AS resume_document, \
-         content_hash, created_at, updated_at"
+         resume_layout::text AS resume_layout, content_hash, created_at, updated_at"
 
     let toDomain (row: SavedResumeRow) : SavedResume =
         { Id = SavedResumeId row.id
@@ -357,6 +362,7 @@ type PostgresSavedResumeRepository(connectionString: string) =
                 None
             else
                 ResumeDocumentJson.tryParse row.resume_document
+          ResumeLayout = row.resume_layout |> Option.ofObj
           ContentHash = row.content_hash
           CreatedAt = row.created_at
           UpdatedAt = row.updated_at }
@@ -405,10 +411,11 @@ type PostgresSavedResumeRepository(connectionString: string) =
                     connection.ExecuteAsync(
                         """
                         INSERT INTO saved_resumes
-                            (id, owner_key, name, resume_text, resume_document, content_hash, created_at, updated_at)
+                            (id, owner_key, name, resume_text, resume_document, resume_layout, content_hash,
+                             created_at, updated_at)
                         VALUES
-                            (@Id, @OwnerKey, @Name, @ResumeText, CAST(@ResumeDocument AS jsonb), @ContentHash,
-                             @CreatedAt, @UpdatedAt)
+                            (@Id, @OwnerKey, @Name, @ResumeText, CAST(@ResumeDocument AS jsonb),
+                             CAST(@ResumeLayout AS jsonb), @ContentHash, @CreatedAt, @UpdatedAt)
                         ON CONFLICT (owner_key, content_hash) DO NOTHING
                         """,
                         {| Id = id
@@ -419,6 +426,7 @@ type PostgresSavedResumeRepository(connectionString: string) =
                             resume.ResumeDocument
                             |> Option.map ResumeDocumentJson.serialize
                             |> Option.toObj
+                           ResumeLayout = resume.ResumeLayout |> Option.toObj
                            ContentHash = resume.ContentHash
                            CreatedAt = resume.CreatedAt
                            UpdatedAt = resume.UpdatedAt |}
@@ -427,8 +435,13 @@ type PostgresSavedResumeRepository(connectionString: string) =
                 return ()
             }
 
-        member _.UpdateDocument
-            (id: SavedResumeId, ownerKey: OwnerKey, document: ResumeDocument option)
+        member _.UpdateMetadata
+            (
+                id: SavedResumeId,
+                ownerKey: OwnerKey,
+                document: ResumeDocument option,
+                layout: string option
+            )
             : Task<unit> =
             task {
                 use connection = new NpgsqlConnection(connectionString)
@@ -440,7 +453,9 @@ type PostgresSavedResumeRepository(connectionString: string) =
                     connection.ExecuteAsync(
                         """
                         UPDATE saved_resumes
-                        SET resume_document = CAST(@ResumeDocument AS jsonb), updated_at = @UpdatedAt
+                        SET resume_document = COALESCE(resume_document, CAST(@ResumeDocument AS jsonb)),
+                            resume_layout = COALESCE(resume_layout, CAST(@ResumeLayout AS jsonb)),
+                            updated_at = @UpdatedAt
                         WHERE id = @Id AND owner_key = @OwnerKey
                         """,
                         {| Id = resumeId
@@ -449,7 +464,8 @@ type PostgresSavedResumeRepository(connectionString: string) =
                            ResumeDocument =
                             document
                             |> Option.map ResumeDocumentJson.serialize
-                            |> Option.toObj |}
+                            |> Option.toObj
+                           ResumeLayout = layout |> Option.toObj |}
                     )
 
                 return ()

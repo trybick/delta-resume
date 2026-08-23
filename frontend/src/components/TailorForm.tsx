@@ -18,7 +18,7 @@ type TailorFormProps = {
   jobDescription: string;
   onJobDescriptionChange: (value: string) => void;
   onResumeTextChange: (text: string) => void;
-  onFileAttach: (file: AttachedFile, text: string, sourceFile: File) => void;
+  onFileAttach: (file: AttachedFile, text: string, sourceFile: File) => Promise<void>;
   onClearResume: () => void;
   onSelectSaved: (resume: SavedResume) => void;
   onRenameSaved: (id: string, name: string) => void;

@@ -124,6 +124,7 @@ const App = () => {
     resumeText,
     pasteFieldText,
     resumeDocument,
+    resumeLayout,
     attachedFile,
     originalDocx,
     handleResumeTextChange,
@@ -295,6 +296,7 @@ const App = () => {
           savedResumes.map((resume) => resume.name),
         ),
         result?.document ?? resumeDocument,
+        resumeLayout,
         runId,
       );
       if (succeeded) {

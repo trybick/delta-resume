@@ -10,6 +10,7 @@ import { getAuthToken } from './authToken';
 import { getFingerprint } from './fingerprint';
 import { notifyRateLimited } from './rateLimitNotice';
 import { parseResumeDocument } from './resumeModel';
+import { parsePersistedDocxLayout, serializeDocxLayout, type DocxCleanLayout } from './docxLayout';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
@@ -107,6 +108,7 @@ export const postTailor = async (
   jobDescription: string,
   resumeName: string,
   resumeDocument?: ResumeDocument | null,
+  resumeLayout?: DocxCleanLayout | null,
   signal?: AbortSignal,
   runId?: string,
 ): Promise<TailorResponse> => {
@@ -118,6 +120,7 @@ export const postTailor = async (
       jobDescription,
       resumeName,
       resumeDocument: resumeDocument ? JSON.stringify(resumeDocument) : null,
+      resumeLayout: resumeLayout ? serializeDocxLayout(resumeLayout) : null,
       runId: runId ?? null,
     }),
     signal,
@@ -125,8 +128,9 @@ export const postTailor = async (
   if (!response.ok) {
     return throwApiError(response);
   }
-  const data = (await response.json()) as TailorResponse & {
-    document?: string | ResumeDocument | null;
+  const data = (await response.json()) as Omit<TailorResponse, 'document' | 'resumeLayout'> & {
+    document?: unknown;
+    resumeLayout?: unknown;
   };
   return {
     ...data,
@@ -145,6 +149,7 @@ export const postTailor = async (
       locked: requirement.locked ?? false,
     })),
     document: parseResumeDocument(data.document),
+    resumeLayout: parsePersistedDocxLayout(data.resumeLayout),
   };
 };
 
@@ -217,11 +222,15 @@ export const getSavedResumes = async (): Promise<SavedResume[]> => {
     return throwApiError(response);
   }
   const data = (await response.json()) as Array<
-    SavedResume & { resumeDocument?: string | ResumeDocument | null }
+    Omit<SavedResume, 'resumeDocument' | 'resumeLayout'> & {
+      resumeDocument?: unknown;
+      resumeLayout?: unknown;
+    }
   >;
   return data.map((resume) => ({
     ...resume,
     resumeDocument: parseResumeDocument(resume.resumeDocument),
+    resumeLayout: parsePersistedDocxLayout(resume.resumeLayout),
   }));
 };
 
