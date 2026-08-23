@@ -2,6 +2,7 @@ import { Badge, Button, Grid, Stack, Text, Title } from '@mantine/core';
 import { IconSparkles } from '@tabler/icons-react';
 import DiffMockExample from './DiffMockExample';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { proAccent } from '../lib/proAccent';
 import { appTheme, spaceGroteskStack } from '../lib/theme';
 
 type LandingHeroProps = {
@@ -32,11 +33,21 @@ const LandingHero = ({ freeTrialLabel, onStartClick, onExampleClick }: LandingHe
               fz={{ base: '1.75rem', md: '2.375rem' }}
               style={{ fontFamily: spaceGroteskStack, lineHeight: 1.2 }}
             >
-              Tailor your resume to any job in seconds
+              Tailor your resume and cover letter{' '}
+              <Badge
+                component="span"
+                size="lg"
+                variant="gradient"
+                gradient={{ ...proAccent.gradient, deg: 45 }}
+                style={{ verticalAlign: 'middle' }}
+              >
+                Pro
+              </Badge>{' '}
+              to any job in seconds
             </Title>
             <Text size="md" c="dimmed" ta="center" maw={480} lh={1.5}>
-              Our AI rewrites your bullets the way recruiters want to read them. You keep only what
-              sounds like you.
+              AI rewrites your bullets to match the role, then shows every change as an inline diff.
+              Keep what sounds like you and revert the rest, one click at a time.
             </Text>
           </Stack>
           {freeTrialLabel && (
@@ -58,13 +69,16 @@ const LandingHero = ({ freeTrialLabel, onStartClick, onExampleClick }: LandingHe
           <Button variant="subtle" color="gray" size="sm" onClick={handleExampleClick}>
             See an example result first
           </Button>
+          <Text size="xs" c="dimmed" ta="center" maw={420}>
+            Tailoring your resume is free. Pro adds a matching cover letter in the same run.
+          </Text>
         </Stack>
       </Grid.Col>
       <Grid.Col span={6} visibleFrom="md">
         <Stack gap={6} align="center">
           <DiffMockExample />
           <Text size="xs" c="dimmed" ta="center">
-            Every rewrite is shown as an inline diff. Keep it or revert it with one click.
+            Every suggestion shows up as a diff like this — applied only if you keep it.
           </Text>
         </Stack>
       </Grid.Col>
