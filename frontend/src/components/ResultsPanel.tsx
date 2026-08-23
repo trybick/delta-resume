@@ -134,16 +134,6 @@ type ResumeSegment =
   | { kind: 'added'; bullet: AddedBullet }
   | { kind: 'context'; nodeId: string; lines: string[] };
 
-const hasMustHaveGaps = (result: TailorResult): boolean => {
-  const changedTargets = new Set(result.changes.map((change) => change.targetId));
-  return result.requirements.some((requirement) => {
-    const covered =
-      requirement.satisfiedBy.length > 0 ||
-      requirement.satisfiedByChanges.some((targetId) => changedTargets.has(targetId));
-    return !covered && requirement.importance === 'must';
-  });
-};
-
 const ResultsPanel = ({
   status,
   result,
@@ -165,7 +155,7 @@ const ResultsPanel = ({
   const [addedBullets, setAddedBullets] = useState<AddedBullet[]>([]);
   const [expandedSegments, setExpandedSegments] = useState<Set<string>>(new Set());
   const [summaryOpen, setSummaryOpen] = useState(false);
-  const [gapsOpen, setGapsOpen] = useState(() => (result ? hasMustHaveGaps(result) : false));
+  const [gapsOpen, setGapsOpen] = useState(false);
   const upgradeCtaLabel = useProUpgradeCtaLabel();
   const isNarrowMobile = useMediaQuery('(max-width: 36em)');
 
