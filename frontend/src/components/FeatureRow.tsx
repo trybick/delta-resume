@@ -11,7 +11,7 @@ const FeatureRow = ({ feature, compact }: FeatureRowProps) => {
 
   return (
     <Group gap="sm" wrap="nowrap" align={compact ? 'center' : 'flex-start'}>
-      <ThemeIcon size={compact ? 28 : 36} radius="md" variant="light" color="cyan">
+      <ThemeIcon size={compact ? 28 : 36} radius="xl" variant="light" color="cyan">
         <Icon size={compact ? 15 : 19} />
       </ThemeIcon>
       <Box>

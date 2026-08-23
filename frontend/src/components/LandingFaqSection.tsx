@@ -37,11 +37,6 @@ const FAQ_ITEMS: FaqItem[] = [
     answer:
       'No. Cover letters are a Pro feature, and they\u2019re labeled that way wherever they appear. On Pro, every tailor run also writes a matching cover letter in your choice of length and tone, from the same resume and job post.',
   },
-  {
-    question: 'What does one credit cover?',
-    answer:
-      'One credit is one full tailor run: every bullet reviewed against the job post, with an inline diff for each suggested change. On Pro, that same run also writes your cover letter.',
-  },
 ];
 
 const LandingFaqSection = () => {

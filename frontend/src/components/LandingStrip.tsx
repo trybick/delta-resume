@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
   Anchor,
-  Badge,
   Box,
   Button,
   Card,
@@ -22,11 +21,8 @@ import {
   IconCheck,
   IconChevronDown,
   IconChevronUp,
-  IconClipboardText,
   IconDatabaseOff,
-  IconFileText,
   IconFolders,
-  IconGitCompare,
   IconRobotOff,
   IconSparkles,
 } from '@tabler/icons-react';
@@ -51,24 +47,20 @@ type LandingStripProps = {
 };
 
 type HowItWorksStep = {
-  icon: typeof IconFileText;
   title: string;
   description: string;
 };
 
 const HOW_IT_WORKS_STEPS: HowItWorksStep[] = [
   {
-    icon: IconFileText,
     title: 'Add your resume',
     description: 'Upload a .docx or .pdf, or paste the text. No account needed to try it.',
   },
   {
-    icon: IconClipboardText,
     title: 'Paste the job post',
     description: 'Drop in the job description you\u2019re applying for, straight from the listing.',
   },
   {
-    icon: IconGitCompare,
     title: 'Review every change',
     description:
       'Your resume bullets are rewritten to match the role. You see each edit as an inline diff and keep or revert it.',
@@ -108,7 +100,7 @@ const getFreePlanFeatures = (freeCreditTotal: number | null): string[] => [
     : 'Free credits, no account needed',
   'Inline diff review of every change',
   'Copy or export your tailored resume',
-  'Multiple export options, including fit to one page',
+  'Fit to one page option',
 ];
 
 const LandingStrip = ({
@@ -194,33 +186,30 @@ const LandingStrip = ({
                 </Text>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
-                {HOW_IT_WORKS_STEPS.map((step, index) => {
-                  const StepIcon = step.icon;
-                  return (
-                    <Card key={step.title} withBorder padding="lg" radius="md">
-                      <Stack gap="sm">
-                        <Group gap="sm">
-                          <ThemeIcon size={36} radius="md" variant="light">
-                            <StepIcon size={19} />
-                          </ThemeIcon>
-                          <Badge size="lg" variant="light" color="cyan">
-                            Step {index + 1}
-                          </Badge>
-                        </Group>
+                {HOW_IT_WORKS_STEPS.map((step, index) => (
+                  <Card key={step.title} withBorder padding="lg" radius="md" h="100%">
+                    <Stack gap="sm">
+                      <Group gap="sm" wrap="nowrap">
+                        <ThemeIcon size={28} radius="xl" variant="light" color="cyan">
+                          <Text size="sm" fw={700}>
+                            {index + 1}
+                          </Text>
+                        </ThemeIcon>
                         <Text fw={600}>{step.title}</Text>
-                        <Text size="sm" c="dimmed" lh={1.5}>
-                          {step.description}
-                        </Text>
-                      </Stack>
-                    </Card>
-                  );
-                })}
+                      </Group>
+                      <Text size="sm" c="dimmed" lh={1.5}>
+                        {step.description}
+                      </Text>
+                    </Stack>
+                  </Card>
+                ))}
               </SimpleGrid>
               <Stack gap="xl" align="center" w="100%" hiddenFrom={onStartClick ? 'md' : undefined}>
                 <Stack gap={6} align="center" w="100%">
                   <DiffMockExample />
-                  <Text size="xs" c="dimmed" ta="center">
-                    Every rewrite is shown as an inline diff. Keep it or revert it with one click.
+                  <Text size="sm" c="dimmed" ta="center">
+                    Every rewrite is shown as an inline diff. Revert anything you don't like with
+                    one click.
                   </Text>
                 </Stack>
                 <CoverLetterMockExample />
@@ -243,17 +232,19 @@ const LandingStrip = ({
                 {PRIVACY_POINTS.map((point) => {
                   const PointIcon = point.icon;
                   return (
-                    <Stack key={point.title} gap="sm" align="center">
-                      <ThemeIcon size={40} radius="md" variant="light" color="teal">
-                        <PointIcon size={21} />
-                      </ThemeIcon>
-                      <Text fw={600} ta="center">
-                        {point.title}
-                      </Text>
-                      <Text size="sm" c="dimmed" ta="center" lh={1.5}>
-                        {point.description}
-                      </Text>
-                    </Stack>
+                    <Card key={point.title} withBorder padding="lg" radius="md" h="100%">
+                      <Stack gap="sm">
+                        <Group gap="sm" wrap="nowrap">
+                          <ThemeIcon size={28} radius="xl" variant="light" color="teal">
+                            <PointIcon size={15} />
+                          </ThemeIcon>
+                          <Text fw={600}>{point.title}</Text>
+                        </Group>
+                        <Text size="sm" c="dimmed" lh={1.5}>
+                          {point.description}
+                        </Text>
+                      </Stack>
+                    </Card>
                   );
                 })}
               </SimpleGrid>
