@@ -1,7 +1,8 @@
-import { Badge, Button, Grid, Stack, Text, Title } from '@mantine/core';
+import { Badge, Button, Grid, Group, Stack, Text, Title } from '@mantine/core';
 import { IconSparkles } from '@tabler/icons-react';
 import DiffMockExample from './DiffMockExample';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { proAccent } from '../lib/proAccent';
 import { appTheme, spaceGroteskStack } from '../lib/theme';
 
 type LandingHeroProps = {
@@ -34,9 +35,10 @@ const LandingHero = ({ freeTrialLabel, onStartClick, onExampleClick }: LandingHe
             >
               Tailor your resume to any job in seconds
             </Title>
-            <Text size="md" c="dimmed" ta="center" maw={480} lh={1.5}>
-              Our AI rewrites your bullets the way recruiters want to read them. You keep only what
-              sounds like you.
+            <Text size="md" c="dimmed" ta="center" maw={520} lh={1.5}>
+              Delta Resume rewrites your bullets to match the keywords each job post is screened for
+              &mdash; and shows every change as an inline diff, so you keep only what sounds like
+              you.
             </Text>
           </Stack>
           {freeTrialLabel && (
@@ -58,6 +60,14 @@ const LandingHero = ({ freeTrialLabel, onStartClick, onExampleClick }: LandingHe
           <Button variant="subtle" color="gray" size="sm" onClick={handleExampleClick}>
             See an example result first
           </Button>
+          <Group gap={6} justify="center" wrap="nowrap">
+            <Badge size="sm" variant="light" color={proAccent.badgeColor}>
+              Pro
+            </Badge>
+            <Text size="xs" c="dimmed" ta="center">
+              Tailoring your resume is free. Pro adds a matching cover letter in the same run.
+            </Text>
+          </Group>
         </Stack>
       </Grid.Col>
       <Grid.Col span={6} visibleFrom="md">

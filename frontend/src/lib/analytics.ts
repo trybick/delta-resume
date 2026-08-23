@@ -73,6 +73,7 @@ export const AnalyticsEvents = {
   LandingStripToggle: 'landing_strip_toggle',
   LandingView: 'landing_view',
   LandingCta: 'landing_cta',
+  LandingFaqToggle: 'landing_faq_toggle',
   HeaderLogoHome: 'header_logo_home',
 
   PaywallClose: 'paywall_close',

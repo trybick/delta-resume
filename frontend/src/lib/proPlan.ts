@@ -15,15 +15,16 @@ export type ProFeature = {
 
 export const PRO_FEATURES: ProFeature[] = [
   {
-    icon: IconCoins,
-    title: '100 credits / month',
-    description: 'Tailor your resume up to 100 times, refreshed every month',
+    icon: IconMail,
+    title: 'Cover letter with every run',
+    description:
+      'The same run that tailors your resume also writes a matching cover letter, in your choice of length and tone',
   },
   {
-    icon: IconMail,
-    title: 'Automatic cover letters',
+    icon: IconCoins,
+    title: '100 credits / month',
     description:
-      'Every tailor run writes a matching cover letter, in your choice of length and tone',
+      'Up to 100 runs a month, refreshed monthly \u2014 each one includes a cover letter',
   },
   {
     icon: IconTargetArrow,
