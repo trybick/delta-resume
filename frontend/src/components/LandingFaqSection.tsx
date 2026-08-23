@@ -8,6 +8,11 @@ type FaqItem = {
 
 const FAQ_ITEMS: FaqItem[] = [
   {
+    question: 'Why not just paste my resume into ChatGPT?',
+    answer:
+      'A chat window hands back a rewritten wall of text and leaves you to spot what changed. Delta Resume shows every edit as an inline diff you accept or revert one by one, keeps your document formatting for export, and on Pro it also writes the cover letter and flags job requirements your resume doesn\u2019t cover yet.',
+  },
+  {
     question: 'Will the rewrites sound like me?',
     answer:
       'You have the final say on every word. Each rewrite is shown as an inline diff. Keep it or revert it with one click. Nothing changes unless you approve it, so your resume stays in your voice.',
