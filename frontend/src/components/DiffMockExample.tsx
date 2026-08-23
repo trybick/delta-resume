@@ -1,26 +1,24 @@
-import { ActionIcon, Group, Paper, Text } from '@mantine/core';
+import { ActionIcon, Box, Group, Paper, Text } from '@mantine/core';
 import { useReducedMotion } from '@mantine/hooks';
-import { IconArrowBackUp, IconCheck, IconPointerFilled } from '@tabler/icons-react';
+import { IconArrowBackUp, IconPointerFilled, IconRefresh } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
 
-type Phase = 'diff' | 'pressKeep' | 'kept' | 'pressRevert' | 'reverted';
+type Phase = 'diff' | 'pressRevert' | 'reverted' | 'pressReapply';
 
 type Point = { x: number; y: number };
 
 const PHASE_DURATIONS: Record<Phase, number> = {
-  diff: 2600,
-  pressKeep: 450,
-  kept: 2400,
+  diff: 2800,
   pressRevert: 450,
   reverted: 2600,
+  pressReapply: 450,
 };
 
 const NEXT_PHASE: Record<Phase, Phase> = {
-  diff: 'pressKeep',
-  pressKeep: 'kept',
-  kept: 'pressRevert',
+  diff: 'pressRevert',
   pressRevert: 'reverted',
-  reverted: 'diff',
+  reverted: 'pressReapply',
+  pressReapply: 'diff',
 };
 
 const removedStyle = {
@@ -29,7 +27,6 @@ const removedStyle = {
   textDecoration: 'line-through',
   borderRadius: 3,
   padding: '0 2px',
-  transition: 'background-color 0.4s ease, color 0.4s ease',
 } as const;
 
 const addedStyle = {
@@ -37,24 +34,14 @@ const addedStyle = {
   color: 'var(--mantine-color-green-3)',
   borderRadius: 3,
   padding: '0 2px',
-  transition: 'background-color 0.4s ease, color 0.4s ease',
-} as const;
-
-const plainStyle = {
-  backgroundColor: 'transparent',
-  color: 'inherit',
-  borderRadius: 3,
-  padding: '0 2px',
-  transition: 'background-color 0.4s ease, color 0.4s ease',
 } as const;
 
 const DiffMockExample = () => {
   const reducedMotion = useReducedMotion();
   const [phase, setPhase] = useState<Phase>('diff');
   const paperRef = useRef<HTMLDivElement>(null);
-  const keepRef = useRef<HTMLButtonElement>(null);
   const revertRef = useRef<HTMLButtonElement>(null);
-  const [cursorTargets, setCursorTargets] = useState<{ keep: Point; revert: Point } | null>(null);
+  const [cursorTarget, setCursorTarget] = useState<Point | null>(null);
 
   useEffect(() => {
     if (reducedMotion) return;
@@ -65,31 +52,23 @@ const DiffMockExample = () => {
   useEffect(() => {
     const measure = () => {
       const paper = paperRef.current;
-      const keep = keepRef.current;
       const revert = revertRef.current;
-      if (!paper || !keep || !revert) return;
+      if (!paper || !revert) return;
       const paperBox = paper.getBoundingClientRect();
-      const centerOf = (el: HTMLElement): Point => {
-        const box = el.getBoundingClientRect();
-        return {
-          x: box.left - paperBox.left + box.width / 2,
-          y: box.top - paperBox.top + box.height / 2,
-        };
-      };
-      setCursorTargets({ keep: centerOf(keep), revert: centerOf(revert) });
+      const revertBox = revert.getBoundingClientRect();
+      setCursorTarget({
+        x: revertBox.left - paperBox.left + revertBox.width / 2,
+        y: revertBox.top - paperBox.top + revertBox.height / 2,
+      });
     };
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
   }, []);
 
-  const isKept = phase === 'kept' || phase === 'pressRevert';
-  const isReverted = phase === 'reverted';
-  const isPressing = phase === 'pressKeep' || phase === 'pressRevert';
-
-  const cursorTarget =
-    phase === 'kept' || phase === 'pressRevert' ? cursorTargets?.revert : cursorTargets?.keep;
-  const cursorVisible = !reducedMotion && phase !== 'reverted' && cursorTarget !== undefined;
+  const isReverted = phase === 'reverted' || phase === 'pressReapply';
+  const isPressing = phase === 'pressRevert' || phase === 'pressReapply';
+  const cursorVisible = !reducedMotion && cursorTarget !== null;
 
   return (
     <Paper
@@ -103,54 +82,57 @@ const DiffMockExample = () => {
         position: 'relative',
         overflow: 'hidden',
         borderLeft: `3px solid ${isReverted ? 'var(--mantine-color-gray-6)' : 'var(--mantine-color-green-6)'}`,
-        opacity: isReverted ? 0.6 : 1,
-        transition: 'border-color 0.4s ease, opacity 0.4s ease',
+        transition: 'border-color 0.4s ease',
       }}
     >
       <Group justify="space-between" align="center" mb={6} wrap="nowrap">
         <Text size="xs" c="dimmed" fw={600}>
           Suggested rewrite
         </Text>
-        <Group gap={4} wrap="nowrap">
-          <ActionIcon
-            ref={keepRef}
-            size="sm"
-            variant={phase === 'pressKeep' || isKept ? 'filled' : 'light'}
-            color="green"
-            aria-label="Keep change"
-            style={{ transition: 'transform 0.15s ease', transform: phase === 'pressKeep' ? 'scale(0.88)' : undefined }}
-          >
-            <IconCheck size={14} />
-          </ActionIcon>
-          <ActionIcon
-            ref={revertRef}
-            size="sm"
-            variant={phase === 'pressRevert' || isReverted ? 'filled' : 'light'}
-            color={isReverted ? 'green' : 'gray'}
-            aria-label="Revert to original"
-            style={{ transition: 'transform 0.15s ease', transform: phase === 'pressRevert' ? 'scale(0.88)' : undefined }}
-          >
-            <IconArrowBackUp size={14} />
-          </ActionIcon>
-        </Group>
+        <ActionIcon
+          ref={revertRef}
+          size="sm"
+          variant={isReverted ? 'filled' : 'light'}
+          color={isReverted ? 'green' : 'gray'}
+          aria-label={isReverted ? 'Re-apply change' : 'Revert to original'}
+          style={{ transition: 'transform 0.15s ease', transform: isPressing ? 'scale(0.88)' : undefined }}
+        >
+          {isReverted ? <IconRefresh size={14} /> : <IconArrowBackUp size={14} />}
+        </ActionIcon>
       </Group>
-      <Text component="div" size="sm" style={{ lineHeight: 1.6 }}>
-        Led a team{' '}
-        {!isKept && (
-          <span style={isReverted ? plainStyle : removedStyle}>working on internal tools</span>
-        )}
-        {!isKept && !isReverted && ' '}
-        {!isReverted && (
-          <span style={isKept ? plainStyle : addedStyle}>
+      <Box style={{ display: 'grid' }}>
+        <Text
+          component="div"
+          size="sm"
+          aria-hidden={isReverted}
+          style={{
+            gridArea: '1 / 1',
+            lineHeight: 1.6,
+            opacity: isReverted ? 0 : 1,
+            transition: 'opacity 0.4s ease',
+          }}
+        >
+          Led a team <span style={removedStyle}>working on internal tools</span>{' '}
+          <span style={addedStyle}>
             of 5 engineers shipping React dashboards used by 2,000+ internal users
           </span>
-        )}
-        , cutting report turnaround
-        {!isReverted && (
-          <span style={isKept ? plainStyle : addedStyle}> from days to hours</span>
-        )}
-        .
-      </Text>
+          , cutting report turnaround
+          <span style={addedStyle}> from days to hours</span>.
+        </Text>
+        <Text
+          component="div"
+          size="sm"
+          aria-hidden={!isReverted}
+          style={{
+            gridArea: '1 / 1',
+            lineHeight: 1.6,
+            opacity: isReverted ? 1 : 0,
+            transition: 'opacity 0.4s ease',
+          }}
+        >
+          Led a team working on internal tools, cutting report turnaround.
+        </Text>
+      </Box>
       <div
         aria-hidden
         style={{
