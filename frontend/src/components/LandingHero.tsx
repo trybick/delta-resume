@@ -1,5 +1,6 @@
 import { Badge, Button, Grid, Stack, Text, Title } from '@mantine/core';
 import { IconSparkles } from '@tabler/icons-react';
+import CoverLetterMockExample from './CoverLetterMockExample';
 import DiffMockExample from './DiffMockExample';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { appTheme, spaceGroteskStack } from '../lib/theme';
@@ -32,11 +33,11 @@ const LandingHero = ({ freeTrialLabel, onStartClick, onExampleClick }: LandingHe
               fz={{ base: '1.75rem', md: '2.375rem' }}
               style={{ fontFamily: spaceGroteskStack, lineHeight: 1.2 }}
             >
-              Tailor your resume to any job in seconds
+              Tailor your resume and cover letter to any job in seconds
             </Title>
             <Text size="md" c="dimmed" ta="center" maw={480} lh={1.5}>
-              Our AI rewrites your bullets the way recruiters want to read them. You keep only what
-              sounds like you.
+              Paste a job post. Your bullets are rewritten the way recruiters read them, and you
+              approve every change. On Pro, the same run also writes a matching cover letter.
             </Text>
           </Stack>
           {freeTrialLabel && (
@@ -55,17 +56,23 @@ const LandingHero = ({ freeTrialLabel, onStartClick, onExampleClick }: LandingHe
           >
             Tailor my resume for free
           </Button>
+          <Text size="xs" c="dimmed" ta="center">
+            No card required. Your resume is never used to train AI.
+          </Text>
           <Button variant="subtle" color="gray" size="sm" onClick={handleExampleClick}>
             See an example result first
           </Button>
         </Stack>
       </Grid.Col>
       <Grid.Col span={6} visibleFrom="md">
-        <Stack gap={6} align="center">
-          <DiffMockExample />
-          <Text size="xs" c="dimmed" ta="center">
-            Every rewrite is shown as an inline diff. Keep it or revert it with one click.
-          </Text>
+        <Stack gap="md" align="center">
+          <Stack gap={6} align="center" w="100%">
+            <DiffMockExample />
+            <Text size="xs" c="dimmed" ta="center">
+              Every rewrite is shown as an inline diff. Keep it or revert it with one click.
+            </Text>
+          </Stack>
+          <CoverLetterMockExample />
         </Stack>
       </Grid.Col>
     </Grid>
