@@ -1,7 +1,8 @@
-import { Badge, Button, Grid, Stack, Text, Title } from '@mantine/core';
+import { Badge, Button, Grid, Group, Stack, Text, Title } from '@mantine/core';
 import { IconSparkles } from '@tabler/icons-react';
 import DiffMockExample from './DiffMockExample';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { proAccent } from '../lib/proAccent';
 import { appTheme, spaceGroteskStack } from '../lib/theme';
 
 type LandingHeroProps = {
@@ -58,6 +59,14 @@ const LandingHero = ({ freeTrialLabel, onStartClick, onExampleClick }: LandingHe
           <Button variant="subtle" color="gray" size="sm" onClick={handleExampleClick}>
             See an example result first
           </Button>
+          <Group gap={8} justify="center">
+            <Badge size="sm" variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }}>
+              Pro
+            </Badge>
+            <Text size="xs" c="dimmed">
+              Every run also writes a matching cover letter.
+            </Text>
+          </Group>
         </Stack>
       </Grid.Col>
       <Grid.Col span={6} visibleFrom="md">

@@ -75,6 +75,9 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
               <Skeleton width={56} height={18} />
             ) : null}
           </Group>
+          <Text size="xs" c="dimmed" lh={1.4}>
+            One run, full application — tailored resume, cover letter, and gap detection.
+          </Text>
           <Divider color="dark.4" />
           <ProFeatureList />
           <Button
