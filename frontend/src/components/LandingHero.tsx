@@ -1,6 +1,5 @@
 import {
   Badge,
-  Box,
   Button,
   Grid,
   Group,
@@ -19,12 +18,11 @@ import { proAccent } from '../lib/proAccent';
 import { appTheme } from '../lib/theme';
 
 type LandingHeroProps = {
-  freeCreditsRemaining: number | null;
   onStartClick: () => void;
   onExampleClick: () => void;
 };
 
-const LandingHero = ({ freeCreditsRemaining, onStartClick, onExampleClick }: LandingHeroProps) => {
+const LandingHero = ({ onStartClick, onExampleClick }: LandingHeroProps) => {
   const theme = useMantineTheme();
   const isDesktopHeading = useMediaQuery(`(min-width: ${theme.breakpoints.md})`, false, {
     getInitialValueInEffect: false,
@@ -115,11 +113,6 @@ const LandingHero = ({ freeCreditsRemaining, onStartClick, onExampleClick }: Lan
             onClick={handleStartClick}
           >
             Tailor my resume for free
-            {freeCreditsRemaining !== null && (
-              <Box component="span" visibleFrom="sm">
-                {` · ${freeCreditsRemaining} ${freeCreditsRemaining === 1 ? 'credit' : 'credits'}`}
-              </Box>
-            )}
           </Button>
           <Text size="xs" c="dimmed" ta="center">
             No sign-up, no card. Your resume is never used to train AI.

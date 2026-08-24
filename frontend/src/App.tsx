@@ -348,9 +348,6 @@ const App = () => {
         )}
         {showLanding ? (
           <LandingHero
-            freeCreditsRemaining={
-              isGuest && credits !== null && credits.remaining > 0 ? credits.remaining : null
-            }
             onStartClick={handleRevealTool}
             onExampleClick={handleShowExampleFromLanding}
           />
