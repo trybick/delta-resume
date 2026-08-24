@@ -52,11 +52,13 @@ const LINE_HEIGHT_BY_FONT: Record<string, number> = {
 const lineHeightMultiplier = (family: string): number =>
   LINE_HEIGHT_BY_FONT[family.trim().toLowerCase()] ?? DEFAULT_LINE_HEIGHT_MULTIPLIER;
 const HEADING_RULE_PT = 4;
-// The heuristic wrap/line-height model runs a little hot versus real Word
-// layout (canvas-measured widths and generic per-font line heights both skew
-// tall), so a one-page verdict is allowed to run slightly past the literal
-// content height rather than rounding every marginal case up to a 2nd page.
-const FIT_OVERFLOW_TOLERANCE_PT = 26;
+// Keep-formatting measurement runs a little hot versus Word (canvas widths and
+// generic per-font line heights both skew tall), so a one-page verdict is
+// allowed to run slightly past the literal content height. The clean template
+// is the opposite: the same overflow fudge lets Word put a line or two on
+// page 2, so clean fitting uses the real content box minus a widow buffer.
+const KEEP_OVERFLOW_TOLERANCE_PT = 26;
+const CLEAN_WIDOW_BUFFER_PT = 8;
 const MIN_BLOCK_WIDTH_PT = 20;
 const DEFAULT_BODY_HALF_POINTS = 22;
 const MIN_HALF_POINTS = 2;
@@ -183,8 +185,12 @@ const addSegmentHeight = (total: number, segment: FlowSegment): number =>
     ? segment.blocks.reduce((sum, block) => sum + blockHeight(block), 0)
     : segment.rows.reduce((sum, row) => sum + rowHeight(row), 0));
 
-const countPages = (page: FlowPage): number => {
-  const limitPt = page.contentHeightPt + FIT_OVERFLOW_TOLERANCE_PT;
+const keepLimitPt = (page: FlowPage): number => page.contentHeightPt + KEEP_OVERFLOW_TOLERANCE_PT;
+
+const cleanLimitPt = (page: FlowPage): number =>
+  Math.max(1, page.contentHeightPt - CLEAN_WIDOW_BUFFER_PT);
+
+const countPages = (page: FlowPage, limitPt: number): number => {
   let pages = 1;
   let usedPt = 0;
 
@@ -215,6 +221,10 @@ const countPages = (page: FlowPage): number => {
 
   return pages;
 };
+
+const countKeepPages = (page: FlowPage): number => countPages(page, keepLimitPt(page));
+
+const countCleanPages = (page: FlowPage): number => countPages(page, cleanLimitPt(page));
 
 type ThemeBlockOptions = {
   sizeHalfPoints: number;
@@ -1013,7 +1023,7 @@ const cleanPage = (input: FitScaleInput, scale: number): FlowPage => ({
 export const isOriginalSinglePage = async (file: File): Promise<boolean> => {
   const original = await readKeepDocument(file, [], []);
   if (!original) return false;
-  return countPages(keepPage(original, EXPORT_SCALE_DEFAULT)) <= 1;
+  return countKeepPages(keepPage(original, EXPORT_SCALE_DEFAULT)) <= 1;
 };
 
 // One scale has to satisfy every export the user can still pick, so the answer is
@@ -1024,8 +1034,8 @@ export const computeFitToOnePageScale = async (input: FitScaleInput): Promise<nu
     : null;
 
   const fitsOnOnePage = (scale: number): boolean =>
-    countPages(cleanPage(input, scale)) <= 1 &&
-    (original === null || countPages(keepPage(original, scale)) <= 1);
+    countCleanPages(cleanPage(input, scale)) <= 1 &&
+    (original === null || countKeepPages(keepPage(original, scale)) <= 1);
 
   return SCALE_CANDIDATES.find(fitsOnOnePage) ?? EXPORT_SCALE_MIN;
 };
