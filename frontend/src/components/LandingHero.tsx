@@ -110,8 +110,6 @@ const LandingHero = ({ freeCreditsRemaining, onStartClick, onExampleClick }: Lan
             size="lg"
             fullWidth
             maw={420}
-            variant="gradient"
-            gradient={{ ...appTheme.gradient, deg: 45 }}
             leftSection={<IconSparkles size={18} />}
             styles={{ label: { whiteSpace: 'nowrap' } }}
             onClick={handleStartClick}

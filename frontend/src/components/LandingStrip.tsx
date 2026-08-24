@@ -35,7 +35,6 @@ import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { PRIVACY_POLICY } from '../lib/legalContent';
 import type { LegalDocument } from '../lib/legalContent';
 import { proAccent } from '../lib/proAccent';
-import { appTheme } from '../lib/theme';
 import { useProPlan } from '../hooks/useProPlan';
 
 type LandingStripProps = {
@@ -383,8 +382,6 @@ const LandingStrip = ({
                   size="lg"
                   fullWidth
                   maw={420}
-                  variant="gradient"
-                  gradient={{ ...appTheme.gradient, deg: 45 }}
                   leftSection={<IconSparkles size={18} />}
                   onClick={handleStartClick}
                 >

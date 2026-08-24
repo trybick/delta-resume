@@ -1,7 +1,6 @@
 import { Anchor, Badge, Button, Loader, Stack, Text, Tooltip } from '@mantine/core';
 import { IconSparkles } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
-import { appTheme } from '../lib/theme';
 import ResumeInput from './ResumeInput';
 import JobDescriptionInput from './JobDescriptionInput';
 import { getSavedResumeLimit } from '../lib/constants';
@@ -118,8 +117,6 @@ const TailorForm = ({
             className="tailor-button"
             size="lg"
             fullWidth
-            variant="gradient"
-            gradient={{ ...appTheme.gradient, deg: 45 }}
             leftSection={
               isTailoring ? <Loader size={18} color="currentColor" /> : <IconSparkles size={18} />
             }
