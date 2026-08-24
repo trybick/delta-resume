@@ -324,6 +324,7 @@ const App = () => {
         isLoadingCredits={isLoadingCredits}
         creditsError={creditsError}
         showUpgradeCta={showUpgradeCta}
+        showCreditsBadge={!showLanding}
         onUpgradeClick={() => openPaywall('upgrade')}
         onRetryCredits={() => void loadCredits()}
         onHomeClick={handleGoHome}

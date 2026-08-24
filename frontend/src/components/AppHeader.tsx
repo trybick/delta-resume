@@ -1,6 +1,6 @@
 import { Badge, Box, Button, Group, Skeleton, Stack, Text, Title, Tooltip } from '@mantine/core';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
-import { IconCoins, IconCrown, IconLogin2 } from '@tabler/icons-react';
+import { IconCoins, IconCrown, IconLogin2, IconUser } from '@tabler/icons-react';
 import ClerkAuthButton from './ClerkAuthButton';
 import DeltaLogo from './DeltaLogo';
 import UpgradeHoverCard from './UpgradeHoverCard';
@@ -19,6 +19,7 @@ type AppHeaderProps = {
   isLoadingCredits: boolean;
   creditsError: boolean;
   showUpgradeCta: boolean;
+  showCreditsBadge: boolean;
   onUpgradeClick: () => void;
   onRetryCredits: () => void;
   onHomeClick: () => void;
@@ -43,6 +44,7 @@ const AppHeader = ({
   isLoadingCredits,
   creditsError,
   showUpgradeCta,
+  showCreditsBadge,
   onUpgradeClick,
   onRetryCredits,
   onHomeClick,
@@ -143,7 +145,7 @@ const AppHeader = ({
         </a>
         <Group gap="xs" justify="flex-end" align="center" visibleFrom="sm">
           {planLoaded && isProPlan && proCreditsBadge}
-          {creditsLabel && (
+          {showCreditsBadge && creditsLabel && (
             <Tooltip label={`${creditsLabel} remaining. One credit is used when tailoring starts.`}>
               <Badge
                 size="lg"
@@ -155,10 +157,10 @@ const AppHeader = ({
               </Badge>
             </Tooltip>
           )}
-          {!creditsLabel && !isProPlan && isLoadingCredits && (
+          {showCreditsBadge && !creditsLabel && !isProPlan && isLoadingCredits && (
             <Skeleton width={110} height={26} radius="xl" />
           )}
-          {!creditsLabel && !isProPlan && creditsError && !isLoadingCredits && (
+          {showCreditsBadge && !creditsLabel && !isProPlan && creditsError && !isLoadingCredits && (
             <Badge
               size="lg"
               variant="light"
@@ -197,8 +199,10 @@ const AppHeader = ({
           </SignedIn>
         </Group>
         <Group gap="xs" justify="flex-end" wrap="nowrap" align="center" hiddenFrom="sm">
-          {!planLoaded && isLoadingCredits && <Skeleton width={110} height={30} radius="xl" />}
-          {!creditsLabel && !isProPlan && creditsError && !isLoadingCredits && (
+          {showCreditsBadge && !planLoaded && isLoadingCredits && (
+            <Skeleton width={110} height={30} radius="xl" />
+          )}
+          {showCreditsBadge && !creditsLabel && !isProPlan && creditsError && !isLoadingCredits && (
             <Badge
               size="lg"
               variant="light"
@@ -221,7 +225,7 @@ const AppHeader = ({
               {mobileUpgradeLabel}
             </Button>
           )}
-          {planLoaded && !isProPlan && !showUpgradeCta && creditsLabel && (
+          {showCreditsBadge && planLoaded && !isProPlan && !showUpgradeCta && creditsLabel && (
             <Tooltip label={`${creditsLabel} remaining. One credit is used when tailoring starts.`}>
               <Badge
                 size="lg"
@@ -236,16 +240,29 @@ const AppHeader = ({
           )}
           <SignedOut>
             <SignInButton mode="modal">
-              <ClerkAuthButton
-                size="xs"
-                variant="light"
-                px={8}
-                aria-label="Sign in"
-                style={{ border: '1px solid rgba(34, 184, 207, 0.35)' }}
-                onClick={() => trackEvent(AnalyticsEvents.SignIn)}
-              >
-                <IconLogin2 size={16} />
-              </ClerkAuthButton>
+              {showCreditsBadge ? (
+                <ClerkAuthButton
+                  size="xs"
+                  variant="light"
+                  px={8}
+                  aria-label="Sign in"
+                  style={{ border: '1px solid rgba(34, 184, 207, 0.35)' }}
+                  onClick={() => trackEvent(AnalyticsEvents.SignIn)}
+                >
+                  <IconUser size={16} />
+                </ClerkAuthButton>
+              ) : (
+                <ClerkAuthButton
+                  size="xs"
+                  variant="light"
+                  leftSection={<IconLogin2 size={14} />}
+                  styles={{ label: { whiteSpace: 'nowrap' } }}
+                  style={{ border: '1px solid rgba(34, 184, 207, 0.35)' }}
+                  onClick={() => trackEvent(AnalyticsEvents.SignIn)}
+                >
+                  Sign in
+                </ClerkAuthButton>
+              )}
             </SignInButton>
           </SignedOut>
           <SignedIn>

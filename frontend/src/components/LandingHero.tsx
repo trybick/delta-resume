@@ -1,4 +1,16 @@
-import { Badge, Button, Grid, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
+import {
+  Badge,
+  Box,
+  Button,
+  Grid,
+  Group,
+  Stack,
+  Text,
+  ThemeIcon,
+  Title,
+  useMantineTheme,
+} from '@mantine/core';
+import { useMediaQuery } from '@mantine/hooks';
 import { IconEye, IconFileText, IconMail, IconSparkles } from '@tabler/icons-react';
 import CoverLetterMockExample from './CoverLetterMockExample';
 import DiffMockExample from './DiffMockExample';
@@ -13,10 +25,10 @@ type LandingHeroProps = {
 };
 
 const LandingHero = ({ freeCreditsRemaining, onStartClick, onExampleClick }: LandingHeroProps) => {
-  const startLabel =
-    freeCreditsRemaining !== null
-      ? `Tailor my resume for free · ${freeCreditsRemaining} ${freeCreditsRemaining === 1 ? 'credit' : 'credits'}`
-      : 'Tailor my resume for free';
+  const theme = useMantineTheme();
+  const isDesktopHeading = useMediaQuery(`(min-width: ${theme.breakpoints.md})`, false, {
+    getInitialValueInEffect: false,
+  });
 
   const handleStartClick = () => {
     trackEvent(AnalyticsEvents.LandingCta, { placement: 'hero' });
@@ -37,11 +49,29 @@ const LandingHero = ({ freeCreditsRemaining, onStartClick, onExampleClick }: Lan
               order={1}
               ta="center"
               fw={800}
-              maw={520}
+              maw={{ base: '100%', md: 520 }}
               fz={{ base: '1.75rem', md: '2.375rem' }}
-              style={{ lineHeight: 1.2, letterSpacing: '-0.02em', textWrap: 'balance' }}
+              style={{
+                lineHeight: 1.2,
+                letterSpacing: '-0.02em',
+                textWrap: isDesktopHeading ? 'balance' : 'wrap',
+              }}
             >
-              Tailor your resume and cover letter to any job in seconds
+              Tailor your{' '}
+              <Text span inherit variant="gradient" gradient={{ ...appTheme.gradient, deg: 45 }}>
+                resume
+              </Text>{' '}
+              and{' '}
+              <Text
+                span
+                inherit
+                variant="gradient"
+                gradient={{ ...appTheme.gradient, deg: 45 }}
+                style={{ whiteSpace: 'nowrap' }}
+              >
+                cover letter
+              </Text>{' '}
+              to any job in seconds
             </Title>
             <Text
               size="md"
@@ -55,7 +85,7 @@ const LandingHero = ({ freeCreditsRemaining, onStartClick, onExampleClick }: Lan
               for.
             </Text>
           </Stack>
-          <Group gap="md" justify="center">
+          <Group gap="md" justify="center" visibleFrom="sm">
             <Group gap={6} wrap="nowrap">
               <ThemeIcon size={22} radius="xl" variant="light" color="teal">
                 <IconFileText size={13} />
@@ -83,9 +113,15 @@ const LandingHero = ({ freeCreditsRemaining, onStartClick, onExampleClick }: Lan
             variant="gradient"
             gradient={{ ...appTheme.gradient, deg: 45 }}
             leftSection={<IconSparkles size={18} />}
+            styles={{ label: { whiteSpace: 'nowrap' } }}
             onClick={handleStartClick}
           >
-            {startLabel}
+            Tailor my resume for free
+            {freeCreditsRemaining !== null && (
+              <Box component="span" visibleFrom="sm">
+                {` · ${freeCreditsRemaining} ${freeCreditsRemaining === 1 ? 'credit' : 'credits'}`}
+              </Box>
+            )}
           </Button>
           <Text size="xs" c="dimmed" ta="center">
             No sign-up, no card. Your resume is never used to train AI.

@@ -301,7 +301,7 @@ const LandingStrip = ({
                         leftSection={<IconSparkles size={18} />}
                         onClick={handleFreeStartClick}
                       >
-                        Start free, no account needed
+                        Start for free
                       </Button>
                     )}
                   </Stack>
