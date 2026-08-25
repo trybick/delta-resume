@@ -12,7 +12,6 @@ type RequirementsCoverageProps = {
   unresolvedGapCount?: number;
   open?: boolean;
   onToggle?: () => void;
-  actions?: ReactNode;
   children?: ReactNode;
 };
 
@@ -26,7 +25,6 @@ const RequirementsCoverage = ({
   unresolvedGapCount = 0,
   open = false,
   onToggle,
-  actions,
   children,
 }: RequirementsCoverageProps) => {
   if (totalCount === 0) return null;
@@ -104,30 +102,25 @@ const RequirementsCoverage = ({
         border: '1px solid color-mix(in srgb, var(--mantine-color-green-6) 25%, transparent)',
       }}
     >
-      <Group gap="sm" wrap="nowrap" align="center">
-        <Box style={{ flex: 1, minWidth: 0 }}>
-          <Tooltip
-            label={`How many of the job's key requirements your resume demonstrates. ${tooltipParts.join('. ')}.`}
-            multiline
-            maw={340}
+      <Tooltip
+        label={`How many of the job's key requirements your resume demonstrates. ${tooltipParts.join('. ')}.`}
+        multiline
+        maw={340}
+      >
+        {expandable ? (
+          <UnstyledButton
+            onClick={onToggle}
+            w="100%"
+            aria-expanded={open}
+            aria-label="Requirement coverage"
+            style={{ display: 'block' }}
           >
-            {expandable ? (
-              <UnstyledButton
-                onClick={onToggle}
-                w="100%"
-                aria-expanded={open}
-                aria-label="Requirement coverage"
-                style={{ display: 'block' }}
-              >
-                {header}
-              </UnstyledButton>
-            ) : (
-              <Box>{header}</Box>
-            )}
-          </Tooltip>
-        </Box>
-        {actions}
-      </Group>
+            {header}
+          </UnstyledButton>
+        ) : (
+          <Box>{header}</Box>
+        )}
+      </Tooltip>
       {expandable && (
         <Collapse expanded={open}>
           <Box

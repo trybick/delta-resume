@@ -457,86 +457,91 @@ const ResultsPanel = ({
     <Card className="results-card" withBorder shadow="xs" p={{ base: 'sm', sm: 'lg' }}>
       <Stack gap="md">
         <Stack gap="sm">
-          {requirements.length > 0 ? (
-            <RequirementsCoverage
-              coveredCount={coveredCount}
-              totalCount={requirements.length}
-              baseCoveredCount={baseCoveredCount}
-              coveredByChangesCount={coveredByChangesCount}
-              coveredByAddedCount={coveredByAddedCount}
-              availableFillerCount={availableFillerCount}
-              unresolvedGapCount={unresolvedGapCount}
-              open={gaps.length > 0 ? gapsOpen : undefined}
-              onToggle={gaps.length > 0 ? handleGapsToggle : undefined}
-              actions={!isNarrowMobile ? actionButtons : undefined}
-            >
-              {gaps.length > 0 && (
-                <Stack gap="sm">
-                  <Text size="sm" c="dimmed" lh={1.6}>
-                    This job asks for these, but your resume doesn&rsquo;t show them yet. If you have
-                    the experience, add a bullet.
-                  </Text>
-                  {visibleGaps.map((requirement) => (
-                    <GapRow
-                      key={requirement.text}
-                      requirement={requirement}
-                      addedBullet={addedByRequirement.get(requirement.text)}
-                      onAdd={handleAddGapBullet}
-                      onUndo={handleRemoveAddedBullet}
-                    />
-                  ))}
-                  {lockedGaps.length > 0 && (
-                    <Box style={{ position: 'relative' }}>
-                      <Stack
-                        gap="sm"
-                        style={{ filter: 'blur(5px)', userSelect: 'none' }}
-                        aria-hidden
-                      >
-                        {lockedGaps.map((_, index) => (
-                          <GapRow
-                            key={index}
-                            requirement={
-                              LOCKED_GAP_PLACEHOLDERS[index % LOCKED_GAP_PLACEHOLDERS.length]
-                            }
-                          />
-                        ))}
-                      </Stack>
-                      <Center
-                        style={{
-                          position: 'absolute',
-                          inset: 0,
-                          backgroundColor:
-                            'color-mix(in srgb, var(--mantine-color-body) 55%, transparent)',
-                        }}
-                      >
-                        <Stack align="center" gap={6} p="xs">
-                          <Group gap={6}>
-                            <IconLock size={16} color="var(--mantine-primary-color-filled)" />
-                            <Text size="sm" fw={600}>
-                              See all {gaps.length} missing requirements with Pro
-                            </Text>
-                            <Badge variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }}>
-                              Pro
-                            </Badge>
-                          </Group>
-                          <Button
-                            size="xs"
-                            variant="gradient"
-                            gradient={{ ...proAccent.gradient, deg: 45 }}
-                            onClick={handleGapsUpgradeClick}
+          <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
+            {requirements.length > 0 && (
+              <Box style={{ flex: 1, minWidth: 0 }}>
+                <RequirementsCoverage
+                  coveredCount={coveredCount}
+                  totalCount={requirements.length}
+                  baseCoveredCount={baseCoveredCount}
+                  coveredByChangesCount={coveredByChangesCount}
+                  coveredByAddedCount={coveredByAddedCount}
+                  availableFillerCount={availableFillerCount}
+                  unresolvedGapCount={unresolvedGapCount}
+                  open={gaps.length > 0 ? gapsOpen : undefined}
+                  onToggle={gaps.length > 0 ? handleGapsToggle : undefined}
+                >
+                  {gaps.length > 0 && (
+                    <Stack gap="sm">
+                      <Text size="sm" c="dimmed" lh={1.6}>
+                        This job asks for these, but your resume doesn&rsquo;t show them yet. If you
+                        have the experience, add a bullet.
+                      </Text>
+                      {visibleGaps.map((requirement) => (
+                        <GapRow
+                          key={requirement.text}
+                          requirement={requirement}
+                          addedBullet={addedByRequirement.get(requirement.text)}
+                          onAdd={handleAddGapBullet}
+                          onUndo={handleRemoveAddedBullet}
+                        />
+                      ))}
+                      {lockedGaps.length > 0 && (
+                        <Box style={{ position: 'relative' }}>
+                          <Stack
+                            gap="sm"
+                            style={{ filter: 'blur(5px)', userSelect: 'none' }}
+                            aria-hidden
                           >
-                            {upgradeCtaLabel}
-                          </Button>
-                        </Stack>
-                      </Center>
-                    </Box>
+                            {lockedGaps.map((_, index) => (
+                              <GapRow
+                                key={index}
+                                requirement={
+                                  LOCKED_GAP_PLACEHOLDERS[index % LOCKED_GAP_PLACEHOLDERS.length]
+                                }
+                              />
+                            ))}
+                          </Stack>
+                          <Center
+                            style={{
+                              position: 'absolute',
+                              inset: 0,
+                              backgroundColor:
+                                'color-mix(in srgb, var(--mantine-color-body) 55%, transparent)',
+                            }}
+                          >
+                            <Stack align="center" gap={6} p="xs">
+                              <Group gap={6}>
+                                <IconLock size={16} color="var(--mantine-primary-color-filled)" />
+                                <Text size="sm" fw={600}>
+                                  See all {gaps.length} missing requirements with Pro
+                                </Text>
+                                <Badge
+                                  variant="gradient"
+                                  gradient={{ ...proAccent.gradient, deg: 45 }}
+                                >
+                                  Pro
+                                </Badge>
+                              </Group>
+                              <Button
+                                size="xs"
+                                variant="gradient"
+                                gradient={{ ...proAccent.gradient, deg: 45 }}
+                                onClick={handleGapsUpgradeClick}
+                              >
+                                {upgradeCtaLabel}
+                              </Button>
+                            </Stack>
+                          </Center>
+                        </Box>
+                      )}
+                    </Stack>
                   )}
-                </Stack>
-              )}
-            </RequirementsCoverage>
-          ) : (
-            !isNarrowMobile && actionButtons
-          )}
+                </RequirementsCoverage>
+              </Box>
+            )}
+            {!isNarrowMobile && actionButtons}
+          </Group>
           {isNarrowMobile && actionButtons}
         </Stack>
 
