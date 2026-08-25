@@ -154,6 +154,20 @@ body {
   }
 }
 
+.results-tabs .mantine-Tabs-tab {
+  justify-content: center;
+  gap: 6px;
+}
+
+.results-tabs .mantine-Tabs-tabLabel {
+  flex: none;
+}
+
+.results-tabs .mantine-Tabs-tabSection[data-position="left"],
+.results-tabs .mantine-Tabs-tabSection[data-position="right"] {
+  margin-inline: 0;
+}
+
 @media (max-width: 36em) {
   .results-tabs .mantine-Tabs-list {
     flex-wrap: nowrap;
@@ -162,7 +176,6 @@ body {
   .results-tabs .mantine-Tabs-tab {
     flex: 1 1 0;
     font-size: var(--mantine-font-size-sm);
-    justify-content: center;
     min-width: 0;
     padding-inline: 4px;
   }

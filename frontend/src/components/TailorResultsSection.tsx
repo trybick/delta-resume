@@ -1,6 +1,5 @@
 import { Alert, Badge, Button, Center, Group, Loader, Stack, Tabs } from '@mantine/core';
 import { IconAlertCircle, IconCheck, IconEye, IconFileText, IconMail } from '@tabler/icons-react';
-import { useMediaQuery } from '@mantine/hooks';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import ResultsPanel from './ResultsPanel';
 import CoverLetterPanel from './CoverLetterPanel';
@@ -56,7 +55,6 @@ const TailorResultsSection = ({
   onUpgradeClick,
   onGapsUpgradeClick,
 }: TailorResultsSectionProps) => {
-  const isNarrowMobile = useMediaQuery('(max-width: 36em)');
   const resumeTabIndicator = showingExample ? null : status === 'loading' ? (
     <Loader size={12} />
   ) : status === 'done' ? (
@@ -130,14 +128,14 @@ const TailorResultsSection = ({
         <Tabs.List>
           <Tabs.Tab
             value="resume"
-            leftSection={isNarrowMobile ? undefined : <IconFileText size={16} />}
+            leftSection={<IconFileText size={16} />}
             rightSection={resumeTabIndicator && <Center h={16}>{resumeTabIndicator}</Center>}
           >
             Resume changes
           </Tabs.Tab>
           <Tabs.Tab
             value="coverLetter"
-            leftSection={isNarrowMobile ? undefined : <IconMail size={16} />}
+            leftSection={<IconMail size={16} />}
             rightSection={
               coverLetterTabIndicator && <Center h={16}>{coverLetterTabIndicator}</Center>
             }
