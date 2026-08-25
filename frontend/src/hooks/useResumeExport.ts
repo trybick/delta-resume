@@ -13,7 +13,11 @@ import {
   type DocxInsertion,
   type DocxReplacement,
 } from '../lib/exportDocx';
-import { computeFitToOnePageScale, isOriginalSinglePage } from '../lib/exportPageFit';
+import {
+  computeFitToOnePageScale,
+  isOriginalSinglePage,
+  type FitToOnePageScales,
+} from '../lib/exportPageFit';
 import { buildExportFilename, extractCandidateNameFromResume } from '../lib/exportFilename';
 import { PdfConversionError, convertDocxToPdf, downloadPdf } from '../lib/exportPdf';
 import { readCleanLayout, type DocxCleanLayout } from '../lib/docxLayout';
@@ -36,6 +40,7 @@ type UseResumeExportResult = {
   setExportScale: (scale: number) => void;
   fitToOnePage: boolean;
   setFitToOnePage: (enabled: boolean) => void;
+  fitScaleByVariant: FitToOnePageScales;
   isComputingFit: boolean;
   handleCopy: () => Promise<void>;
   handleExport: (variant: 'keep' | 'clean', format: 'docx' | 'pdf') => Promise<boolean>;
@@ -69,12 +74,15 @@ export const useResumeExport = ({
   const [isExporting, setIsExporting] = useState(false);
   const [manualScale, setManualScale] = useState(EXPORT_SCALE_DEFAULT);
   const [fitToOnePage, setFitToOnePageState] = useState(false);
-  const [fitScale, setFitScale] = useState(EXPORT_SCALE_DEFAULT);
+  const [fitScales, setFitScales] = useState<FitToOnePageScales>({
+    clean: EXPORT_SCALE_DEFAULT,
+    keep: EXPORT_SCALE_DEFAULT,
+  });
   const [isComputingFit, setIsComputingFit] = useState(false);
   const autoFitResumeTextRef = useRef<string | null>(null);
   const fitTouchedRef = useRef(false);
 
-  const exportScale = fitToOnePage ? fitScale : manualScale;
+  const exportScale = fitToOnePage ? Math.min(fitScales.clean, fitScales.keep) : manualScale;
 
   const setExportScale = (scale: number) => {
     setManualScale(clampExportScale(scale));
@@ -206,7 +214,7 @@ export const useResumeExport = ({
       try {
         const merged = buildMergedResume();
         const layout = await loadCleanLayout();
-        const scale = await computeFitToOnePageScale({
+        const scales = await computeFitToOnePageScale({
           resumeDocument: merged.document,
           resumeText: merged.lines.join('\n'),
           textsByNodeId: merged.textsByNodeId,
@@ -215,9 +223,11 @@ export const useResumeExport = ({
           replacements: buildKeepReplacements(),
           insertions: buildKeepInsertions(),
         });
-        if (!cancelled) setFitScale(scale);
+        if (!cancelled) setFitScales(scales);
       } catch {
-        if (!cancelled) setFitScale(EXPORT_SCALE_DEFAULT);
+        if (!cancelled) {
+          setFitScales({ clean: EXPORT_SCALE_DEFAULT, keep: EXPORT_SCALE_DEFAULT });
+        }
       } finally {
         if (!cancelled) setIsComputingFit(false);
       }
@@ -248,22 +258,28 @@ export const useResumeExport = ({
     return buildExportFilename([candidateName, companyName, 'resume'], 'resume', format);
   };
 
-  const buildCleanDocx = async (): Promise<Blob> => {
+  const scaleForExport = (variant: 'keep' | 'clean'): number => {
+    if (!fitToOnePage) return manualScale;
+    if (variant === 'keep' && canPatchOriginal) return fitScales.keep;
+    return fitScales.clean;
+  };
+
+  const buildCleanDocx = async (scale: number): Promise<Blob> => {
     const merged = buildMergedResume();
     const layout = await loadCleanLayout();
     return merged.document
-      ? buildDocumentDocx(merged.document, merged.textsByNodeId, layout, exportScale)
-      : buildTemplateDocx(merged.lines.join('\n'), layout, exportScale);
+      ? buildDocumentDocx(merged.document, merged.textsByNodeId, layout, scale)
+      : buildTemplateDocx(merged.lines.join('\n'), layout, scale);
   };
 
-  const buildPatchedDocx = async (): Promise<Blob> => {
-    if (!result || !originalDocx) return buildCleanDocx();
+  const buildPatchedDocx = async (scale: number): Promise<Blob> => {
+    if (!result || !originalDocx) return buildCleanDocx(scaleForExport('clean'));
     try {
       return await patchOriginalDocx(
         originalDocx.file,
         buildKeepReplacements(),
         buildKeepInsertions(),
-        exportScale,
+        scale,
       );
     } catch {
       notifications.show({
@@ -272,7 +288,7 @@ export const useResumeExport = ({
         message:
           'We could not preserve your original formatting, so a clean template was used instead.',
       });
-      return buildCleanDocx();
+      return buildCleanDocx(scaleForExport('clean'));
     }
   };
 
@@ -306,15 +322,17 @@ export const useResumeExport = ({
 
   const handleExport = async (variant: 'keep' | 'clean', format: 'docx' | 'pdf') => {
     if (!result || isExample || isExporting) return false;
+    const scale = scaleForExport(variant);
     trackEvent(AnalyticsEvents.ResumeExport, {
       variant,
       format,
-      scale: exportScale,
+      scale,
       fitToOnePage,
     });
     setIsExporting(true);
     try {
-      const docxBlob = variant === 'keep' ? await buildPatchedDocx() : await buildCleanDocx();
+      const docxBlob =
+        variant === 'keep' ? await buildPatchedDocx(scale) : await buildCleanDocx(scale);
       const filename = resumeFilename(format);
       if (format === 'docx') {
         downloadDocx(docxBlob, filename);
@@ -357,6 +375,7 @@ export const useResumeExport = ({
     setExportScale,
     fitToOnePage,
     setFitToOnePage,
+    fitScaleByVariant: fitScales,
     isComputingFit,
     handleCopy,
     handleExport,

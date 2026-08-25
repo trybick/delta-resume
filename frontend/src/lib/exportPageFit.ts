@@ -3,7 +3,6 @@ import {
   EXPORT_SCALE_DEFAULT,
   EXPORT_SCALE_MAX,
   EXPORT_SCALE_MIN,
-  EXPORT_SCALE_STEP,
   LAYOUT_CELL_GUTTER,
   MAX_TABLE_SHARE_OF_DOCUMENT,
   PAGE_HEIGHT,
@@ -52,13 +51,12 @@ const LINE_HEIGHT_BY_FONT: Record<string, number> = {
 const lineHeightMultiplier = (family: string): number =>
   LINE_HEIGHT_BY_FONT[family.trim().toLowerCase()] ?? DEFAULT_LINE_HEIGHT_MULTIPLIER;
 const HEADING_RULE_PT = 4;
-// Keep-formatting measurement runs a little hot versus Word (canvas widths and
-// generic per-font line heights both skew tall), so a one-page verdict is
-// allowed to run slightly past the literal content height. The clean template
-// is the opposite: the same overflow fudge lets Word put a line or two on
-// page 2, so clean fitting uses the real content box minus a widow buffer.
+// Keep-formatting measurement runs a little hot versus Word, so a one-page
+// verdict is allowed to run past the content box. The clean template is closer
+// to Word; a smaller overflow still lets type scale up into the bottom gap
+// without the extra line that used to spill onto page 2.
 const KEEP_OVERFLOW_TOLERANCE_PT = 26;
-const CLEAN_WIDOW_BUFFER_PT = 8;
+const CLEAN_OVERFLOW_TOLERANCE_PT = 11;
 const MIN_BLOCK_WIDTH_PT = 20;
 const DEFAULT_BODY_HALF_POINTS = 22;
 const MIN_HALF_POINTS = 2;
@@ -187,8 +185,7 @@ const addSegmentHeight = (total: number, segment: FlowSegment): number =>
 
 const keepLimitPt = (page: FlowPage): number => page.contentHeightPt + KEEP_OVERFLOW_TOLERANCE_PT;
 
-const cleanLimitPt = (page: FlowPage): number =>
-  Math.max(1, page.contentHeightPt - CLEAN_WIDOW_BUFFER_PT);
+const cleanLimitPt = (page: FlowPage): number => page.contentHeightPt + CLEAN_OVERFLOW_TOLERANCE_PT;
 
 const countPages = (page: FlowPage, limitPt: number): number => {
   let pages = 1;
@@ -992,10 +989,11 @@ const keepPage = (keepDocument: KeepDocument, scale: number): FlowPage => ({
   })),
 });
 
+const FIT_SCALE_STEP = 0.01;
 const SCALE_CANDIDATES: number[] = Array.from(
-  { length: Math.round((EXPORT_SCALE_MAX - EXPORT_SCALE_MIN) / EXPORT_SCALE_STEP) + 1 },
+  { length: Math.round((EXPORT_SCALE_MAX - EXPORT_SCALE_MIN) / FIT_SCALE_STEP) + 1 },
   (_unused, index) =>
-    clampExportScale(Number((EXPORT_SCALE_MAX - index * EXPORT_SCALE_STEP).toFixed(2))),
+    clampExportScale(Number((EXPORT_SCALE_MAX - index * FIT_SCALE_STEP).toFixed(2))),
 );
 
 export type FitScaleInput = {
@@ -1026,16 +1024,26 @@ export const isOriginalSinglePage = async (file: File): Promise<boolean> => {
   return countKeepPages(keepPage(original, EXPORT_SCALE_DEFAULT)) <= 1;
 };
 
-// One scale has to satisfy every export the user can still pick, so the answer is
-// the largest step where both the clean template and the patched original fit.
-export const computeFitToOnePageScale = async (input: FitScaleInput): Promise<number> => {
+export type FitToOnePageScales = {
+  clean: number;
+  keep: number;
+};
+
+const largestFittingScale = (fits: (scale: number) => boolean): number =>
+  SCALE_CANDIDATES.find(fits) ?? EXPORT_SCALE_MIN;
+
+export const computeFitToOnePageScale = async (
+  input: FitScaleInput,
+): Promise<FitToOnePageScales> => {
   const original = input.originalFile
     ? await readKeepDocument(input.originalFile, input.replacements, input.insertions)
     : null;
 
-  const fitsOnOnePage = (scale: number): boolean =>
-    countCleanPages(cleanPage(input, scale)) <= 1 &&
-    (original === null || countKeepPages(keepPage(original, scale)) <= 1);
+  const clean = largestFittingScale((scale) => countCleanPages(cleanPage(input, scale)) <= 1);
+  if (original === null) return { clean, keep: clean };
 
-  return SCALE_CANDIDATES.find(fitsOnOnePage) ?? EXPORT_SCALE_MIN;
+  return {
+    clean,
+    keep: largestFittingScale((scale) => countKeepPages(keepPage(original, scale)) <= 1),
+  };
 };

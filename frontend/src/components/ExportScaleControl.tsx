@@ -19,6 +19,7 @@ type ExportScaleControlProps = {
   onChange: (scale: number) => void;
   fitToOnePage: boolean;
   onFitToOnePageChange: (enabled: boolean) => void;
+  fitScaleByVariant?: { clean: number; keep: number };
   isComputingFit?: boolean;
   disabled?: boolean;
 };
@@ -28,60 +29,75 @@ export const ExportScaleControl = ({
   onChange,
   fitToOnePage,
   onFitToOnePageChange,
+  fitScaleByVariant,
   isComputingFit = false,
   disabled,
-}: ExportScaleControlProps) => (
-  <Box
-    px="sm"
-    pt={4}
-    pb={10}
-    onKeyDown={(event) => event.stopPropagation()}
-    onClick={(event) => event.stopPropagation()}
-  >
-    <Checkbox
-      size="xs"
-      mb={10}
-      label="Fit to one page"
-      checked={fitToOnePage}
-      onChange={(event) => onFitToOnePageChange(event.currentTarget.checked)}
-      disabled={disabled}
-    />
-    <Group justify="space-between" mb={10}>
-      <Text size="xs" fw={600}>
-        Text size
-      </Text>
-      <Text size="xs" c="dimmed">
-        {isComputingFit ? 'Calculating…' : formatScalePercent(scale)}
-      </Text>
-    </Group>
-    <Slider
-      size="sm"
-      value={scale}
-      onChange={onChange}
-      disabled={disabled || fitToOnePage || isComputingFit}
-      min={EXPORT_SCALE_MIN}
-      max={EXPORT_SCALE_MAX}
-      step={EXPORT_SCALE_STEP}
-      marks={SCALE_MARKS}
-      label={formatScalePercent}
-      aria-label="Export text size"
-    />
+}: ExportScaleControlProps) => {
+  const fittedMin = fitScaleByVariant
+    ? Math.min(fitScaleByVariant.clean, fitScaleByVariant.keep)
+    : null;
+  const fittedMax = fitScaleByVariant
+    ? Math.max(fitScaleByVariant.clean, fitScaleByVariant.keep)
+    : null;
+  const scaleLabel = isComputingFit
+    ? 'Calculating…'
+    : fitToOnePage && fittedMin !== null && fittedMax !== null && fittedMin !== fittedMax
+      ? `${formatScalePercent(fittedMin)}–${formatScalePercent(fittedMax)}`
+      : formatScalePercent(scale);
+
+  return (
     <Box
-      mt={8}
-      style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr 1fr',
-      }}
+      px="sm"
+      pt={4}
+      pb={10}
+      onKeyDown={(event) => event.stopPropagation()}
+      onClick={(event) => event.stopPropagation()}
     >
-      <Text size="xs" c="dimmed" ta="left">
-        Smaller
-      </Text>
-      <Text size="xs" c="dimmed" ta="center">
-        Default
-      </Text>
-      <Text size="xs" c="dimmed" ta="right">
-        Larger
-      </Text>
+      <Checkbox
+        size="xs"
+        mb={10}
+        label="Fit to one page"
+        checked={fitToOnePage}
+        onChange={(event) => onFitToOnePageChange(event.currentTarget.checked)}
+        disabled={disabled}
+      />
+      <Group justify="space-between" mb={10}>
+        <Text size="xs" fw={600}>
+          Text size
+        </Text>
+        <Text size="xs" c="dimmed">
+          {scaleLabel}
+        </Text>
+      </Group>
+      <Slider
+        size="sm"
+        value={scale}
+        onChange={onChange}
+        disabled={disabled || fitToOnePage || isComputingFit}
+        min={EXPORT_SCALE_MIN}
+        max={EXPORT_SCALE_MAX}
+        step={EXPORT_SCALE_STEP}
+        marks={SCALE_MARKS}
+        label={formatScalePercent}
+        aria-label="Export text size"
+      />
+      <Box
+        mt={8}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+        }}
+      >
+        <Text size="xs" c="dimmed" ta="left">
+          Smaller
+        </Text>
+        <Text size="xs" c="dimmed" ta="center">
+          Default
+        </Text>
+        <Text size="xs" c="dimmed" ta="right">
+          Larger
+        </Text>
+      </Box>
     </Box>
-  </Box>
-);
+  );
+};
