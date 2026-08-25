@@ -213,7 +213,7 @@ const AppHeader = ({
               Retry credits
             </Badge>
           )}
-          {planLoaded && isProPlan && proCreditsBadge}
+          {showCreditsBadge && planLoaded && isProPlan && proCreditsBadge}
           {planLoaded && !isProPlan && showUpgradeCta && (
             <Button
               size="xs"
