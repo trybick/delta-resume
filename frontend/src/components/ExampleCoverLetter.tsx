@@ -45,6 +45,8 @@ const ExampleCoverLetter = ({
           settings={settings}
           isSettingsLoading={isSettingsLoading}
           onSettingsChange={onSettingsChange}
+          isProPlan={isProPlan}
+          onUpgradeClick={onUpgradeClick}
           settingsDisabled
           trailing={
             <Button
@@ -61,7 +63,7 @@ const ExampleCoverLetter = ({
         {!isProPlan && (
           <Group justify="space-between" align="center" wrap="wrap">
             <Text size="sm" c="dimmed">
-              On the Pro plan, every tailor run also writes a cover letter like this one.
+              On the Pro plan, you can pick the length and tone of every cover letter.
             </Text>
             <Button
               size="xs"

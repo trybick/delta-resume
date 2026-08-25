@@ -21,9 +21,8 @@ export const PRO_FEATURES: ProFeature[] = [
   },
   {
     icon: IconMail,
-    title: 'Automatic cover letters',
-    description:
-      'Every tailor run writes a matching cover letter, in your choice of length and tone',
+    title: 'Cover letters, your way',
+    description: 'Choose the length and tone of every cover letter',
   },
   {
     icon: IconTargetArrow,

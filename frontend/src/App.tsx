@@ -284,9 +284,7 @@ const App = () => {
       setShowingExample(false);
       setActiveTab('resume');
       const runId = crypto.randomUUID();
-      if (isProPlan) {
-        void runCoverLetter(resumeText, jobDescription, runId);
-      }
+      void runCoverLetter(resumeText, jobDescription, runId);
       const succeeded = await runTailor(
         resumeText,
         jobDescription,
@@ -395,7 +393,6 @@ const App = () => {
                 runCount={runCount}
                 originalDocx={originalDocx}
                 onShowExample={handleShowExample}
-                planLoaded={planLoaded}
                 isProPlan={isProPlan}
                 isGuest={isGuest}
                 lowCredits={lowCredits}

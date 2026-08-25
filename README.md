@@ -7,7 +7,7 @@ Upload or paste a base resume, drop in a job description, and Claude rewrites yo
 **What you get**
 
 - **Inline diff review:** Keep or revert every rewrite; unchanged lines stay collapsed so you focus on what changed
-- **Cover letters (Pro):** Every tailor run also writes a matching cover letter (length and tone you choose); copy or export alongside the resume
+- **Cover letters:** Every tailor run also writes a matching cover letter; Pro lets you choose length and tone. Copy or export alongside the resume
 - **Missing requirements (Pro):** See job requirements your resume doesn’t cover yet, plus one-click draft bullets you can insert and edit
 - **Saved resumes:** Signed-in users auto-save after a run (1 on Free, 10 on Pro); rename or delete anytime
 - **Try before you buy:** Guests get free credits with no account; preview an example tailor + cover letter without spending credits
@@ -106,5 +106,5 @@ Authentication and billing are handled by [Clerk](https://clerk.com) (Clerk Bill
 
 - Guests get 3 lifetime credits, tracked against both a browser fingerprint (FingerprintJS, sent as `X-Guest-Fingerprint`) and a salted hash of their IP; the higher of the two usage counts applies, so clearing one alone does not reset credits.
 - Free accounts get 3 lifetime credits shared across their Clerk user id and browser fingerprint (IP is not included); remaining is `limit - max(usage)` across those keys, so guest fingerprint usage carries over after sign-in. Free accounts can save 1 resume.
-- Pro subscribers ($19/month, or $14/month billed annually) get 100 credits per calendar month, automatic cover letters with each tailor run, full missing-requirements analysis with one-click draft bullets, and up to 10 saved resumes. The Pro badge tooltip shows the next billing reset date from Clerk’s frontend subscription data.
+- Pro subscribers ($19/month, or $14/month billed annually) get 100 credits per calendar month, cover letter length and tone, full missing-requirements analysis with one-click draft bullets, and up to 10 saved resumes. The Pro badge tooltip shows the next billing reset date from Clerk’s frontend subscription data.
 - One credit is spent when a valid tailoring request is accepted for AI processing, and refunded if the AI call fails or the request is cancelled before completing. Cover letters do not cost an extra credit. When credits run out the API returns `402 credits_exhausted` and the UI opens a paywall: sign-up (Google prominent) for guests, the Clerk `PricingTable` in-app checkout for signed-in users.

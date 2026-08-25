@@ -10,7 +10,7 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'Why not just paste my resume into ChatGPT?',
     answer:
-      'A chat window hands back a rewritten wall of text and leaves you to spot what changed. Delta Resume shows every edit as an inline diff you accept or revert one by one, keeps your document formatting for export, and can automatically fit your resume to one page by scaling the sizing. On Pro it also writes the cover letter and flags job requirements your resume doesn\u2019t cover yet.',
+      'A chat window hands back a rewritten wall of text and leaves you to spot what changed. Delta Resume shows every edit as an inline diff you accept or revert one by one, keeps your document formatting for export, and can automatically fit your resume to one page by scaling the sizing. Every tailor run also writes a matching cover letter. On Pro it flags job requirements your resume doesn\u2019t cover yet.',
   },
   {
     question: 'Will the rewrites sound like me?',
@@ -35,7 +35,7 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'Does the free plan include cover letters?',
     answer:
-      'No. Cover letters are a Pro feature, and they\u2019re labeled that way wherever they appear. On Pro, every tailor run also writes a matching cover letter in your choice of length and tone, from the same resume and job post.',
+      'Yes. Every tailor run writes a matching cover letter from the same resume and job post. Pro lets you choose the length and tone.',
   },
 ];
 

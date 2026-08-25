@@ -34,7 +34,6 @@ import {
 } from '../lib/formatCoverLetter';
 import { useCoverLetterSettings } from '../hooks/useCoverLetterSettings';
 import ExampleCoverLetter from './ExampleCoverLetter';
-import LockedTeaser from './LockedTeaser';
 import NameAndSettingsRow from './NameAndSettingsRow';
 import WritingLoader from './WritingLoader';
 
@@ -48,7 +47,6 @@ type CoverLetterPanelProps = {
   exampleResult?: CoverLetterResult;
   onRetry: () => void;
   onUpgradeClick: () => void;
-  onShowExample?: () => void;
 };
 
 const CoverLetterPanel = ({
@@ -61,7 +59,6 @@ const CoverLetterPanel = ({
   exampleResult,
   onRetry,
   onUpgradeClick,
-  onShowExample,
 }: CoverLetterPanelProps) => {
   const { user } = useUser();
   const { has } = useAuth();
@@ -115,6 +112,8 @@ const CoverLetterPanel = ({
       settings={coverLetterSettings}
       isSettingsLoading={isSettingsLoading}
       onSettingsChange={handleSettingsChange}
+      isProPlan={onProPlan}
+      onUpgradeClick={onUpgradeClick}
       trailing={disabledExportButton}
     />
   );
@@ -132,16 +131,6 @@ const CoverLetterPanel = ({
         settings={coverLetterSettings}
         isSettingsLoading={isSettingsLoading}
         onSettingsChange={handleSettingsChange}
-      />
-    );
-  }
-
-  if (!onProPlan) {
-    return (
-      <LockedTeaser
-        isProPlan={onProPlan}
-        onUpgradeClick={onUpgradeClick}
-        onShowExample={onShowExample}
       />
     );
   }
@@ -280,6 +269,8 @@ const CoverLetterPanel = ({
           settings={coverLetterSettings}
           isSettingsLoading={isSettingsLoading}
           onSettingsChange={handleSettingsChange}
+          isProPlan={onProPlan}
+          onUpgradeClick={onUpgradeClick}
           trailing={
             <Menu
               key={exportMenuKey ?? undefined}

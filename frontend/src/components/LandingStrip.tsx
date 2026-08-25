@@ -98,6 +98,7 @@ const getFreePlanFeatures = (freeCreditTotal: number | null): string[] => [
     ? `${freeCreditTotal} free ${freeCreditTotal === 1 ? 'credit' : 'credits'}, no account needed`
     : 'Free credits, no account needed',
   'Inline diff review of every change',
+  'Matching cover letter with every tailor run',
   'Copy or export your tailored resume',
   'Fit to one page option',
 ];
@@ -180,8 +181,8 @@ const LandingStrip = ({
                   How it works
                 </Title>
                 <Text size="sm" c="dimmed" ta="center" maw={520}>
-                  Three steps from job post to tailored resume. On Pro, a matching cover letter is
-                  written for you at the same time.
+                  Three steps from job post to tailored resume. Every run also writes a matching
+                  cover letter.
                 </Text>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
@@ -260,8 +261,8 @@ const LandingStrip = ({
                   Simple pricing
                 </Title>
                 <Text size="sm" c="dimmed" ta="center" maw={520}>
-                  Try it free, no account needed. Upgrade when you want cover letters and gap
-                  filling on every run.
+                  Try it free, no account needed. Upgrade when you want gap filling and cover letter
+                  customization on every run.
                 </Text>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" w="100%" maw={760}>

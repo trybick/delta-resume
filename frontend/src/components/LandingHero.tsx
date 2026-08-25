@@ -1,5 +1,4 @@
 import {
-  Badge,
   Button,
   Grid,
   Group,
@@ -14,7 +13,6 @@ import { IconEye, IconFileText, IconMail, IconSparkles } from '@tabler/icons-rea
 import CoverLetterMockExample from './CoverLetterMockExample';
 import DiffMockExample from './DiffMockExample';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
-import { proAccent } from '../lib/proAccent';
 import { appTheme } from '../lib/theme';
 
 type LandingHeroProps = {
@@ -99,9 +97,6 @@ const LandingHero = ({ onStartClick, onExampleClick }: LandingHeroProps) => {
               <Text size="sm" fw={600}>
                 Matching cover letter
               </Text>
-              <Badge size="sm" variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }}>
-                Pro
-              </Badge>
             </Group>
           </Group>
           <Button
@@ -115,7 +110,7 @@ const LandingHero = ({ onStartClick, onExampleClick }: LandingHeroProps) => {
             Tailor my resume for free
           </Button>
           <Text size="xs" c="dimmed" ta="center">
-            No sign-up, no card. Your resume is never used to train AI.
+            No sign-up, no card.
           </Text>
           <Button
             variant="default"

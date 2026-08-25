@@ -5,12 +5,10 @@ import {
   IconCheck,
   IconEye,
   IconFileText,
-  IconLock,
   IconMail,
 } from '@tabler/icons-react';
 import { useMediaQuery } from '@mantine/hooks';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
-import { proAccent } from '../lib/proAccent';
 import ResultsPanel from './ResultsPanel';
 import CoverLetterPanel from './CoverLetterPanel';
 import type { OriginalDocx } from '../lib/types';
@@ -35,7 +33,6 @@ type TailorResultsSectionProps = {
   runCount: number;
   originalDocx: OriginalDocx | null;
   onShowExample: () => void;
-  planLoaded: boolean;
   isProPlan: boolean;
   isGuest: boolean;
   lowCredits: boolean;
@@ -61,7 +58,6 @@ const TailorResultsSection = ({
   runCount,
   originalDocx,
   onShowExample,
-  planLoaded,
   isProPlan,
   isGuest,
   lowCredits,
@@ -81,11 +77,7 @@ const TailorResultsSection = ({
     <IconCheck size={14} color="var(--mantine-color-green-filled)" />
   ) : null;
 
-  const coverLetterTabIndicator = !planLoaded ? null : !isProPlan ? (
-    <Badge size="xs" variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }} h={16}>
-      Pro
-    </Badge>
-  ) : showingExample ? null : coverLetterStatus === 'loading' ? (
+  const coverLetterTabIndicator = showingExample ? null : coverLetterStatus === 'loading' ? (
     <Loader size={12} />
   ) : coverLetterStatus === 'done' ? (
     <IconCheck size={14} color="var(--mantine-color-green-filled)" />
@@ -113,7 +105,6 @@ const TailorResultsSection = ({
       )}
       {showingExample && (
         <Group
-          className="example-banner"
           justify="space-between"
           align="center"
           wrap="nowrap"
@@ -124,20 +115,17 @@ const TailorResultsSection = ({
             backgroundColor: 'var(--mantine-color-cyan-light)',
           }}
         >
-          <Group
-            className="example-banner-copy"
-            gap="xs"
-            wrap="nowrap"
-            style={{ flex: 1, minWidth: 0 }}
-          >
+          <Group gap="xs" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
             <IconEye size={16} color="var(--mantine-color-cyan-4)" style={{ flexShrink: 0 }} />
-            <Text size="sm">
+            <Text size="sm" hiddenFrom="sm" style={{ minWidth: 0 }}>
+              This is an example. Explore it, then run your own tailor.
+            </Text>
+            <Text size="sm" visibleFrom="sm">
               This is an example. Explore the resume changes and cover letter, then run your own
               tailor.
             </Text>
           </Group>
           <Button
-            className="example-banner-back"
             size="xs"
             variant="subtle"
             color="cyan"
@@ -175,13 +163,7 @@ const TailorResultsSection = ({
           </Tabs.Tab>
           <Tabs.Tab
             value="coverLetter"
-            leftSection={
-              isNarrowMobile ? undefined : planLoaded && !isProPlan ? (
-                <IconLock size={16} />
-              ) : (
-                <IconMail size={16} />
-              )
-            }
+            leftSection={isNarrowMobile ? undefined : <IconMail size={16} />}
             rightSection={
               coverLetterTabIndicator && <Center h={16}>{coverLetterTabIndicator}</Center>
             }
@@ -218,7 +200,6 @@ const TailorResultsSection = ({
             exampleResult={SAMPLE_COVER_LETTER_RESULT}
             onRetry={onRetryCoverLetter}
             onUpgradeClick={onUpgradeClick}
-            onShowExample={onShowExample}
           />
         </Tabs.Panel>
       </Tabs>

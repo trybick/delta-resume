@@ -279,95 +279,88 @@ module Handlers =
             }
 
     let coverLetter: HttpHandler =
-        fun next ctx ->
+        requireFingerprintOrAuth (fun next ctx ->
             task {
                 let identityOptions = ctx.GetService<IdentityOptions>()
                 let identity = Identity.resolve identityOptions ctx
+                let! request = tryBindJson<CoverLetterRequestDto> ctx
 
-                if Identity.plan identity <> ProPlan then
-                    return!
-                        (setStatusCode StatusCodes.Status403Forbidden
-                         >=> json
-                                 {| Code = "pro_required"
-                                    Message = "Cover letters are a Pro feature. Upgrade to Pro to unlock them." |})
-                            next
-                            ctx
-                else
-                    let! request = tryBindJson<CoverLetterRequestDto> ctx
+                match request with
+                | None -> return! invalidJsonResponse next ctx
+                | Some request ->
+                    match
+                        InputValidation.validate
+                            request.ResumeText
+                            request.JobDescription
+                            request.CandidateName
+                    with
+                    | Error message ->
+                        return!
+                            codedErrorResponse
+                                StatusCodes.Status400BadRequest
+                                "invalid_input"
+                                message
+                                next
+                                ctx
+                    | Ok() ->
+                        let engine = ctx.GetService<CoverLetterEngine>()
+                        let creditService = ctx.GetService<CreditService>()
+                        let settingsRepository = ctx.GetService<UserSettingsRepository>()
+                        let! storedSettings = settingsRepository.Get(Identity.ownerKey identity)
 
-                    match request with
-                    | None -> return! invalidJsonResponse next ctx
-                    | Some request ->
-                        match
-                            InputValidation.validate
-                                request.ResumeText
-                                request.JobDescription
-                                request.CandidateName
-                        with
+                        let settings =
+                            if Identity.plan identity = ProPlan then
+                                storedSettings |> Option.defaultValue UserSettings.defaults
+                            else
+                                UserSettings.defaults
+
+                        let stopwatch = Stopwatch.StartNew()
+
+                        let! outcome =
+                            engine.GenerateCoverLetter(
+                                request.ResumeText,
+                                request.JobDescription,
+                                request.CandidateName,
+                                settings.CoverLetter,
+                                ctx.RequestAborted
+                            )
+
+                        stopwatch.Stop()
+
+                        match request.RunId with
+                        | Some runId ->
+                            do!
+                                recordCoverLetterOutcome
+                                    creditService
+                                    runId
+                                    outcome.Usage
+                                    (int stopwatch.ElapsedMilliseconds)
+                        | None -> ()
+
+                        match outcome.Result with
+                        | Ok draft ->
+                            let response: CoverLetterResponseDto =
+                                { JobTitle = draft.JobTitle
+                                  CompanyName = draft.CompanyName
+                                  Letter = draft.Letter }
+
+                            return! json response next ctx
                         | Error message ->
+                            eprintfn "Cover letter generation failed: %s" message
+
+                            SentrySdk.CaptureMessage(
+                                sprintf "Cover letter generation failed: %s" message,
+                                SentryLevel.Error
+                            )
+                            |> ignore
+
                             return!
-                                codedErrorResponse
-                                    StatusCodes.Status400BadRequest
-                                    "invalid_input"
-                                    message
+                                errorResponse
+                                    StatusCodes.Status502BadGateway
+                                    "Something went wrong while writing your cover letter."
                                     next
                                     ctx
-                        | Ok() ->
-                            let engine = ctx.GetService<CoverLetterEngine>()
-                            let creditService = ctx.GetService<CreditService>()
-                            let settingsRepository = ctx.GetService<UserSettingsRepository>()
-                            let! storedSettings = settingsRepository.Get(Identity.ownerKey identity)
-
-                            let settings =
-                                storedSettings |> Option.defaultValue UserSettings.defaults
-
-                            let stopwatch = Stopwatch.StartNew()
-
-                            let! outcome =
-                                engine.GenerateCoverLetter(
-                                    request.ResumeText,
-                                    request.JobDescription,
-                                    request.CandidateName,
-                                    settings.CoverLetter,
-                                    ctx.RequestAborted
-                                )
-
-                            stopwatch.Stop()
-
-                            match request.RunId with
-                            | Some runId ->
-                                do!
-                                    recordCoverLetterOutcome
-                                        creditService
-                                        runId
-                                        outcome.Usage
-                                        (int stopwatch.ElapsedMilliseconds)
-                            | None -> ()
-
-                            match outcome.Result with
-                            | Ok draft ->
-                                let response: CoverLetterResponseDto =
-                                    { JobTitle = draft.JobTitle
-                                      CompanyName = draft.CompanyName
-                                      Letter = draft.Letter }
-
-                                return! json response next ctx
-                            | Error message ->
-                                eprintfn "Cover letter generation failed: %s" message
-
-                                SentrySdk.CaptureMessage(
-                                    sprintf "Cover letter generation failed: %s" message,
-                                    SentryLevel.Error
-                                )
-                                |> ignore
-
-                                return!
-                                    errorResponse
-                                        StatusCodes.Status502BadGateway
-                                        "Something went wrong while writing your cover letter."
-                                        next
-                                        ctx
-            }
+            })
 
     // PDF-only: converts a client-built .docx to a real text-based PDF via LibreOffice.
     // Client-side screenshot PDFs have no text layer (ATS-unreadable), so export posts
@@ -439,33 +432,43 @@ module Handlers =
     let updateSettings: HttpHandler =
         requireSignedInWithMessage "Sign in to manage your settings." (fun next ctx ->
             task {
-                let! request = tryBindJson<UserSettingsDto> ctx
+                let identityOptions = ctx.GetService<IdentityOptions>()
+                let identity = Identity.resolve identityOptions ctx
 
-                let validated =
-                    match request with
-                    | None -> Error "Invalid settings payload."
-                    | Some dto ->
-                        if isNull (box dto.CoverLetter) then
-                            Error "coverLetter settings are required."
-                        else
-                            match
-                                CoverLetterLength.tryParse dto.CoverLetter.Length,
-                                CoverLetterTone.tryParse dto.CoverLetter.Tone
-                            with
-                            | None, _ -> Error "Invalid cover letter length."
-                            | _, None -> Error "Invalid cover letter tone."
-                            | Some length, Some tone ->
-                                Ok { CoverLetter = { Length = length; Tone = tone } }
+                if Identity.plan identity <> ProPlan then
+                    return!
+                        codedErrorResponse
+                            StatusCodes.Status403Forbidden
+                            "pro_required"
+                            "Cover letter settings are a Pro feature."
+                            next
+                            ctx
+                else
+                    let! request = tryBindJson<UserSettingsDto> ctx
 
-                match validated with
-                | Error message ->
-                    return! codedErrorResponse StatusCodes.Status400BadRequest "invalid_input" message next ctx
-                | Ok settings ->
-                    let identityOptions = ctx.GetService<IdentityOptions>()
-                    let identity = Identity.resolve identityOptions ctx
-                    let repository = ctx.GetService<UserSettingsRepository>()
-                    do! repository.Upsert(Identity.ownerKey identity, settings)
-                    return! json (Mapping.toUserSettingsDto settings) next ctx
+                    let validated =
+                        match request with
+                        | None -> Error "Invalid settings payload."
+                        | Some dto ->
+                            if isNull (box dto.CoverLetter) then
+                                Error "coverLetter settings are required."
+                            else
+                                match
+                                    CoverLetterLength.tryParse dto.CoverLetter.Length,
+                                    CoverLetterTone.tryParse dto.CoverLetter.Tone
+                                with
+                                | None, _ -> Error "Invalid cover letter length."
+                                | _, None -> Error "Invalid cover letter tone."
+                                | Some length, Some tone ->
+                                    Ok { CoverLetter = { Length = length; Tone = tone } }
+
+                    match validated with
+                    | Error message ->
+                        return! codedErrorResponse StatusCodes.Status400BadRequest "invalid_input" message next ctx
+                    | Ok settings ->
+                        let repository = ctx.GetService<UserSettingsRepository>()
+                        do! repository.Upsert(Identity.ownerKey identity, settings)
+                        return! json (Mapping.toUserSettingsDto settings) next ctx
             })
 
     let listSavedResumes: HttpHandler =
