@@ -179,15 +179,18 @@ body {
   .gap-row {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
+    row-gap: 4px;
   }
 
   .gap-row-title {
-    align-self: center;
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
 
   .gap-row-action {
     grid-column: 2;
-    justify-self: start;
+    grid-row: 1;
+    justify-self: end;
   }
 
   .collapsible-insight-label {
