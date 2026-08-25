@@ -9,7 +9,6 @@ import { SAMPLE_COVER_LETTER_RESULT, SAMPLE_TAILOR_RESULT } from '../lib/mockTai
 import type {
   CoverLetterResult,
   CoverLetterStatus,
-  CreditStatus,
   TailorResult,
   TailorStatus,
 } from '../lib/types';
@@ -28,15 +27,12 @@ type TailorResultsSectionProps = {
   onShowExample: () => void;
   isProPlan: boolean;
   isGuest: boolean;
-  lowCredits: boolean;
-  credits: CreditStatus | null;
   coverLetterStatus: CoverLetterStatus;
   coverLetterResult: CoverLetterResult | null;
   coverLetterError: string | null;
   onRetryCoverLetter: () => void;
   onUpgradeClick: () => void;
   onGapsUpgradeClick: () => void;
-  onNudgeClick: () => void;
 };
 
 const TailorResultsSection = ({
@@ -53,15 +49,12 @@ const TailorResultsSection = ({
   onShowExample,
   isProPlan,
   isGuest,
-  lowCredits,
-  credits,
   coverLetterStatus,
   coverLetterResult,
   coverLetterError,
   onRetryCoverLetter,
   onUpgradeClick,
   onGapsUpgradeClick,
-  onNudgeClick,
 }: TailorResultsSectionProps) => {
   const isNarrowMobile = useMediaQuery('(max-width: 36em)');
   const resumeTabIndicator = showingExample ? null : status === 'loading' ? (
@@ -161,13 +154,10 @@ const TailorResultsSection = ({
             exportMenuKey={activeTab}
             isProPlan={isProPlan}
             isGuest={isGuest}
-            lowCredits={lowCredits}
-            credits={credits}
             originalDocx={showingExample ? null : originalDocx}
             companyName={showingExample ? undefined : coverLetterResult?.companyName}
             onShowExample={status === 'idle' ? onShowExample : undefined}
             onUpgradeClick={onGapsUpgradeClick}
-            onNudgeClick={onNudgeClick}
           />
         </Tabs.Panel>
         <Tabs.Panel value="coverLetter" pt="md">

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Anchor,
   Badge,
   Box,
   Button,
@@ -16,7 +15,6 @@ import {
 } from '@mantine/core';
 import {
   IconChevronDown,
-  IconCoins,
   IconCopy,
   IconDownload,
   IconEye,
@@ -25,7 +23,6 @@ import {
   IconFileTypePdf,
   IconLock,
   IconSparkles,
-  IconTargetArrow,
 } from '@tabler/icons-react';
 import { useMediaQuery } from '@mantine/hooks';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
@@ -39,7 +36,6 @@ import type {
   AddedBullet,
   BulletChange,
   ChangeDecision,
-  CreditStatus,
   JobRequirement,
   OriginalDocx,
   TailorResult,
@@ -64,13 +60,10 @@ type ResultsPanelProps = {
   exportMenuKey?: string | null;
   isProPlan: boolean;
   isGuest?: boolean;
-  lowCredits?: boolean;
-  credits?: CreditStatus | null;
   originalDocx?: OriginalDocx | null;
   companyName?: string;
   onShowExample?: () => void;
   onUpgradeClick: () => void;
-  onNudgeClick?: () => void;
 };
 
 const buildDecisionMap = (result: TailorResult | null): Record<string, ChangeDecision> => {
@@ -140,13 +133,10 @@ const ResultsPanel = ({
   exportMenuKey = null,
   isProPlan,
   isGuest = false,
-  lowCredits = false,
-  credits = null,
   originalDocx = null,
   companyName,
   onShowExample,
   onUpgradeClick,
-  onNudgeClick,
 }: ResultsPanelProps) => {
   const [decisions, setDecisions] = useState<Record<string, ChangeDecision>>(() =>
     buildDecisionMap(result),
@@ -266,10 +256,6 @@ const ResultsPanel = ({
       !addedByRequirement.has(requirement.text) &&
       hasDraftBullet(requirement),
   ).length;
-  const gapsLabel =
-    unresolvedGapCount > 0
-      ? `${unresolvedGapCount} requirement${unresolvedGapCount === 1 ? '' : 's'} your resume doesn’t show`
-      : 'Requirement gaps addressed';
   const visibleGaps = gaps.filter((requirement) => !requirement.locked);
   const lockedGaps = gaps.filter((requirement) => requirement.locked);
 
@@ -366,29 +352,6 @@ const ResultsPanel = ({
     }
     segments.push({ kind: 'context', nodeId: segment.nodeId, lines: [segment.text] });
   });
-  const showGuestNudge = !isExample && isGuest && credits !== null;
-  const showFreeUpgradeNudge =
-    !isExample &&
-    !isGuest &&
-    !isProPlan &&
-    credits !== null &&
-    (lowCredits || credits.remaining <= 0);
-  const nudgeRemaining = credits?.remaining ?? 0;
-  const creditWord = nudgeRemaining === 1 ? 'credit' : 'credits';
-  const isOutOfCredits = nudgeRemaining <= 0;
-  const nudgeCountLabel = isOutOfCredits
-    ? isGuest
-      ? 'Out of free credits.'
-      : 'Out of credits.'
-    : isGuest
-      ? `${nudgeRemaining} free ${creditWord} left.`
-      : `${nudgeRemaining} ${creditWord} left.`;
-  const nudgeActionLabel = isGuest
-    ? isOutOfCredits
-      ? 'Sign up to keep tailoring and save your resumes'
-      : 'Sign up to save your resumes automatically'
-    : 'Upgrade to Pro';
-
   const actionButtons = (
     <Group
       gap="xs"
@@ -494,51 +457,85 @@ const ResultsPanel = ({
     <Card className="results-card" withBorder shadow="xs" p={{ base: 'sm', sm: 'lg' }}>
       <Stack gap="md">
         <Stack gap="sm">
-          <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
-            {requirements.length > 0 && (
-              <Box style={{ flex: 1, minWidth: 0 }}>
-                <RequirementsCoverage
-                  coveredCount={coveredCount}
-                  totalCount={requirements.length}
-                  baseCoveredCount={baseCoveredCount}
-                  coveredByChangesCount={coveredByChangesCount}
-                  coveredByAddedCount={coveredByAddedCount}
-                  availableFillerCount={availableFillerCount}
-                />
-              </Box>
-            )}
-            {!isNarrowMobile && actionButtons}
-          </Group>
-          {(showGuestNudge || showFreeUpgradeNudge) && (
-            <Group
-              gap={6}
-              wrap="nowrap"
-              px={10}
-              py={4}
-              style={{
-                width: 'fit-content',
-                maxWidth: '100%',
-                borderRadius: 999,
-                backgroundColor: isOutOfCredits
-                  ? 'var(--mantine-color-orange-light)'
-                  : 'var(--mantine-color-default-hover)',
-              }}
+          {requirements.length > 0 ? (
+            <RequirementsCoverage
+              coveredCount={coveredCount}
+              totalCount={requirements.length}
+              baseCoveredCount={baseCoveredCount}
+              coveredByChangesCount={coveredByChangesCount}
+              coveredByAddedCount={coveredByAddedCount}
+              availableFillerCount={availableFillerCount}
+              unresolvedGapCount={unresolvedGapCount}
+              open={gaps.length > 0 ? gapsOpen : undefined}
+              onToggle={gaps.length > 0 ? handleGapsToggle : undefined}
+              actions={!isNarrowMobile ? actionButtons : undefined}
             >
-              <IconCoins
-                size={13}
-                stroke={1.8}
-                color={
-                  isOutOfCredits ? 'var(--mantine-color-orange-5)' : 'var(--mantine-color-dimmed)'
-                }
-                style={{ flexShrink: 0 }}
-              />
-              <Text size="xs" c="dimmed" lh={1.4}>
-                {nudgeCountLabel}{' '}
-                <Anchor size="xs" fw={600} component="button" type="button" onClick={onNudgeClick}>
-                  {nudgeActionLabel}
-                </Anchor>
-              </Text>
-            </Group>
+              {gaps.length > 0 && (
+                <Stack gap="sm">
+                  <Text size="sm" c="dimmed" lh={1.6}>
+                    This job asks for these, but your resume doesn&rsquo;t show them yet. If you have
+                    the experience, add a bullet.
+                  </Text>
+                  {visibleGaps.map((requirement) => (
+                    <GapRow
+                      key={requirement.text}
+                      requirement={requirement}
+                      addedBullet={addedByRequirement.get(requirement.text)}
+                      onAdd={handleAddGapBullet}
+                      onUndo={handleRemoveAddedBullet}
+                    />
+                  ))}
+                  {lockedGaps.length > 0 && (
+                    <Box style={{ position: 'relative' }}>
+                      <Stack
+                        gap="sm"
+                        style={{ filter: 'blur(5px)', userSelect: 'none' }}
+                        aria-hidden
+                      >
+                        {lockedGaps.map((_, index) => (
+                          <GapRow
+                            key={index}
+                            requirement={
+                              LOCKED_GAP_PLACEHOLDERS[index % LOCKED_GAP_PLACEHOLDERS.length]
+                            }
+                          />
+                        ))}
+                      </Stack>
+                      <Center
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          backgroundColor:
+                            'color-mix(in srgb, var(--mantine-color-body) 55%, transparent)',
+                        }}
+                      >
+                        <Stack align="center" gap={6} p="xs">
+                          <Group gap={6}>
+                            <IconLock size={16} color="var(--mantine-primary-color-filled)" />
+                            <Text size="sm" fw={600}>
+                              See all {gaps.length} missing requirements with Pro
+                            </Text>
+                            <Badge variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }}>
+                              Pro
+                            </Badge>
+                          </Group>
+                          <Button
+                            size="xs"
+                            variant="gradient"
+                            gradient={{ ...proAccent.gradient, deg: 45 }}
+                            onClick={handleGapsUpgradeClick}
+                          >
+                            {upgradeCtaLabel}
+                          </Button>
+                        </Stack>
+                      </Center>
+                    </Box>
+                  )}
+                </Stack>
+              )}
+            </RequirementsCoverage>
+          ) : (
+            !isNarrowMobile && actionButtons
           )}
           {isNarrowMobile && actionButtons}
         </Stack>
@@ -557,77 +554,6 @@ const ResultsPanel = ({
             {result.summary}
           </Text>
         </CollapsibleInsight>
-
-        {gaps.length > 0 && (
-          <CollapsibleInsight
-            open={gapsOpen}
-            onToggle={handleGapsToggle}
-            icon={<IconTargetArrow size={13} color={proAccent.insightIconColor} stroke={1.8} />}
-            label={gapsLabel}
-            labelColor={proAccent.insightLabelColor}
-            borderColor={proAccent.insightBorderColor}
-            background={proAccent.insightBackground}
-            ariaLabel="Requirement gaps"
-          >
-            <Stack gap="sm">
-              <Text size="sm" c="dimmed" lh={1.6}>
-                This job asks for these, but your resume doesn&rsquo;t demonstrate them yet. If you
-                have the experience, adding a bullet for it would strengthen your match.
-              </Text>
-              {visibleGaps.map((requirement) => (
-                <GapRow
-                  key={requirement.text}
-                  requirement={requirement}
-                  addedBullet={addedByRequirement.get(requirement.text)}
-                  onAdd={handleAddGapBullet}
-                  onUndo={handleRemoveAddedBullet}
-                />
-              ))}
-              {lockedGaps.length > 0 && (
-                <Box style={{ position: 'relative' }}>
-                  <Stack gap="sm" style={{ filter: 'blur(5px)', userSelect: 'none' }} aria-hidden>
-                    {lockedGaps.map((_, index) => (
-                      <GapRow
-                        key={index}
-                        requirement={
-                          LOCKED_GAP_PLACEHOLDERS[index % LOCKED_GAP_PLACEHOLDERS.length]
-                        }
-                      />
-                    ))}
-                  </Stack>
-                  <Center
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      backgroundColor:
-                        'color-mix(in srgb, var(--mantine-color-body) 55%, transparent)',
-                    }}
-                  >
-                    <Stack align="center" gap={6} p="xs">
-                      <Group gap={6}>
-                        <IconLock size={16} color="var(--mantine-primary-color-filled)" />
-                        <Text size="sm" fw={600}>
-                          See all {gaps.length} missing requirements with Pro
-                        </Text>
-                        <Badge variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }}>
-                          Pro
-                        </Badge>
-                      </Group>
-                      <Button
-                        size="xs"
-                        variant="gradient"
-                        gradient={{ ...proAccent.gradient, deg: 45 }}
-                        onClick={handleGapsUpgradeClick}
-                      >
-                        {upgradeCtaLabel}
-                      </Button>
-                    </Stack>
-                  </Center>
-                </Box>
-              )}
-            </Stack>
-          </CollapsibleInsight>
-        )}
 
         <Paper
           withBorder

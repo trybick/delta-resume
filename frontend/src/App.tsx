@@ -395,15 +395,12 @@ const App = () => {
                 onShowExample={handleShowExample}
                 isProPlan={isProPlan}
                 isGuest={isGuest}
-                lowCredits={lowCredits}
-                credits={credits}
                 coverLetterStatus={coverLetterStatus}
                 coverLetterResult={coverLetterResult}
                 coverLetterError={coverLetterError}
                 onRetryCoverLetter={retryCoverLetter}
                 onUpgradeClick={() => openPaywall('coverLetter')}
                 onGapsUpgradeClick={() => openPaywall('gaps')}
-                onNudgeClick={() => openPaywall(isGuest ? 'signUp' : 'upgrade')}
               />
             </Grid.Col>
           </Grid>
