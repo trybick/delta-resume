@@ -1,12 +1,5 @@
-import { Alert, Badge, Button, Center, Group, Loader, Stack, Tabs, Text } from '@mantine/core';
-import {
-  IconAlertCircle,
-  IconArrowBackUp,
-  IconCheck,
-  IconEye,
-  IconFileText,
-  IconMail,
-} from '@tabler/icons-react';
+import { Alert, Badge, Button, Center, Group, Loader, Stack, Tabs } from '@mantine/core';
+import { IconAlertCircle, IconCheck, IconEye, IconFileText, IconMail } from '@tabler/icons-react';
 import { useMediaQuery } from '@mantine/hooks';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import ResultsPanel from './ResultsPanel';
@@ -104,39 +97,27 @@ const TailorResultsSection = ({
         </Alert>
       )}
       {showingExample && (
-        <Group
-          justify="space-between"
-          align="center"
-          wrap="nowrap"
-          gap="sm"
-          p="sm"
-          style={{
-            borderRadius: 8,
-            backgroundColor: 'var(--mantine-color-cyan-light)',
-          }}
-        >
-          <Group gap="xs" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
-            <IconEye size={16} color="var(--mantine-color-cyan-4)" style={{ flexShrink: 0 }} />
-            <Text size="sm" hiddenFrom="sm" style={{ minWidth: 0 }}>
-              This is an example. Explore it, then run your own tailor.
-            </Text>
-            <Text size="sm" visibleFrom="sm">
-              This is an example. Explore the resume changes and cover letter, then run your own
-              tailor.
-            </Text>
-          </Group>
+        <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
+          <Badge
+            size="lg"
+            variant="light"
+            color="cyan"
+            leftSection={<IconEye size={14} />}
+            styles={{ label: { textTransform: 'none', fontWeight: 600 } }}
+          >
+            Example preview
+          </Badge>
           <Button
             size="xs"
-            variant="subtle"
+            variant="light"
             color="cyan"
-            leftSection={<IconArrowBackUp size={14} />}
             style={{ flexShrink: 0 }}
             onClick={() => {
               trackEvent(AnalyticsEvents.DismissExample);
               onDismissExample();
             }}
           >
-            Back
+            Exit preview
           </Button>
         </Group>
       )}
