@@ -155,19 +155,6 @@ body {
 }
 
 @media (max-width: 36em) {
-  .example-banner {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .example-banner-copy {
-    flex: none !important;
-  }
-
-  .example-banner-back {
-    align-self: flex-start;
-  }
-
   .results-tabs .mantine-Tabs-list {
     flex-wrap: nowrap;
   }

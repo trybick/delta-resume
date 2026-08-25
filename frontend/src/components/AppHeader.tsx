@@ -72,21 +72,24 @@ const AppHeader = ({
     creditsRemaining === null
       ? 'Pro'
       : `Pro · ${creditsRemaining} ${creditsRemaining === 1 ? 'credit' : 'credits'}`;
+  const compactProCreditsLabel =
+    creditsRemaining === null ? 'Pro' : `Pro · ${creditsRemaining}`;
 
   const proCreditsTooltip =
     creditsResetsAt === null
       ? 'One tailor uses one credit.'
       : `One tailor uses one credit. Resets ${formatCreditsResetAt(creditsResetsAt)}.`;
 
-  const proCreditsBadge = (
+  const proCreditsBadge = (label: string, compact: boolean) => (
     <Tooltip label={proCreditsTooltip}>
       <Badge
-        size="lg"
+        size={compact ? 'md' : 'lg'}
         variant="gradient"
         gradient={{ ...proAccent.gradient, deg: 45 }}
         leftSection={<IconCrown size={14} />}
+        styles={{ label: { whiteSpace: 'nowrap' } }}
       >
-        {proCreditsLabel}
+        {label}
       </Badge>
     </Tooltip>
   );
@@ -144,7 +147,7 @@ const AppHeader = ({
           </Group>
         </a>
         <Group gap="xs" justify="flex-end" align="center" visibleFrom="sm">
-          {planLoaded && isProPlan && proCreditsBadge}
+          {planLoaded && isProPlan && proCreditsBadge(proCreditsLabel, false)}
           {showCreditsBadge && creditsLabel && (
             <Tooltip label={`${creditsLabel} remaining. One credit is used when tailoring starts.`}>
               <Badge
@@ -198,7 +201,14 @@ const AppHeader = ({
             </Box>
           </SignedIn>
         </Group>
-        <Group gap="xs" justify="flex-end" wrap="nowrap" align="center" hiddenFrom="sm">
+        <Group
+          gap="xs"
+          justify="flex-end"
+          wrap="nowrap"
+          align="center"
+          hiddenFrom="sm"
+          style={{ flexShrink: 0 }}
+        >
           {showCreditsBadge && !planLoaded && isLoadingCredits && (
             <Skeleton width={110} height={30} radius="xl" />
           )}
@@ -213,7 +223,7 @@ const AppHeader = ({
               Retry credits
             </Badge>
           )}
-          {showCreditsBadge && planLoaded && isProPlan && proCreditsBadge}
+          {showCreditsBadge && planLoaded && isProPlan && proCreditsBadge(compactProCreditsLabel, true)}
           {planLoaded && !isProPlan && showUpgradeCta && (
             <Button
               size="xs"
