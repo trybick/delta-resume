@@ -1,34 +1,90 @@
+import { useEffect, useRef, useState } from 'react';
 import { Group, Select, Stack, Text } from '@mantine/core';
-import { IconInfoCircle } from '@tabler/icons-react';
+import { IconCheck, IconInfoCircle } from '@tabler/icons-react';
 import { coverLetterLengthOptions, coverLetterToneOptions } from '../lib/types';
 import type { CoverLetterLength, CoverLetterSettings, CoverLetterTone } from '../lib/types';
+
+type SettingsField = 'length' | 'tone';
 
 type CoverLetterSettingsPanelProps = {
   settings: CoverLetterSettings;
   isLoading: boolean;
-  onChange: (next: CoverLetterSettings) => void;
+  onChange: (next: CoverLetterSettings) => Promise<void>;
 };
+
+const SAVED_FLASH_MS = 2000;
+
+const isCoverLetterLength = (value: string): value is CoverLetterLength =>
+  coverLetterLengthOptions.some((option) => option.value === value);
+
+const isCoverLetterTone = (value: string): value is CoverLetterTone =>
+  coverLetterToneOptions.some((option) => option.value === value);
+
+type SavedFieldLabelProps = {
+  label: string;
+  saved: boolean;
+};
+
+const SavedFieldLabel = ({ label, saved }: SavedFieldLabelProps) => (
+  <Group gap={6} component="span" wrap="nowrap">
+    {label}
+    {saved && (
+      <IconCheck
+        size={14}
+        color="var(--mantine-color-green-filled)"
+        aria-label="Saved"
+      />
+    )}
+  </Group>
+);
 
 const CoverLetterSettingsPanel = ({
   settings,
   isLoading,
   onChange,
 }: CoverLetterSettingsPanelProps) => {
+  const [savedFields, setSavedFields] = useState<Record<SettingsField, boolean>>({
+    length: false,
+    tone: false,
+  });
+  const savedTimers = useRef<Partial<Record<SettingsField, number>>>({});
+
+  useEffect(() => {
+    const timers = savedTimers.current;
+    return () => {
+      Object.values(timers).forEach((id) => {
+        if (id !== undefined) window.clearTimeout(id);
+      });
+    };
+  }, []);
+
+  const flashSaved = (field: SettingsField) => {
+    window.clearTimeout(savedTimers.current[field]);
+    setSavedFields((current) => ({ ...current, [field]: true }));
+    savedTimers.current[field] = window.setTimeout(() => {
+      setSavedFields((current) => ({ ...current, [field]: false }));
+    }, SAVED_FLASH_MS);
+  };
+
   const handleLengthChange = (value: string | null) => {
-    if (!value) return;
-    onChange({ ...settings, length: value as CoverLetterLength });
+    if (!value || !isCoverLetterLength(value)) return;
+    void onChange({ ...settings, length: value })
+      .then(() => flashSaved('length'))
+      .catch(() => undefined);
   };
 
   const handleToneChange = (value: string | null) => {
-    if (!value) return;
-    onChange({ ...settings, tone: value as CoverLetterTone });
+    if (!value || !isCoverLetterTone(value)) return;
+    void onChange({ ...settings, tone: value })
+      .then(() => flashSaved('tone'))
+      .catch(() => undefined);
   };
 
   return (
     <Stack gap="sm">
       <Group grow align="flex-start" preventGrowOverflow={false}>
         <Select
-          label="Length"
+          label={<SavedFieldLabel label="Length" saved={savedFields.length} />}
           data={coverLetterLengthOptions}
           value={settings.length}
           onChange={handleLengthChange}
@@ -36,7 +92,7 @@ const CoverLetterSettingsPanel = ({
           disabled={isLoading}
         />
         <Select
-          label="Tone"
+          label={<SavedFieldLabel label="Tone" saved={savedFields.tone} />}
           data={coverLetterToneOptions}
           value={settings.tone}
           onChange={handleToneChange}

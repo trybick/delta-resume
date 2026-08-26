@@ -60,13 +60,14 @@ export const useCoverLetterSettings = ({
         length: next.length,
         tone: next.tone,
       });
-    } catch {
+    } catch (error) {
       setSettings(previous);
       notifications.show({
         color: 'red',
         title: 'Could not save settings',
         message: 'Something went wrong. Please try again.',
       });
+      throw error;
     }
   };
 

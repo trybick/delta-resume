@@ -16,7 +16,7 @@ type NameAndSettingsRowProps = {
   onToggleSettings: () => void;
   settings: CoverLetterSettings;
   isSettingsLoading: boolean;
-  onSettingsChange: (next: CoverLetterSettings) => void;
+  onSettingsChange: (next: CoverLetterSettings) => Promise<void>;
   isProPlan: boolean;
   onUpgradeClick: () => void;
   trailing?: ReactNode;
