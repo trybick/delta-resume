@@ -99,21 +99,29 @@ const trimBlankEdges = (lines: string[]): TrimmedSegment => {
   return { lines: lines.slice(start, end), offset: start };
 };
 
-const splitContextLines = (lines: string[], collapsed: boolean): ContextSplit => {
+const splitContextLines = (
+  lines: string[],
+  collapsed: boolean,
+  isOpening: boolean,
+): ContextSplit => {
   const expandedSplit: ContextSplit = { leading: lines, hidden: [], trailing: [] };
-  if (!collapsed || lines.length < CONTEXT_LINES_PER_SIDE * 2 + MIN_HIDDEN_LINES) {
+  if (!collapsed) return expandedSplit;
+  const leadingCount = isOpening ? 0 : CONTEXT_LINES_PER_SIDE;
+  const trailingCount = isOpening ? 0 : CONTEXT_LINES_PER_SIDE;
+  const minHidden = isOpening ? 1 : MIN_HIDDEN_LINES;
+  if (lines.length < leadingCount + trailingCount + minHidden) {
     return expandedSplit;
   }
-  let leadingEnd = CONTEXT_LINES_PER_SIDE;
+  let leadingEnd = leadingCount;
   while (leadingEnd > 0 && isBlankLine(lines[leadingEnd - 1])) {
     leadingEnd -= 1;
   }
-  let trailingStart = lines.length - CONTEXT_LINES_PER_SIDE;
+  let trailingStart = lines.length - trailingCount;
   while (trailingStart < lines.length && isBlankLine(lines[trailingStart])) {
     trailingStart += 1;
   }
   const hidden = lines.slice(leadingEnd, trailingStart);
-  if (hidden.length < MIN_HIDDEN_LINES) return expandedSplit;
+  if (hidden.length < minHidden) return expandedSplit;
   return {
     leading: lines.slice(0, leadingEnd),
     hidden,
@@ -573,7 +581,7 @@ const ResultsPanel = ({
               Your tailored resume
             </Text>
           </Group>
-          {segments.map((segment) => {
+          {segments.map((segment, segmentIndex) => {
             if (segment.kind === 'change') {
               return (
                 <DiffBullet
@@ -599,6 +607,7 @@ const ResultsPanel = ({
             const { leading, hidden, trailing } = splitContextLines(
               trimmed.lines,
               !expandedSegments.has(segment.nodeId),
+              segmentIndex === 0,
             );
             return (
               <div key={segment.nodeId}>
