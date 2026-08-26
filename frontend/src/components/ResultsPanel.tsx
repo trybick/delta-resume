@@ -462,6 +462,7 @@ const ResultsPanel = ({
     <Card className="results-card" withBorder shadow="xs" p={{ base: 'sm', sm: 'lg' }}>
       <Stack gap="md">
         <Stack gap="sm">
+          {isNarrowMobile && actionButtons}
           <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
             {requirements.length > 0 && (
               <Box style={{ flex: 1, minWidth: 0 }}>
@@ -547,7 +548,6 @@ const ResultsPanel = ({
             )}
             {!isNarrowMobile && actionButtons}
           </Group>
-          {isNarrowMobile && actionButtons}
         </Stack>
 
         <CollapsibleInsight
