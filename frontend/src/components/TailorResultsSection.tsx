@@ -1,6 +1,7 @@
-import { Alert, Badge, Button, Center, Group, Loader, Stack, Tabs } from '@mantine/core';
-import { IconAlertCircle, IconCheck, IconEye, IconFileText, IconMail } from '@tabler/icons-react';
+import { Alert, Badge, Box, Button, Center, Loader, Stack, Tabs } from '@mantine/core';
+import { IconAlertCircle, IconCheck, IconEyeOff, IconFileText, IconMail } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { appTheme } from '../lib/theme';
 import ResultsPanel from './ResultsPanel';
 import CoverLetterPanel from './CoverLetterPanel';
 import type { OriginalDocx } from '../lib/types';
@@ -88,29 +89,26 @@ const TailorResultsSection = ({
         </Alert>
       )}
       {showingExample && (
-        <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
-          <Badge
-            size="lg"
-            variant="light"
-            color="cyan"
-            leftSection={<IconEye size={14} />}
-            styles={{ label: { textTransform: 'none', fontWeight: 600 } }}
-          >
-            Example preview
-          </Badge>
-          <Button
-            size="xs"
-            variant="light"
-            color="cyan"
-            style={{ flexShrink: 0 }}
-            onClick={() => {
-              trackEvent(AnalyticsEvents.DismissExample);
-              onDismissExample();
-            }}
-          >
-            Exit preview
-          </Button>
-        </Group>
+        <Button
+          size="md"
+          variant="gradient"
+          gradient={{ ...appTheme.gradient, deg: 45 }}
+          leftSection={<IconEyeOff size={18} />}
+          w={{ base: '100%', sm: 'auto' }}
+          mx="auto"
+          styles={{ label: { whiteSpace: 'nowrap' } }}
+          onClick={() => {
+            trackEvent(AnalyticsEvents.DismissExample);
+            onDismissExample();
+          }}
+        >
+          <Box component="span" hiddenFrom="sm">
+            Tap to exit preview mode
+          </Box>
+          <Box component="span" visibleFrom="sm">
+            Exit preview mode
+          </Box>
+        </Button>
       )}
       <Tabs
         className="results-tabs"
