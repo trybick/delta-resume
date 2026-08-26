@@ -14,7 +14,11 @@ module Routes =
               >=> Handlers.credits
               GET >=> route "/api/saved-resumes" >=> RateLimit.loosePolicy >=> Handlers.listSavedResumes
               GET >=> route "/api/settings" >=> RateLimit.loosePolicy >=> Handlers.getSettings
-              PUT >=> route "/api/settings" >=> RateLimit.loosePolicy >=> Handlers.updateSettings
+              PUT
+              >=> route "/api/settings"
+              >=> RateLimit.loosePolicy
+              >=> Handlers.hydrateClerkPublicUser
+              >=> Handlers.updateSettings
               POST
               >=> route "/api/tailor"
               >=> RateLimit.tailorPolicy
