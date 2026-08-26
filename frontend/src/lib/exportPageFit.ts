@@ -51,7 +51,7 @@ const LINE_HEIGHT_BY_FONT: Record<string, number> = {
 const lineHeightMultiplier = (family: string): number =>
   LINE_HEIGHT_BY_FONT[family.trim().toLowerCase()] ?? DEFAULT_LINE_HEIGHT_MULTIPLIER;
 const HEADING_RULE_PT = 4;
-const KEEP_OVERFLOW_TOLERANCE_PT = 0;
+const KEEP_FIT_SAFETY_MARGIN_PT = 1;
 const CLEAN_OVERFLOW_TOLERANCE_PT = 11;
 const MIN_BLOCK_WIDTH_PT = 20;
 const DEFAULT_BODY_HALF_POINTS = 22;
@@ -179,7 +179,7 @@ const addSegmentHeight = (total: number, segment: FlowSegment): number =>
     ? segment.blocks.reduce((sum, block) => sum + blockHeight(block), 0)
     : segment.rows.reduce((sum, row) => sum + rowHeight(row), 0));
 
-const keepLimitPt = (page: FlowPage): number => page.contentHeightPt + KEEP_OVERFLOW_TOLERANCE_PT;
+const keepLimitPt = (page: FlowPage): number => page.contentHeightPt - KEEP_FIT_SAFETY_MARGIN_PT;
 
 const cleanLimitPt = (page: FlowPage): number => page.contentHeightPt + CLEAN_OVERFLOW_TOLERANCE_PT;
 
@@ -306,8 +306,9 @@ const cleanDocumentSegments = (
   textsByNodeId: Map<string, string>,
   layout: DocxCleanLayout | null | undefined,
   scale: number,
+  spacingScale: number,
 ): FlowSegment[] => {
-  const theme = createResumeTheme(scale);
+  const theme = createResumeTheme(scale, spacingScale);
   const items: PlacedBlock[] = [];
   const textOf = (nodeId: string): string => textsByNodeId.get(nodeId)?.trim() ?? '';
 
@@ -419,8 +420,12 @@ const cleanDocumentSegments = (
 const CONTACT_LINE_PATTERN = /@|\bwww\.|https?:|linkedin|github|(?:\d[\s().-]*){7,}/i;
 const MAX_CONTACT_LINE_INDEX = 3;
 
-const templateSegments = (resumeText: string, scale: number): FlowSegment[] => {
-  const theme = createResumeTheme(scale);
+const templateSegments = (
+  resumeText: string,
+  scale: number,
+  spacingScale: number,
+): FlowSegment[] => {
+  const theme = createResumeTheme(scale, spacingScale);
   const blocks: FlowBlock[] = [];
   let previousBlank = false;
   let contentIndex = 0;
@@ -1002,14 +1007,20 @@ export type FitScaleInput = {
   insertions: DocxInsertion[];
 };
 
-const cleanPage = (input: FitScaleInput, scale: number): FlowPage => ({
+const cleanPage = (input: FitScaleInput, scale: number, spacingScale = scale): FlowPage => ({
   contentHeightPt: CLEAN_CONTENT_HEIGHT_PT,
   sections: [
     {
       columnCount: 1,
       segments: input.resumeDocument
-        ? cleanDocumentSegments(input.resumeDocument, input.textsByNodeId, input.layout, scale)
-        : templateSegments(input.resumeText, scale),
+        ? cleanDocumentSegments(
+            input.resumeDocument,
+            input.textsByNodeId,
+            input.layout,
+            scale,
+            spacingScale,
+          )
+        : templateSegments(input.resumeText, scale, spacingScale),
     },
   ],
 });
@@ -1022,6 +1033,7 @@ export const isOriginalSinglePage = async (file: File): Promise<boolean> => {
 
 export type FitToOnePageScales = {
   clean: number;
+  cleanSpacing: number;
   keep: number;
 };
 
@@ -1036,10 +1048,14 @@ export const computeFitToOnePageScale = async (
     : null;
 
   const clean = largestFittingScale((scale) => countCleanPages(cleanPage(input, scale)) <= 1);
-  if (original === null) return { clean, keep: clean };
+  const cleanSpacing = largestFittingScale(
+    (spacingScale) => countCleanPages(cleanPage(input, clean, spacingScale)) <= 1,
+  );
+  if (original === null) return { clean, cleanSpacing, keep: clean };
 
   return {
     clean,
+    cleanSpacing,
     keep: largestFittingScale((scale) => countKeepPages(keepPage(original, scale)) <= 1),
   };
 };

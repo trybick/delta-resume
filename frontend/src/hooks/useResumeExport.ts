@@ -75,6 +75,7 @@ export const useResumeExport = ({
   const [fitToOnePage, setFitToOnePageState] = useState(false);
   const [fitScales, setFitScales] = useState<FitToOnePageScales>({
     clean: EXPORT_SCALE_DEFAULT,
+    cleanSpacing: EXPORT_SCALE_DEFAULT,
     keep: EXPORT_SCALE_DEFAULT,
   });
   const [isComputingFit, setIsComputingFit] = useState(false);
@@ -225,7 +226,11 @@ export const useResumeExport = ({
         if (!cancelled) setFitScales(scales);
       } catch {
         if (!cancelled) {
-          setFitScales({ clean: EXPORT_SCALE_DEFAULT, keep: EXPORT_SCALE_DEFAULT });
+          setFitScales({
+            clean: EXPORT_SCALE_DEFAULT,
+            cleanSpacing: EXPORT_SCALE_DEFAULT,
+            keep: EXPORT_SCALE_DEFAULT,
+          });
         }
       } finally {
         if (!cancelled) setIsComputingFit(false);
@@ -263,16 +268,21 @@ export const useResumeExport = ({
     return fitScales.clean;
   };
 
-  const buildCleanDocx = async (scale: number): Promise<Blob> => {
+  const cleanSpacingScaleForExport = (): number =>
+    fitToOnePage ? fitScales.cleanSpacing : manualScale;
+
+  const buildCleanDocx = async (scale: number, spacingScale = scale): Promise<Blob> => {
     const merged = buildMergedResume();
     const layout = await loadCleanLayout();
     return merged.document
-      ? buildDocumentDocx(merged.document, merged.textsByNodeId, layout, scale)
-      : buildTemplateDocx(merged.lines.join('\n'), layout, scale);
+      ? buildDocumentDocx(merged.document, merged.textsByNodeId, layout, scale, spacingScale)
+      : buildTemplateDocx(merged.lines.join('\n'), layout, scale, spacingScale);
   };
 
   const buildPatchedDocx = async (scale: number): Promise<Blob> => {
-    if (!result || !originalDocx) return buildCleanDocx(scaleForExport('clean'));
+    if (!result || !originalDocx) {
+      return buildCleanDocx(scaleForExport('clean'), cleanSpacingScaleForExport());
+    }
     try {
       return await patchOriginalDocx(
         originalDocx.file,
@@ -287,7 +297,7 @@ export const useResumeExport = ({
         message:
           'We could not preserve your original formatting, so a clean template was used instead.',
       });
-      return buildCleanDocx(scaleForExport('clean'));
+      return buildCleanDocx(scaleForExport('clean'), cleanSpacingScaleForExport());
     }
   };
 
@@ -331,7 +341,9 @@ export const useResumeExport = ({
     setIsExporting(true);
     try {
       const docxBlob =
-        variant === 'keep' ? await buildPatchedDocx(scale) : await buildCleanDocx(scale);
+        variant === 'keep'
+          ? await buildPatchedDocx(scale)
+          : await buildCleanDocx(scale, cleanSpacingScaleForExport());
       const filename = resumeFilename(format);
       if (format === 'docx') {
         downloadDocx(docxBlob, filename);

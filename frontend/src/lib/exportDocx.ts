@@ -84,8 +84,12 @@ export type ResumeTheme = {
   paragraphAfter: number;
 };
 
-export const createResumeTheme = (scale = EXPORT_SCALE_DEFAULT): ResumeTheme => {
+export const createResumeTheme = (
+  scale = EXPORT_SCALE_DEFAULT,
+  spacingScale = scale,
+): ResumeTheme => {
   const clamped = clampExportScale(scale);
+  const clampedSpacing = clampExportScale(spacingScale);
   return {
     scale: clamped,
     bodySize: scaledHalfPoints(19, clamped),
@@ -94,14 +98,14 @@ export const createResumeTheme = (scale = EXPORT_SCALE_DEFAULT): ResumeTheme => 
     headingSize: scaledHalfPoints(20, clamped),
     contactSize: scaledHalfPoints(18, clamped),
     bulletIndent: scaledTwips(288, clamped),
-    nameAfter: scaledTwips(60, clamped),
-    contactAfter: scaledTwips(20, clamped),
-    bulletAfter: scaledTwips(40, clamped),
-    headingBefore: scaledTwips(260, clamped),
-    headingAfter: scaledTwips(100, clamped),
-    blockBefore: scaledTwips(120, clamped),
-    blockAfter: scaledTwips(40, clamped),
-    paragraphAfter: scaledTwips(80, clamped),
+    nameAfter: scaledTwips(60, clampedSpacing),
+    contactAfter: scaledTwips(20, clampedSpacing),
+    bulletAfter: scaledTwips(40, clampedSpacing),
+    headingBefore: scaledTwips(260, clampedSpacing),
+    headingAfter: scaledTwips(100, clampedSpacing),
+    blockBefore: scaledTwips(120, clampedSpacing),
+    blockAfter: scaledTwips(40, clampedSpacing),
+    paragraphAfter: scaledTwips(80, clampedSpacing),
   };
 };
 
@@ -893,8 +897,9 @@ export const buildTemplateDocx = async (
   resumeText: string,
   layout?: DocxCleanLayout | null,
   scale = EXPORT_SCALE_DEFAULT,
+  spacingScale = scale,
 ): Promise<Blob> => {
-  const theme = createResumeTheme(scale);
+  const theme = createResumeTheme(scale, spacingScale);
   const anchorHrefs = layout?.hrefByAnchorText;
   const lines = resumeText.split('\n');
   const paragraphs: (Paragraph | Table)[] = [];
@@ -1007,8 +1012,9 @@ export const buildDocumentDocx = async (
   textsByNodeId: Map<string, string>,
   layout?: DocxCleanLayout | null,
   scale = EXPORT_SCALE_DEFAULT,
+  spacingScale = scale,
 ): Promise<Blob> => {
-  const theme = createResumeTheme(scale);
+  const theme = createResumeTheme(scale, spacingScale);
   const anchorHrefs = layout?.hrefByAnchorText;
   const items: RenderedItem[] = [];
   const textOf = (nodeId: string): string => textsByNodeId.get(nodeId)?.trim() ?? '';
