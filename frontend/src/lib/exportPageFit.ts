@@ -51,11 +51,7 @@ const LINE_HEIGHT_BY_FONT: Record<string, number> = {
 const lineHeightMultiplier = (family: string): number =>
   LINE_HEIGHT_BY_FONT[family.trim().toLowerCase()] ?? DEFAULT_LINE_HEIGHT_MULTIPLIER;
 const HEADING_RULE_PT = 4;
-// Keep-formatting measurement runs a little hot versus Word, so a one-page
-// verdict is allowed to run past the content box. The clean template is closer
-// to Word; a smaller overflow still lets type scale up into the bottom gap
-// without the extra line that used to spill onto page 2.
-const KEEP_OVERFLOW_TOLERANCE_PT = 26;
+const KEEP_OVERFLOW_TOLERANCE_PT = 0;
 const CLEAN_OVERFLOW_TOLERANCE_PT = 11;
 const MIN_BLOCK_WIDTH_PT = 20;
 const DEFAULT_BODY_HALF_POINTS = 22;
