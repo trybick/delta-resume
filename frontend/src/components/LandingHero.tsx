@@ -68,8 +68,8 @@ const LandingHero = ({ onStartClick, onExampleClick }: LandingHeroProps) => {
               lh={1.5}
               style={{ textWrap: 'balance' }}
             >
-              Paste a job post. Your bullets are rewritten for the skills and keywords it asks for
-              and a matching cover letter to go with it.
+              Paste a job post. Your bullets are rewritten for the skills and keywords it asks for,
+              plus a cover letter to match.
             </Text>
           </Stack>
           <Button
