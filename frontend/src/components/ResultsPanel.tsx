@@ -131,7 +131,6 @@ const ResultsPanel = ({
   result,
   isExample = false,
   exportMenuKey = null,
-  isProPlan,
   isGuest = false,
   originalDocx = null,
   companyName,
