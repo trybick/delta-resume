@@ -30,7 +30,7 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'Do I need an account to try it?',
     answer:
-      'No. You get free credits the moment you open the app. Paste your resume and a job post and you\u2019ll see suggested rewrites in seconds. No sign-up, no card.',
+      'No. You get free credits the moment you open the app. Paste your resume and a job post and you\u2019ll see suggested rewrites in seconds. No sign-up, no card required.',
   },
   {
     question: 'Does the free plan include cover letters?',

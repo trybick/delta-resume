@@ -1,15 +1,6 @@
-import {
-  Button,
-  Grid,
-  Group,
-  Stack,
-  Text,
-  ThemeIcon,
-  Title,
-  useMantineTheme,
-} from '@mantine/core';
+import { Button, Grid, Stack, Text, Title, useMantineTheme } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconEye, IconFileText, IconMail, IconSparkles } from '@tabler/icons-react';
+import { IconEye, IconSparkles } from '@tabler/icons-react';
 import CoverLetterMockExample from './CoverLetterMockExample';
 import DiffMockExample from './DiffMockExample';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
@@ -77,28 +68,10 @@ const LandingHero = ({ onStartClick, onExampleClick }: LandingHeroProps) => {
               lh={1.5}
               style={{ textWrap: 'balance' }}
             >
-              Paste a job post. Your bullets are rewritten to hit the skills and keywords it asks
-              for.
+              Paste a job post. Your bullets are rewritten for the skills and keywords it asks for
+              and a matching cover letter to go with it.
             </Text>
           </Stack>
-          <Group gap="md" justify="center" visibleFrom="sm">
-            <Group gap={6} wrap="nowrap">
-              <ThemeIcon size={22} radius="xl" variant="light" color="teal">
-                <IconFileText size={13} />
-              </ThemeIcon>
-              <Text size="sm" fw={600}>
-                Tailored resume
-              </Text>
-            </Group>
-            <Group gap={6} wrap="nowrap">
-              <ThemeIcon size={22} radius="xl" variant="light" color="teal">
-                <IconMail size={13} />
-              </ThemeIcon>
-              <Text size="sm" fw={600}>
-                Matching cover letter
-              </Text>
-            </Group>
-          </Group>
           <Button
             size="lg"
             fullWidth
@@ -110,7 +83,7 @@ const LandingHero = ({ onStartClick, onExampleClick }: LandingHeroProps) => {
             Tailor my resume for free
           </Button>
           <Text size="xs" c="dimmed" ta="center">
-            No sign-up, no card.
+            No sign-up, no card required.
           </Text>
           <Button
             variant="default"

@@ -1,11 +1,6 @@
 import { Badge, Box, Group, Paper, Stack, Text } from '@mantine/core';
-import { useProPlan } from '../hooks/useProPlan';
-import { proAccent } from '../lib/proAccent';
 
 const CoverLetterMockExample = () => {
-  const { monthlyPrice, annualMonthlyPrice } = useProPlan();
-  const proPrice = annualMonthlyPrice ?? monthlyPrice;
-
   return (
     <Stack gap={6} align="center" w="100%">
       <Paper
@@ -20,16 +15,9 @@ const CoverLetterMockExample = () => {
           <Text size="xs" c="dimmed" fw={600}>
             Matching cover letter
           </Text>
-          <Group gap={6} align="center" wrap="nowrap">
-            {proPrice && (
-              <Text size="xs" c="dimmed" fw={500}>
-                from {proPrice}/mo
-              </Text>
-            )}
-            <Badge size="sm" variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }}>
-              Pro
-            </Badge>
-          </Group>
+          <Badge size="sm" variant="light" color="teal">
+            Included free
+          </Badge>
         </Group>
         <Box
           style={{

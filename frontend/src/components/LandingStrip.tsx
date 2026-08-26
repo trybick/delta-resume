@@ -389,7 +389,7 @@ const LandingStrip = ({
                   Tailor my resume for free
                 </Button>
                 <Text size="xs" c="dimmed" ta="center">
-                  Free credits to start. No sign-up, no card.
+                  Free credits to start. No sign-up, no card required.
                 </Text>
               </Stack>
             )}
