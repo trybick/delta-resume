@@ -40,7 +40,6 @@ type UseResumeExportResult = {
   setExportScale: (scale: number) => void;
   fitToOnePage: boolean;
   setFitToOnePage: (enabled: boolean) => void;
-  fitScaleByVariant: FitToOnePageScales;
   isComputingFit: boolean;
   handleCopy: () => Promise<void>;
   handleExport: (variant: 'keep' | 'clean', format: 'docx' | 'pdf') => Promise<boolean>;
@@ -82,7 +81,7 @@ export const useResumeExport = ({
   const autoFitResumeTextRef = useRef<string | null>(null);
   const fitTouchedRef = useRef(false);
 
-  const exportScale = fitToOnePage ? Math.min(fitScales.clean, fitScales.keep) : manualScale;
+  const exportScale = manualScale;
 
   const setExportScale = (scale: number) => {
     setManualScale(clampExportScale(scale));
@@ -375,7 +374,6 @@ export const useResumeExport = ({
     setExportScale,
     fitToOnePage,
     setFitToOnePage,
-    fitScaleByVariant: fitScales,
     isComputingFit,
     handleCopy,
     handleExport,

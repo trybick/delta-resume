@@ -19,7 +19,6 @@ type ExportScaleControlProps = {
   onChange: (scale: number) => void;
   fitToOnePage: boolean;
   onFitToOnePageChange: (enabled: boolean) => void;
-  fitScaleByVariant?: { clean: number; keep: number };
   isComputingFit?: boolean;
   disabled?: boolean;
 };
@@ -29,20 +28,13 @@ export const ExportScaleControl = ({
   onChange,
   fitToOnePage,
   onFitToOnePageChange,
-  fitScaleByVariant,
   isComputingFit = false,
   disabled,
 }: ExportScaleControlProps) => {
-  const fittedMin = fitScaleByVariant
-    ? Math.min(fitScaleByVariant.clean, fitScaleByVariant.keep)
-    : null;
-  const fittedMax = fitScaleByVariant
-    ? Math.max(fitScaleByVariant.clean, fitScaleByVariant.keep)
-    : null;
   const scaleLabel = isComputingFit
     ? 'Calculating…'
-    : fitToOnePage && fittedMin !== null && fittedMax !== null && fittedMin !== fittedMax
-      ? `${formatScalePercent(fittedMin)}–${formatScalePercent(fittedMax)}`
+    : fitToOnePage
+      ? 'Auto'
       : formatScalePercent(scale);
 
   return (

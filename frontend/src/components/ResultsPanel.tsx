@@ -210,7 +210,6 @@ const ResultsPanel = ({
     setExportScale,
     fitToOnePage,
     setFitToOnePage,
-    fitScaleByVariant,
     isComputingFit,
     handleCopy,
     handleExport,
@@ -393,7 +392,6 @@ const ResultsPanel = ({
             onChange={setExportScale}
             fitToOnePage={fitToOnePage}
             onFitToOnePageChange={setFitToOnePage}
-            fitScaleByVariant={fitScaleByVariant}
             isComputingFit={isComputingFit}
             disabled={isExample}
           />
