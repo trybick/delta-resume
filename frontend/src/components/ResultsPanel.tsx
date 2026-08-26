@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
+  ActionIcon,
   Badge,
   Box,
   Button,
@@ -8,6 +9,7 @@ import {
   Group,
   Menu,
   Paper,
+  Popover,
   Stack,
   Text,
   ThemeIcon,
@@ -46,7 +48,6 @@ import { useResumeExport } from '../hooks/useResumeExport';
 import AddedBulletRow from './AddedBulletRow';
 import RequirementsCoverage from './RequirementsCoverage';
 import CollapsedContext from './CollapsedContext';
-import CollapsibleInsight from './CollapsibleInsight';
 import ContextLine from './ContextLine';
 import DiffBullet from './DiffBullet';
 import GapRow from './GapRow';
@@ -150,13 +151,14 @@ const ResultsPanel = ({
   );
   const [addedBullets, setAddedBullets] = useState<AddedBullet[]>([]);
   const [expandedSegments, setExpandedSegments] = useState<Set<string>>(new Set());
-  const [summaryOpen, setSummaryOpen] = useState(false);
   const [gapsOpen, setGapsOpen] = useState(false);
+  const [summaryOpen, setSummaryOpen] = useState(false);
   const upgradeCtaLabel = useProUpgradeCtaLabel();
   const isNarrowMobile = useMediaQuery('(max-width: 36em)');
 
   useEffect(() => {
     setExpandedSegments(new Set());
+    setSummaryOpen(false);
   }, [result]);
 
   const handleExpandSegment = (nodeId: string, hiddenCount: number) => {
@@ -270,12 +272,9 @@ const ResultsPanel = ({
     onUpgradeClick();
   };
 
-  const handleSummaryToggle = () => {
-    setSummaryOpen((current) => {
-      const next = !current;
-      trackEvent(AnalyticsEvents.SummaryToggle, { open: next });
-      return next;
-    });
+  const handleSummaryOpenChange = (open: boolean) => {
+    setSummaryOpen(open);
+    trackEvent(AnalyticsEvents.SummaryToggle, { open });
   };
 
   const handleGapsToggle = () => {
@@ -358,6 +357,39 @@ const ResultsPanel = ({
     }
     segments.push({ kind: 'context', nodeId: segment.nodeId, lines: [segment.text] });
   });
+  const summaryButton = result.summary ? (
+    <Popover
+      opened={summaryOpen}
+      onChange={handleSummaryOpenChange}
+      position={isNarrowMobile ? 'bottom-start' : 'bottom-end'}
+      withinPortal
+      shadow="md"
+      width={340}
+    >
+      <Popover.Target>
+        <ActionIcon
+          variant="subtle"
+          color="violet"
+          size="md"
+          aria-label="Summary of changes"
+          aria-expanded={summaryOpen}
+          style={{ flexShrink: 0, flexGrow: 0 }}
+          onClick={(event) => {
+            event.stopPropagation();
+            handleSummaryOpenChange(!summaryOpen);
+          }}
+        >
+          <IconSparkles size={16} stroke={1.8} />
+        </ActionIcon>
+      </Popover.Target>
+      <Popover.Dropdown>
+        <Text size="sm" c="dimmed" lh={1.6}>
+          {result.summary}
+        </Text>
+      </Popover.Dropdown>
+    </Popover>
+  ) : null;
+  const showSummaryOnCoverageRow = Boolean(isNarrowMobile && requirements.length > 0);
   const actionButtons = (
     <Group
       gap="xs"
@@ -366,6 +398,7 @@ const ResultsPanel = ({
       preventGrowOverflow={false}
       style={{ flexShrink: 0 }}
     >
+      {!showSummaryOnCoverageRow && summaryButton}
       <Menu
         key={exportMenuKey ?? undefined}
         position="bottom-end"
@@ -374,10 +407,10 @@ const ResultsPanel = ({
       >
         <Menu.Target>
           <Button
-            size="xs"
-            variant="light"
-            leftSection={<IconDownload size={16} />}
-            rightSection={<IconChevronDown size={14} />}
+            size={isNarrowMobile ? 'sm' : 'xs'}
+            variant="filled"
+            leftSection={<IconDownload size={isNarrowMobile ? 18 : 16} />}
+            rightSection={<IconChevronDown size={isNarrowMobile ? 16 : 14} />}
             loading={isExporting}
           >
             Export
@@ -463,7 +496,8 @@ const ResultsPanel = ({
       <Stack gap="md">
         <Stack gap="sm">
           {isNarrowMobile && actionButtons}
-          <Group justify="space-between" align="flex-start" wrap="nowrap" gap="sm">
+          <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
+            {showSummaryOnCoverageRow && summaryButton}
             {requirements.length > 0 && (
               <Box style={{ flex: 1, minWidth: 0 }}>
                 <RequirementsCoverage
@@ -549,21 +583,6 @@ const ResultsPanel = ({
             {!isNarrowMobile && actionButtons}
           </Group>
         </Stack>
-
-        <CollapsibleInsight
-          open={summaryOpen}
-          onToggle={handleSummaryToggle}
-          icon={<IconSparkles size={13} color="var(--mantine-color-violet-4)" stroke={1.8} />}
-          label="Summary of changes"
-          labelColor="violet.4"
-          borderColor="var(--mantine-color-violet-6)"
-          background="rgba(151, 117, 250, 0.07)"
-          ariaLabel="Summary of changes"
-        >
-          <Text size="sm" c="dimmed" lh={1.6}>
-            {result.summary}
-          </Text>
-        </CollapsibleInsight>
 
         <Paper
           withBorder
