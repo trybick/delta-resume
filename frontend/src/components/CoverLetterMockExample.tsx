@@ -1,4 +1,4 @@
-import { Badge, Box, Group, Paper, Stack, Text } from '@mantine/core';
+import { Box, Paper, Stack, Text } from '@mantine/core';
 
 const CoverLetterMockExample = () => {
   return (
@@ -11,14 +11,9 @@ const CoverLetterMockExample = () => {
         w="100%"
         style={{ borderLeft: '3px solid var(--mantine-color-cyan-6)' }}
       >
-        <Group justify="space-between" align="center" mb={6} wrap="nowrap">
-          <Text size="xs" c="dimmed" fw={600}>
-            Matching cover letter
-          </Text>
-          <Badge size="sm" variant="light" color="teal">
-            Included free
-          </Badge>
-        </Group>
+        <Text size="xs" c="dimmed" fw={600} mb={6}>
+          Matching cover letter
+        </Text>
         <Box
           style={{
             maskImage: 'linear-gradient(to bottom, black 30%, transparent 100%)',
@@ -26,7 +21,7 @@ const CoverLetterMockExample = () => {
           }}
         >
           <Text size="sm" c="dimmed" lineClamp={3} style={{ lineHeight: 1.6 }}>
-            Dear Hiring Team,
+            Dear Acme Corporation Hiring Team,
             <br />
             When I read that you need a frontend lead who can own dashboards end to end, it sounded
             like my last role. I led a team of 5 engineers shipping React dashboards used by 2,000+
