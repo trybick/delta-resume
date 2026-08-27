@@ -52,7 +52,7 @@ const lineHeightMultiplier = (family: string): number =>
   LINE_HEIGHT_BY_FONT[family.trim().toLowerCase()] ?? DEFAULT_LINE_HEIGHT_MULTIPLIER;
 const HEADING_RULE_PT = 4;
 const KEEP_FIT_SAFETY_MARGIN_PT = 1;
-const CLEAN_OVERFLOW_TOLERANCE_PT = 11;
+const CLEAN_FIT_SAFETY_MARGIN_PT = 12;
 const MIN_BLOCK_WIDTH_PT = 20;
 const DEFAULT_BODY_HALF_POINTS = 22;
 const MIN_HALF_POINTS = 2;
@@ -83,6 +83,7 @@ type FlowBlock = {
   beforePt: number;
   afterPt: number;
   extraPt: number;
+  keepNext: boolean;
 };
 
 type FlowRow = {
@@ -181,7 +182,27 @@ const addSegmentHeight = (total: number, segment: FlowSegment): number =>
 
 const keepLimitPt = (page: FlowPage): number => page.contentHeightPt - KEEP_FIT_SAFETY_MARGIN_PT;
 
-const cleanLimitPt = (page: FlowPage): number => page.contentHeightPt + CLEAN_OVERFLOW_TOLERANCE_PT;
+const cleanLimitPt = (page: FlowPage): number => page.contentHeightPt - CLEAN_FIT_SAFETY_MARGIN_PT;
+
+type FlowUnit = {
+  heightPt: number;
+  keepNext: boolean;
+};
+
+const segmentUnits = (segment: FlowSegment): FlowUnit[] =>
+  segment.kind === 'blocks'
+    ? segment.blocks.map((block) => ({
+        heightPt: blockHeight(block),
+        keepNext: block.keepNext,
+      }))
+    : segment.rows.map((row) => ({
+        heightPt: rowHeight(row),
+        keepNext: row.columns.some((column) =>
+          column.some(
+            (cell) => cell.kind === 'blocks' && cell.blocks.some((block) => block.keepNext),
+          ),
+        ),
+      }));
 
 const countPages = (page: FlowPage, limitPt: number): number => {
   let pages = 1;
@@ -203,13 +224,19 @@ const countPages = (page: FlowPage, limitPt: number): number => {
       advance(section.segments.reduce(addSegmentHeight, 0) / section.columnCount);
       return;
     }
-    section.segments.forEach((segment) => {
-      if (segment.kind === 'blocks') {
-        segment.blocks.forEach((block) => advance(blockHeight(block)));
-        return;
+    const units = section.segments.flatMap(segmentUnits);
+    let index = 0;
+    while (index < units.length) {
+      let heightPt = units[index].heightPt;
+      let keepNext = units[index].keepNext;
+      index += 1;
+      while (keepNext && index < units.length) {
+        heightPt += units[index].heightPt;
+        keepNext = units[index].keepNext;
+        index += 1;
       }
-      segment.rows.forEach((row) => advance(rowHeight(row)));
-    });
+      advance(heightPt);
+    }
   });
 
   return pages;
@@ -226,6 +253,7 @@ type ThemeBlockOptions = {
   beforeTwips?: number;
   afterTwips?: number;
   extraPt?: number;
+  keepNext?: boolean;
 };
 
 const themeBlock = (text: string, options: ThemeBlockOptions): FlowBlock => {
@@ -240,6 +268,7 @@ const themeBlock = (text: string, options: ThemeBlockOptions): FlowBlock => {
     beforePt: twipsToPt(options.beforeTwips ?? 0),
     afterPt: twipsToPt(options.afterTwips ?? 0),
     extraPt: options.extraPt ?? 0,
+    keepNext: options.keepNext ?? false,
   };
 };
 
@@ -363,6 +392,7 @@ const cleanDocumentSegments = (
           beforeTwips: theme.headingBefore,
           afterTwips: theme.headingAfter,
           extraPt: HEADING_RULE_PT,
+          keepNext: true,
         }),
       );
     }
@@ -375,6 +405,9 @@ const cleanDocumentSegments = (
           // Title and date share one table row, so the row is only as tall as the
           // title column rather than the two texts laid end to end.
           const splitsIntoColumns = Boolean(left) && Boolean(dateText);
+          const keepWithFollowingBullet = block.bullets.some(
+            (bullet) => stripBulletMarker(textOf(bullet.id)).trim().length > 0,
+          );
           push(
             block.headingSourceLines,
             themeBlock(left || dateText || '', {
@@ -383,6 +416,7 @@ const cleanDocumentSegments = (
               widthPt: splitsIntoColumns ? CLEAN_TITLE_WIDTH_PT : CLEAN_CONTENT_WIDTH_PT,
               beforeTwips: theme.blockBefore,
               afterTwips: theme.blockAfter,
+              keepNext: keepWithFollowingBullet,
             }),
           );
         }
@@ -463,6 +497,7 @@ const templateSegments = (
           beforeTwips: theme.headingBefore,
           afterTwips: theme.headingAfter,
           extraPt: HEADING_RULE_PT,
+          keepNext: true,
         }),
       );
     } else {
@@ -967,6 +1002,7 @@ const scaleKeepParagraph = (paragraph: KeepParagraph, scale: number): FlowBlock 
     beforePt: twipsToPt(scaleTwips(paragraph.beforeTwips, scale)),
     afterPt: twipsToPt(scaleTwips(paragraph.afterTwips, scale)),
     extraPt: 0,
+    keepNext: false,
   };
 };
 

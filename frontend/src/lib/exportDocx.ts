@@ -937,7 +937,12 @@ type RenderedItem = {
 const closedWithParagraph = (elements: (Paragraph | Table)[]): (Paragraph | Table)[] =>
   elements.length > 0 && !(elements[elements.length - 1] instanceof Table)
     ? elements
-    : [...elements, new Paragraph({})];
+    : [
+        ...elements,
+        new Paragraph({
+          spacing: { before: 0, after: 0, line: 20, lineRule: 'exact' },
+        }),
+      ];
 
 const layoutTable = (
   items: RenderedItem[],
@@ -1088,6 +1093,9 @@ export const buildDocumentDocx = async (
       if (block.kind === 'entry') {
         const left = entryDisplayLeft(block) || textOf(block.id);
         const dateText = entryDisplayDate(block);
+        const keepWithFollowingBullet = block.bullets.some(
+          (bullet) => stripBulletMarker(textOf(bullet.id)).trim().length > 0,
+        );
         if (left && dateText) {
           push(
             block.headingSourceLines,
@@ -1097,7 +1105,7 @@ export const buildDocumentDocx = async (
               {
                 spacingBefore: theme.blockBefore,
                 spacingAfter: theme.blockAfter,
-                keepNext: true,
+                keepNext: keepWithFollowingBullet,
               },
               anchorHrefs,
             ),
@@ -1107,8 +1115,8 @@ export const buildDocumentDocx = async (
             block.headingSourceLines,
             new Paragraph({
               spacing: { before: theme.blockBefore, after: theme.blockAfter },
-              keepNext: true,
-              keepLines: true,
+              keepNext: keepWithFollowingBullet,
+              keepLines: keepWithFollowingBullet,
               children: linkedRuns(
                 left || dateText || '',
                 { font: FONT, size: theme.bodySize, bold: true },
