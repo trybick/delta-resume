@@ -389,33 +389,34 @@ const ResultsPanel = ({
       </Popover.Dropdown>
     </Popover>
   ) : null;
-  const showSummaryOnCoverageRow = Boolean(isNarrowMobile && requirements.length > 0);
   const actionButtons = (
     <Group
       gap="xs"
       wrap="nowrap"
-      grow={isNarrowMobile}
       preventGrowOverflow={false}
+      w={isNarrowMobile ? '100%' : undefined}
       style={{ flexShrink: 0 }}
     >
-      {!showSummaryOnCoverageRow && summaryButton}
-      <Menu
-        key={exportMenuKey ?? undefined}
-        position="bottom-end"
-        withinPortal
-        onOpen={() => trackEvent(AnalyticsEvents.ResumeExportMenuOpen)}
-      >
-        <Menu.Target>
-          <Button
-            size={isNarrowMobile ? 'sm' : 'xs'}
-            variant="filled"
-            leftSection={<IconDownload size={isNarrowMobile ? 18 : 16} />}
-            rightSection={<IconChevronDown size={isNarrowMobile ? 16 : 14} />}
-            loading={isExporting}
-          >
-            Export
-          </Button>
-        </Menu.Target>
+      {summaryButton}
+      <Box style={isNarrowMobile ? { flex: 1, minWidth: 0 } : undefined}>
+        <Menu
+          key={exportMenuKey ?? undefined}
+          position="bottom-end"
+          withinPortal
+          onOpen={() => trackEvent(AnalyticsEvents.ResumeExportMenuOpen)}
+        >
+          <Menu.Target>
+            <Button
+              size={isNarrowMobile ? 'sm' : 'xs'}
+              variant="filled"
+              fullWidth={isNarrowMobile}
+              leftSection={<IconDownload size={isNarrowMobile ? 18 : 16} />}
+              rightSection={<IconChevronDown size={isNarrowMobile ? 16 : 14} />}
+              loading={isExporting}
+            >
+              Export
+            </Button>
+          </Menu.Target>
         <Menu.Dropdown>
           <Menu.Item leftSection={<IconCopy size={16} />} disabled={isExample} onClick={handleCopy}>
             Copy to clipboard
@@ -487,7 +488,8 @@ const ResultsPanel = ({
             PDF (.pdf)
           </Menu.Item>
         </Menu.Dropdown>
-      </Menu>
+        </Menu>
+      </Box>
     </Group>
   );
 
@@ -497,7 +499,6 @@ const ResultsPanel = ({
         <Stack gap="sm">
           {isNarrowMobile && actionButtons}
           <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
-            {showSummaryOnCoverageRow && summaryButton}
             {requirements.length > 0 && (
               <Box style={{ flex: 1, minWidth: 0 }}>
                 <RequirementsCoverage
