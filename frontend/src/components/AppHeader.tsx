@@ -72,8 +72,7 @@ const AppHeader = ({
     creditsRemaining === null
       ? 'Pro'
       : `Pro · ${creditsRemaining} ${creditsRemaining === 1 ? 'credit' : 'credits'}`;
-  const compactProCreditsLabel =
-    creditsRemaining === null ? 'Pro' : `Pro · ${creditsRemaining}`;
+  const compactProCreditsLabel = creditsRemaining === null ? 'Pro' : `Pro · ${creditsRemaining}`;
 
   const proCreditsTooltip =
     creditsResetsAt === null
@@ -113,12 +112,12 @@ const AppHeader = ({
           onClick={handleHomeClick}
           style={{ minWidth: 0, textDecoration: 'none', color: 'inherit' }}
         >
-          <Group gap="sm" align="center" wrap="nowrap" style={{ minWidth: 0 }}>
+          <Group gap={6} align="center" wrap="nowrap" style={{ minWidth: 0 }}>
             <Box visibleFrom="sm" lh={0}>
-              <DeltaLogo size={38} />
+              <DeltaLogo size={28} />
             </Box>
             <Box hiddenFrom="sm" lh={0}>
-              <DeltaLogo size={30} />
+              <DeltaLogo size={22} />
             </Box>
             <Stack gap={2} style={{ minWidth: 0 }}>
               <Title
@@ -140,9 +139,6 @@ const AppHeader = ({
                   Resume
                 </Text>
               </Title>
-              <Text size="xs" c="dimmed" lh={1.4} visibleFrom="sm">
-                Tailor your resume to any job description in seconds
-              </Text>
             </Stack>
           </Group>
         </a>
@@ -223,7 +219,10 @@ const AppHeader = ({
               Retry credits
             </Badge>
           )}
-          {showCreditsBadge && planLoaded && isProPlan && proCreditsBadge(compactProCreditsLabel, true)}
+          {showCreditsBadge &&
+            planLoaded &&
+            isProPlan &&
+            proCreditsBadge(compactProCreditsLabel, true)}
           {planLoaded && !isProPlan && showUpgradeCta && (
             <Button
               size="xs"
