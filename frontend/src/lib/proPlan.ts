@@ -21,7 +21,7 @@ export const PRO_FEATURES: ProFeature[] = [
   },
   {
     icon: IconMail,
-    title: 'Cover letters, your way',
+    title: 'Cover letter customization',
     description: 'Choose the length and tone of every cover letter',
   },
   {
