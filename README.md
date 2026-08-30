@@ -1,19 +1,19 @@
 # Delta Resume
 
-Tailor your resume and get a matching cover letter in one run.
+Tired of the job application grind? Rewriting your resume for every posting is the worst part of the search, so most people skip it and send the same generic version everywhere. Recruiters can tell.
 
-Upload a resume, drop in a job description, and our app rewrites your bullets to fit the role and writes a matching cover letter. Every suggestion shows up as an inline word-level diff which you can accept or reject:
+Delta Resume does the tailoring for you. Paste a job description, and it rewrites your resume bullets to fit the role and drafts a matching cover letter, in one run. Every suggestion shows up as an inline word-level diff you can accept or reject, so nothing lands on your resume that you didn't approve:
 
 ![Inline word-level diffs on resume bullets](demo/resume-inline-diffs.png)
 
-Then export the new resume and cover letter as DOCX or PDF.
+When you're happy with it, export the resume and cover letter as DOCX or PDF. Minutes per application instead of an hour.
 
 **What you get**
 
-- **Inline diff review:** Keep or revert every rewrite.
-- **Cover letters:** Every tailor run also writes a matching cover letter.
-- **Missing requirements (Pro):** See job requirements your resume doesn’t cover yet, plus one-click bullets you can insert.
-- **Try before you buy:** Try for free. No account or credit card required.
+- **Inline diff review.** Keep or revert every rewrite.
+- **Cover letters.** Every tailor run also writes a matching cover letter.
+- **Missing requirements (Pro).** See job requirements your resume doesn't cover yet, plus one-click bullets you can insert.
+- **Try before you buy.** Free to try. No account or credit card required.
 
 ## Structure
 
