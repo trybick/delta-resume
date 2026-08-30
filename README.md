@@ -1,42 +1,26 @@
 # Delta Resume
 
-Tailor your resume to any job description in seconds, and walk away with a matching cover letter.
+Tailor your resume and get a matching cover letter in one run.
 
-Upload or paste a base resume, drop in a job description, and Claude rewrites your bullets to fit the role. Every suggestion shows up as an inline word-level diff: accept or reject each change, then copy or export the result as DOCX or PDF (including format-preserving export from your original `.docx`).
+Upload a resume, drop in a job description, and our app rewrites your bullets to fit the role and writes a matching cover letter. Every suggestion shows up as an inline word-level diff which you can accept or reject:
+
+![Inline word-level diffs on resume bullets](demo/resume-inline-diffs.png)
+
+Then export the new resume and cover letter as DOCX or PDF.
 
 **What you get**
 
-- **Inline diff review:** Keep or revert every rewrite; unchanged lines stay collapsed so you focus on what changed
-- **Cover letters:** Every tailor run also writes a matching cover letter; Pro lets you choose length and tone. Copy or export alongside the resume
-- **Missing requirements (Pro):** See job requirements your resume doesn’t cover yet, plus one-click draft bullets you can insert and edit
-- **Saved resumes:** Signed-in users auto-save after a run (1 on Free, 10 on Pro); rename or delete anytime
-- **Try before you buy:** Guests get free credits with no account; preview an example tailor + cover letter without spending credits
-- **Privacy-minded:** Tailor results and cover letter text aren’t stored. PostgreSQL keeps credit usage, signed-in saved resumes, and Pro cover letter settings. Documents aren’t used for model training
-
-## Screenshots
-
-![Inline word-level diffs on resume bullets — accept or reject each rewrite](demo/resume-inline-diffs.png)
-
-_Inline word-level diffs on resume bullets — accept or reject each rewrite_
-
-![Requirement coverage meter showing matches, tailored gains, and remaining gaps](demo/requirement-coverage.png)
-
-_Requirement coverage meter showing matches, tailored gains, and remaining gaps_
-
-![Missing requirements with one-click draft bullets to add to your resume](demo/missing-requirements.png)
-
-_Missing requirements with one-click draft bullets to add to your resume_
-
-![Matching cover letter generated with each tailor run — edit, then export](demo/cover-letter.png)
-
-_Matching cover letter generated with each tailor run — edit, then export_
+- **Inline diff review:** Keep or revert every rewrite.
+- **Cover letters:** Every tailor run also writes a matching cover letter.
+- **Missing requirements (Pro):** See job requirements your resume doesn’t cover yet, plus one-click bullets you can insert.
+- **Try before you buy:** Try for free. No account or credit card required.
 
 ## Structure
 
-- `frontend/` - Vite + React + TypeScript + Mantine SPA. `/` is the landing page; `/app` is the tailor tool
-- `backend/DeltaResume.Api/` - F# + Giraffe + Dapper API with DDD layering
+- `frontend/` - Vite + React + TypeScript + Mantine single-page UI. Clerk for authentication.
+- `backend/DeltaResume.Api/` - F# + Giraffe + Dapper API with a Domain-Driven Design layering
 
-## Running
+## Local Development
 
 ### Backend
 
@@ -48,7 +32,7 @@ Create the local database once:
 createdb deltaresume
 ```
 
-**Environment variables** (in `backend/DeltaResume.Api/.env`; loaded automatically on `dotnet run` via DotNetEnv):
+**Environment variables** (in `backend/DeltaResume.Api/.env`):
 
 | Variable                  | Required | Description                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | ------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -70,19 +54,11 @@ dotnet run
 
 Tables are created automatically on startup (`CREATE TABLE IF NOT EXISTS`). Recreating the database is required for schema changes that alter existing column types.
 
-### Backend on Railway
-
-1. Set the service **Root Directory** to `backend/DeltaResume.Api` (uses the included `Dockerfile`).
-2. Add a **PostgreSQL** plugin to the project.
-3. On the API service, add a variable reference from Postgres → `DATABASE_URL`.
-4. Also set: `ANTHROPIC_API_KEY`, `CLERK_FRONTEND_API_URL`, `CLERK_SECRET_KEY`, `IP_HASH_SALT`, `TRUST_FORWARDED_HEADERS=true`, `CORS_ORIGINS` = your deployed frontend origin(s). Optionally set `SENTRY_DSN`.
-5. Do **not** set `BACKEND_RUNNING_LOCALLY`.
-
 ### Frontend
 
 Proxies `/api` to the backend. Open http://localhost:5200 after starting.
 
-**Environment variables** (in `frontend/.env.development.local`, gitignored; or `frontend/.env.development` for shared defaults):
+**Environment variables** (in `frontend/.env`)
 
 | Variable                     | Required | Description                                                                                                                                  |
 | ---------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -99,12 +75,3 @@ clerk env pull --file .env.development.local
 npm install
 npm run dev
 ```
-
-## Auth, credits, and billing
-
-Authentication and billing are handled by [Clerk](https://clerk.com) (Clerk Billing uses Stripe under the hood). Credit enforcement is server-side:
-
-- Guests get 3 lifetime credits, tracked against both a browser fingerprint (FingerprintJS, sent as `X-Guest-Fingerprint`) and a salted hash of their IP; the higher of the two usage counts applies, so clearing one alone does not reset credits.
-- Free accounts get 3 lifetime credits shared across their Clerk user id and browser fingerprint (IP is not included); remaining is `limit - max(usage)` across those keys, so guest fingerprint usage carries over after sign-in. Free accounts can save 1 resume.
-- Pro subscribers ($19/month, or $14/month billed annually) get 100 credits per calendar month, cover letter length and tone, full missing-requirements analysis with one-click draft bullets, and up to 10 saved resumes. The Pro badge tooltip shows the next billing reset date from Clerk’s frontend subscription data.
-- One credit is spent when a valid tailoring request is accepted for AI processing, and refunded if the AI call fails or the request is cancelled before completing. Cover letters do not cost an extra credit. When credits run out the API returns `402 credits_exhausted` and the UI opens a paywall: sign-up (Google prominent) for guests, the Clerk `PricingTable` in-app checkout for signed-in users.
