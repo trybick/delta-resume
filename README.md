@@ -11,7 +11,7 @@ Upload or paste a base resume, drop in a job description, and Claude rewrites yo
 - **Missing requirements (Pro):** See job requirements your resume doesn’t cover yet, plus one-click draft bullets you can insert and edit
 - **Saved resumes:** Signed-in users auto-save after a run (1 on Free, 10 on Pro); rename or delete anytime
 - **Try before you buy:** Guests get free credits with no account; preview an example tailor + cover letter without spending credits
-- **Privacy-minded:** Tailoring runs aren’t stored; guest runs never touch the database; documents aren’t used for model training
+- **Privacy-minded:** Tailor results and cover letter text aren’t stored. PostgreSQL keeps credit usage, signed-in saved resumes, and Pro cover letter settings. Documents aren’t used for model training
 
 ## Screenshots
 
@@ -33,8 +33,8 @@ _Matching cover letter generated with each tailor run — edit, then export_
 
 ## Structure
 
-- `frontend/` - Vite + React + TypeScript + Mantine single-page UI
-- `backend/DeltaResume.Api/` - F# + Giraffe + Dapper API with a DDD layering
+- `frontend/` - Vite + React + TypeScript + Mantine SPA. `/` is the landing page; `/app` is the tailor tool
+- `backend/DeltaResume.Api/` - F# + Giraffe + Dapper API with DDD layering
 
 ## Running
 
