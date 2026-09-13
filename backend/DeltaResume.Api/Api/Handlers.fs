@@ -2,6 +2,7 @@ namespace DeltaResume.Api
 
 open System
 open System.Diagnostics
+open System.Threading.Tasks
 open System.IO
 open System.Threading
 open Giraffe
@@ -32,6 +33,69 @@ module Handlers =
 
     let private requireSignedIn: HttpHandler -> HttpHandler =
         requireSignedInWithMessage "Sign in to manage saved resumes."
+
+    let private requireSignedInForRuns: HttpHandler -> HttpHandler =
+        requireSignedInWithMessage "Sign in to view your applications."
+
+    let private sanitizeResumeName (value: string option) : string =
+        value
+        |> Option.map (fun name -> if isNull name then "" else name.Trim())
+        |> Option.filter (fun name -> name.Length > 0)
+        |> Option.map (fun name ->
+            if name.Length > InputLimits.MaxNameCharacters then
+                name.Substring(0, InputLimits.MaxNameCharacters)
+            else
+                name)
+        |> Option.defaultValue ""
+
+    let private persistTailorRun
+        (ctx: HttpContext)
+        (request: TailorRequestDto)
+        (run: TailorRun)
+        : Task<unit> =
+        task {
+            try
+                let savedResumeService = ctx.GetService<SavedResumeService>()
+
+                do!
+                    savedResumeService.AutoSave(
+                        ctx,
+                        request.ResumeText,
+                        request.ResumeName,
+                        run.Document,
+                        request.ResumeLayout
+                    )
+
+                let! savedResumeId = savedResumeService.FindIdByContent(ctx, request.ResumeText)
+                let tailorRunService = ctx.GetService<TailorRunService>()
+                let identityOptions = ctx.GetService<IdentityOptions>()
+                let identity = Identity.resolve identityOptions ctx
+                let now = DateTimeOffset.UtcNow
+                let (RunId runId) = run.Id
+
+                do!
+                    tailorRunService.SaveAfterTailor(
+                        ctx,
+                        { Id = runId
+                          OwnerKey = Identity.ownerKey identity
+                          SavedResumeId = savedResumeId
+                          ResumeName = sanitizeResumeName request.ResumeName
+                          CompanyName = None
+                          JobTitle = None
+                          JobDescription = request.JobDescription
+                          ResumeText = request.ResumeText
+                          ResultJson =
+                            Mapping.serializeStoredResult (
+                                Mapping.toStoredResultDto request.ResumeLayout run
+                            )
+                          CoverLetterJson = None
+                          DecisionsJson = TailorRunDecisions.EmptyJson
+                          CreatedAt = run.CreatedAt
+                          UpdatedAt = now }
+                    )
+            with ex ->
+                SentrySdk.CaptureException(ex) |> ignore
+        }
 
     let private requireFingerprintOrAuth (innerHandler: HttpHandler) : HttpHandler =
         fun next ctx ->
@@ -117,9 +181,6 @@ module Handlers =
             }
 
     let private creditsExhaustedResponse (status: CreditStatus) : HttpHandler =
-        let freeCreditTotal = status.Total
-        let freeCreditWord = if freeCreditTotal = 1 then "credit" else "credits"
-
         setStatusCode StatusCodes.Status402PaymentRequired
         >=> json
                 {| Code = "credits_exhausted"
@@ -128,7 +189,7 @@ module Handlers =
                     if status.IsAuthenticated then
                         "You've used all your credits. Subscribe to Pro to keep tailoring."
                     else
-                        $"You've used your {freeCreditTotal} free {freeCreditWord}. Sign up to upgrade and continue." |}
+                        $"You've used your free run. Create a free account for {CreditPlan.extraFreeRunsAfterSignup} more." |}
 
     let private tryBindJson<'T> (ctx: HttpContext) =
         task {
@@ -242,25 +303,18 @@ module Handlers =
 
                                 match outcome.Result with
                                 | Ok run ->
-                                    try
-                                        let savedResumeService = ctx.GetService<SavedResumeService>()
+                                    let persistedRun =
+                                        match request.RunId with
+                                        | Some runId -> { run with Id = RunId runId }
+                                        | None -> run
 
-                                        do!
-                                            savedResumeService.AutoSave(
-                                                ctx,
-                                                request.ResumeText,
-                                                request.ResumeName,
-                                                run.Document,
-                                                request.ResumeLayout
-                                            )
-                                    with ex ->
-                                        SentrySdk.CaptureException(ex) |> ignore
+                                    do! persistTailorRun ctx request persistedRun
 
                                     let identityOptions = ctx.GetService<IdentityOptions>()
                                     let identity = Identity.resolve identityOptions ctx
                                     let isProPlan = Identity.plan identity = ProPlan
 
-                                    return! json (Mapping.toResponseDto isProPlan request.ResumeLayout run) next ctx
+                                    return! json (Mapping.toResponseDto isProPlan request.ResumeLayout persistedRun) next ctx
                                 | Error error ->
                                     do! refundCredit creditService operationId
                                     return! tailorErrorToResponse error next ctx
@@ -344,6 +398,23 @@ module Handlers =
                                   CompanyName = draft.CompanyName
                                   Letter = draft.Letter }
 
+                            match request.RunId with
+                            | Some runId ->
+                                try
+                                    let tailorRunService = ctx.GetService<TailorRunService>()
+
+                                    do!
+                                        tailorRunService.SaveCoverLetter(
+                                            ctx,
+                                            runId,
+                                            Mapping.serializeCoverLetter response,
+                                            Some draft.CompanyName,
+                                            Some draft.JobTitle
+                                        )
+                                with ex ->
+                                    SentrySdk.CaptureException(ex) |> ignore
+                            | None -> ()
+
                             return! json response next ctx
                         | Error message ->
                             eprintfn "Cover letter generation failed: %s" message
@@ -365,9 +436,9 @@ module Handlers =
     // PDF-only: converts a client-built .docx to a real text-based PDF via LibreOffice.
     // Client-side screenshot PDFs have no text layer (ATS-unreadable), so export posts
     // the .docx here instead. Docx download stays fully client-side and never hits this.
-    // Requires guest fingerprint or Clerk auth so anonymous scrapers cannot spawn soffice.
+    // Requires a signed-in user so anonymous callers cannot spawn soffice.
     let convertPdf: HttpHandler =
-        requireFingerprintOrAuth (fun next ctx ->
+        requireSignedInWithMessage "Create a free account to export as PDF." (fun next ctx ->
             task {
                 use bodyStream = new MemoryStream()
                 do! ctx.Request.Body.CopyToAsync(bodyStream, ctx.RequestAborted)
@@ -516,4 +587,166 @@ module Handlers =
                         return! setStatusCode StatusCodes.Status204NoContent next ctx
                     else
                         return! errorResponse StatusCodes.Status404NotFound "Resume not found." next ctx
+            })
+
+    let listTailorRuns: HttpHandler =
+        requireSignedInForRuns (fun next ctx ->
+            task {
+                let service = ctx.GetService<TailorRunService>()
+                let! listed = service.List ctx
+
+                match listed with
+                | None ->
+                    return!
+                        codedErrorResponse
+                            StatusCodes.Status401Unauthorized
+                            "auth_required"
+                            "Sign in to view your applications."
+                            next
+                            ctx
+                | Some listed ->
+                    let response: TailorRunListDto =
+                        { Runs = listed.Runs |> List.map Mapping.toRunSummaryDto
+                          HiddenOlderCount = listed.HiddenOlderCount }
+
+                    return! json response next ctx
+            })
+
+    let getTailorRun (runId: string) : HttpHandler =
+        requireSignedInForRuns (fun next ctx ->
+            task {
+                match Guid.TryParse runId with
+                | false, _ -> return! errorResponse StatusCodes.Status400BadRequest "Invalid run id." next ctx
+                | true, id ->
+                    let service = ctx.GetService<TailorRunService>()
+                    let! record = service.Get(ctx, id)
+
+                    match record with
+                    | None -> return! errorResponse StatusCodes.Status404NotFound "Application not found." next ctx
+                    | Some record ->
+                        let identityOptions = ctx.GetService<IdentityOptions>()
+                        let identity = Identity.resolve identityOptions ctx
+                        let isProPlan = Identity.plan identity = ProPlan
+
+                        match Mapping.toRunDetailDto isProPlan record with
+                        | None -> return! persistenceFailureResponse next ctx
+                        | Some detail -> return! json detail next ctx
+            })
+
+    let patchTailorRun (runId: string) : HttpHandler =
+        requireSignedInForRuns (fun next ctx ->
+            task {
+                let! request = tryBindJson<PatchRunDecisionsRequestDto> ctx
+
+                match request with
+                | None -> return! invalidJsonResponse next ctx
+                | Some request when obj.ReferenceEquals(request.Decisions, null) ->
+                    return! invalidJsonResponse next ctx
+                | Some request ->
+                    match Guid.TryParse runId with
+                    | false, _ -> return! errorResponse StatusCodes.Status400BadRequest "Invalid run id." next ctx
+                    | true, id ->
+                        let service = ctx.GetService<TailorRunService>()
+                        let! updated = service.UpdateDecisions(ctx, id, Mapping.serializeDecisions request.Decisions)
+
+                        if updated then
+                            return! setStatusCode StatusCodes.Status204NoContent next ctx
+                        else
+                            return! errorResponse StatusCodes.Status404NotFound "Application not found." next ctx
+            })
+
+    let deleteTailorRun (runId: string) : HttpHandler =
+        requireSignedInForRuns (fun next ctx ->
+            task {
+                match Guid.TryParse runId with
+                | false, _ -> return! errorResponse StatusCodes.Status400BadRequest "Invalid run id." next ctx
+                | true, id ->
+                    let service = ctx.GetService<TailorRunService>()
+                    let! deleted = service.Delete(ctx, id)
+
+                    if deleted then
+                        return! setStatusCode StatusCodes.Status204NoContent next ctx
+                    else
+                        return! errorResponse StatusCodes.Status404NotFound "Application not found." next ctx
+            })
+
+    let claimTailorRun: HttpHandler =
+        requireSignedInForRuns (fun next ctx ->
+            task {
+                let! request = tryBindJson<ClaimRunRequestDto> ctx
+
+                match request with
+                | None -> return! invalidJsonResponse next ctx
+                | Some request when obj.ReferenceEquals(request.Result, null) ->
+                    return! invalidJsonResponse next ctx
+                | Some request ->
+                    match InputValidation.validate request.ResumeText request.JobDescription request.ResumeName with
+                    | Error message ->
+                        return! codedErrorResponse StatusCodes.Status400BadRequest "invalid_input" message next ctx
+                    | Ok() when request.RunId = Guid.Empty ->
+                        return! codedErrorResponse StatusCodes.Status400BadRequest "invalid_input" "Run id is required." next ctx
+                    | Ok() ->
+                        let identityOptions = ctx.GetService<IdentityOptions>()
+                        let identity = Identity.resolve identityOptions ctx
+                        let now = DateTimeOffset.UtcNow
+                        let coverLetter =
+                            request.CoverLetter
+                            |> Option.bind (fun letter -> if isNull (box letter) then None else Some letter)
+
+                        let coverLetterJson = coverLetter |> Option.map Mapping.serializeCoverLetter
+
+                        let decisions =
+                            if obj.ReferenceEquals(request.Decisions, null) then
+                                Mapping.emptyDecisions
+                            else
+                                request.Decisions
+
+                        let visibleRequirements =
+                            if obj.ReferenceEquals(request.Result.Requirements, null) then
+                                []
+                            else
+                                request.Result.Requirements
+                                |> List.filter (fun requirement ->
+                                    not requirement.Locked && not (String.IsNullOrWhiteSpace requirement.Text))
+
+                        let storedResult =
+                            { request.Result with
+                                Requirements = visibleRequirements }
+
+                        let record: TailorRunRecord =
+                            { Id = request.RunId
+                              OwnerKey = Identity.ownerKey identity
+                              SavedResumeId = None
+                              ResumeName = sanitizeResumeName request.ResumeName
+                              CompanyName = coverLetter |> Option.map _.CompanyName
+                              JobTitle = coverLetter |> Option.map _.JobTitle
+                              JobDescription = request.JobDescription
+                              ResumeText = request.ResumeText
+                              ResultJson = Mapping.serializeStoredResult storedResult
+                              CoverLetterJson = coverLetterJson
+                              DecisionsJson = Mapping.serializeDecisions decisions
+                              CreatedAt = now
+                              UpdatedAt = now }
+
+                        let service = ctx.GetService<TailorRunService>()
+                        let! claimed = service.Claim(ctx, record)
+
+                        match claimed with
+                        | GuestUser ->
+                            return!
+                                codedErrorResponse
+                                    StatusCodes.Status401Unauthorized
+                                    "auth_required"
+                                    "Sign in to view your applications."
+                                    next
+                                    ctx
+                        | Conflict ->
+                            return! errorResponse StatusCodes.Status409Conflict "This application belongs to another account." next ctx
+                        | Claimed saved
+                        | AlreadyOwned saved ->
+                            let isProPlan = Identity.plan identity = ProPlan
+
+                            match Mapping.toRunDetailDto isProPlan saved with
+                            | None -> return! persistenceFailureResponse next ctx
+                            | Some detail -> return! json detail next ctx
             })

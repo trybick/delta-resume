@@ -1,9 +1,13 @@
 import type {
+  AddedBullet,
+  ChangeDecision,
   CoverLetterResult,
   CreditStatus,
   ResumeDocument,
   SavedResume,
   TailorResult,
+  TailorRunDetail,
+  TailorRunList,
   UserSettings,
 } from './types';
 import { getAuthToken } from './authToken';
@@ -68,6 +72,29 @@ const readErrorMessage = async (response: Response): Promise<string> => {
   return `Request failed with status ${response.status}.`;
 };
 
+const parseTailorResult = (
+  data: Omit<TailorResult, 'document' | 'resumeLayout'> & {
+    runId?: string;
+    document?: unknown;
+    resumeLayout?: unknown;
+  },
+): TailorResult => ({
+  ...data,
+  changes: (data.changes ?? []).map((change) => ({
+    ...change,
+    sourceLines: change.sourceLines && change.sourceLines.length > 0 ? change.sourceLines : [],
+  })),
+  requirements: (data.requirements ?? []).map((requirement) => ({
+    ...requirement,
+    gapHint: requirement.gapHint ?? null,
+    draftBullet: requirement.draftBullet ?? null,
+    insertAfterId: requirement.insertAfterId ?? null,
+    locked: requirement.locked ?? false,
+  })),
+  document: parseResumeDocument(data.document),
+  resumeLayout: parsePersistedDocxLayout(data.resumeLayout),
+});
+
 const throwApiError = async (response: Response): Promise<never> => {
   if (response.status === 429) {
     const retryAfterSeconds = Number.parseInt(response.headers.get('Retry-After') ?? '', 10) || 60;
@@ -100,7 +127,11 @@ export const getCredits = async (): Promise<CreditStatus> => {
   if (!response.ok) {
     return throwApiError(response);
   }
-  return (await response.json()) as CreditStatus;
+  const data = (await response.json()) as CreditStatus;
+  return {
+    ...data,
+    freeAccountTotal: data.freeAccountTotal ?? 4,
+  };
 };
 
 export const postTailor = async (
@@ -132,25 +163,7 @@ export const postTailor = async (
     document?: unknown;
     resumeLayout?: unknown;
   };
-  return {
-    ...data,
-    changes: (data.changes ?? []).map((change) => ({
-      ...change,
-      sourceLines:
-        change.sourceLines && change.sourceLines.length > 0
-          ? change.sourceLines
-          : [],
-    })),
-    requirements: (data.requirements ?? []).map((requirement) => ({
-      ...requirement,
-      gapHint: requirement.gapHint ?? null,
-      draftBullet: requirement.draftBullet ?? null,
-      insertAfterId: requirement.insertAfterId ?? null,
-      locked: requirement.locked ?? false,
-    })),
-    document: parseResumeDocument(data.document),
-    resumeLayout: parsePersistedDocxLayout(data.resumeLayout),
-  };
+  return parseTailorResult(data) as TailorResponse;
 };
 
 export const postCoverLetter = async (
@@ -253,4 +266,137 @@ export const deleteSavedResume = async (resumeId: string): Promise<void> => {
   if (!response.ok) {
     return throwApiError(response);
   }
+};
+
+type StoredTailorResultPayload = Omit<TailorResult, 'document' | 'resumeLayout'> & {
+  document: string | null;
+  resumeLayout: string | null;
+};
+
+const toStoredResultPayload = (result: TailorResult): StoredTailorResultPayload => ({
+  ...result,
+  document: result.document ? JSON.stringify(result.document) : null,
+  resumeLayout: result.resumeLayout ? serializeDocxLayout(result.resumeLayout) : null,
+});
+
+const parseRunDetail = (data: {
+  id: string;
+  resumeName: string;
+  companyName: string | null;
+  jobTitle: string | null;
+  jobDescription: string;
+  createdAt: string;
+  result: Omit<TailorResult, 'document' | 'resumeLayout'> & {
+    runId?: string;
+    document?: unknown;
+    resumeLayout?: unknown;
+  };
+  coverLetter: CoverLetterResult | null;
+  decisions: {
+    decisions?: Record<string, ChangeDecision>;
+    addedBullets?: AddedBullet[];
+  } | null;
+}): TailorRunDetail => ({
+  id: data.id,
+  resumeName: data.resumeName,
+  companyName: data.companyName,
+  jobTitle: data.jobTitle,
+  jobDescription: data.jobDescription,
+  createdAt: data.createdAt,
+  result: {
+    ...parseTailorResult(data.result),
+    runId: data.result.runId ?? data.id,
+    resumeText: data.result.resumeText,
+  },
+  coverLetter: data.coverLetter,
+  decisions: {
+    decisions: data.decisions?.decisions ?? {},
+    addedBullets: data.decisions?.addedBullets ?? [],
+  },
+});
+
+export const getTailorRuns = async (): Promise<TailorRunList> => {
+  const response = await fetch(`${API_BASE_URL}/api/runs`, {
+    headers: await buildHeaders(),
+  });
+  if (!response.ok) {
+    return throwApiError(response);
+  }
+  const data = (await response.json()) as TailorRunList;
+  return {
+    runs: data.runs ?? [],
+    hiddenOlderCount: data.hiddenOlderCount ?? 0,
+  };
+};
+
+export const getTailorRun = async (runId: string): Promise<TailorRunDetail> => {
+  const response = await fetch(`${API_BASE_URL}/api/runs/${runId}`, {
+    headers: await buildHeaders(),
+  });
+  if (!response.ok) {
+    return throwApiError(response);
+  }
+  return parseRunDetail(await response.json());
+};
+
+export const patchTailorRunDecisions = async (
+  runId: string,
+  decisions: Record<string, ChangeDecision>,
+  addedBullets: AddedBullet[],
+): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/api/runs/${runId}`, {
+    method: 'PATCH',
+    headers: await buildHeaders(),
+    body: JSON.stringify({
+      decisions: {
+        decisions,
+        addedBullets,
+      },
+    }),
+  });
+  if (!response.ok) {
+    return throwApiError(response);
+  }
+};
+
+export const deleteTailorRun = async (runId: string): Promise<void> => {
+  const response = await fetch(`${API_BASE_URL}/api/runs/${runId}`, {
+    method: 'DELETE',
+    headers: await buildHeaders(),
+  });
+  if (!response.ok) {
+    return throwApiError(response);
+  }
+};
+
+export const claimTailorRun = async (payload: {
+  runId: string;
+  resumeName?: string;
+  resumeText: string;
+  jobDescription: string;
+  result: TailorResult;
+  coverLetter: CoverLetterResult | null;
+  decisions: Record<string, ChangeDecision>;
+  addedBullets: AddedBullet[];
+}): Promise<TailorRunDetail> => {
+  const response = await fetch(`${API_BASE_URL}/api/runs/claim`, {
+    method: 'POST',
+    headers: await buildHeaders(),
+    body: JSON.stringify({
+      runId: payload.runId,
+      resumeName: payload.resumeName ?? null,
+      resumeText: payload.resumeText,
+      jobDescription: payload.jobDescription,
+      result: toStoredResultPayload(payload.result),
+      coverLetter: payload.coverLetter,
+      decisions: {
+        decisions: payload.decisions,
+        addedBullets: payload.addedBullets,
+      },
+    }),
+  });
+  if (!response.ok) {
+    return throwApiError(response);
+  }
+  return parseRunDetail(await response.json());
 };

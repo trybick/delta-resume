@@ -4,7 +4,7 @@ import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import { appTheme } from '../lib/theme';
 import ResultsPanel from './ResultsPanel';
 import CoverLetterPanel from './CoverLetterPanel';
-import type { OriginalDocx } from '../lib/types';
+import type { AddedBullet, ChangeDecision, OriginalDocx } from '../lib/types';
 import { SAMPLE_COVER_LETTER_RESULT, SAMPLE_TAILOR_RESULT } from '../lib/mockTailor';
 import type {
   CoverLetterResult,
@@ -12,6 +12,7 @@ import type {
   TailorResult,
   TailorStatus,
 } from '../lib/types';
+import SignupBanner from './SignupBanner';
 
 type TailorResultsSectionProps = {
   errorMessage: string | null;
@@ -27,12 +28,24 @@ type TailorResultsSectionProps = {
   onShowExample: () => void;
   isProPlan: boolean;
   isGuest: boolean;
+  showSignupBanner: boolean;
+  freeAccountTotal: number;
+  onSignupBannerClick: () => void;
+  onSignupBannerDismiss: () => void;
+  initialDecisions?: Record<string, ChangeDecision>;
+  initialAddedBullets?: AddedBullet[];
   coverLetterStatus: CoverLetterStatus;
   coverLetterResult: CoverLetterResult | null;
   coverLetterError: string | null;
   onRetryCoverLetter: () => void;
   onUpgradeClick: () => void;
   onGapsUpgradeClick: () => void;
+  onExportGate: () => void;
+  onKeepFormattingGate: () => void;
+  onReviewStateChange?: (
+    decisions: Record<string, ChangeDecision>,
+    addedBullets: AddedBullet[],
+  ) => void;
 };
 
 const TailorResultsSection = ({
@@ -49,12 +62,21 @@ const TailorResultsSection = ({
   onShowExample,
   isProPlan,
   isGuest,
+  showSignupBanner,
+  freeAccountTotal,
+  onSignupBannerClick,
+  onSignupBannerDismiss,
+  initialDecisions,
+  initialAddedBullets,
   coverLetterStatus,
   coverLetterResult,
   coverLetterError,
   onRetryCoverLetter,
   onUpgradeClick,
   onGapsUpgradeClick,
+  onExportGate,
+  onKeepFormattingGate,
+  onReviewStateChange,
 }: TailorResultsSectionProps) => {
   const resumeTabIndicator = showingExample ? null : status === 'loading' ? (
     <Loader size={12} />
@@ -86,7 +108,14 @@ const TailorResultsSection = ({
           }}
         >
           {errorMessage}
-        </Alert>
+          </Alert>
+      )}
+      {showSignupBanner && (
+        <SignupBanner
+          freeAccountTotal={freeAccountTotal}
+          onSignUpClick={onSignupBannerClick}
+          onDismiss={onSignupBannerDismiss}
+        />
       )}
       {showingExample && (
         <Button
@@ -143,7 +172,7 @@ const TailorResultsSection = ({
         </Tabs.List>
         <Tabs.Panel value="resume" pt="md">
           <ResultsPanel
-            key={showingExample ? 'example' : runCount}
+            key={showingExample ? 'example' : (result?.runId ?? runCount)}
             status={showingExample ? 'done' : status}
             result={showingExample ? SAMPLE_TAILOR_RESULT : result}
             isExample={showingExample}
@@ -152,13 +181,19 @@ const TailorResultsSection = ({
             isGuest={isGuest}
             originalDocx={showingExample ? null : originalDocx}
             companyName={showingExample ? undefined : coverLetterResult?.companyName}
+            initialDecisions={showingExample ? undefined : initialDecisions}
+            initialAddedBullets={showingExample ? undefined : initialAddedBullets}
             onShowExample={status === 'idle' ? onShowExample : undefined}
             onUpgradeClick={onGapsUpgradeClick}
+            onExportGate={onExportGate}
+            onKeepFormattingGate={onKeepFormattingGate}
+            onReviewStateChange={showingExample ? undefined : onReviewStateChange}
           />
         </Tabs.Panel>
         <Tabs.Panel value="coverLetter" pt="md">
           <CoverLetterPanel
             isProPlan={isProPlan}
+            isGuest={isGuest}
             status={coverLetterStatus}
             result={coverLetterResult}
             errorMessage={coverLetterError}
@@ -167,6 +202,7 @@ const TailorResultsSection = ({
             exampleResult={SAMPLE_COVER_LETTER_RESULT}
             onRetry={onRetryCoverLetter}
             onUpgradeClick={onUpgradeClick}
+            onExportGate={onExportGate}
           />
         </Tabs.Panel>
       </Tabs>

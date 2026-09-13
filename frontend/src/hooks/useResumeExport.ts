@@ -31,6 +31,10 @@ type UseResumeExportOptions = {
   companyName?: string;
   decisions: Record<string, ChangeDecision>;
   activeAddedBullets: AddedBullet[];
+  isGuest?: boolean;
+  isProPlan?: boolean;
+  onExportGate?: () => void;
+  onKeepFormattingGate?: () => void;
 };
 
 type UseResumeExportResult = {
@@ -69,6 +73,10 @@ export const useResumeExport = ({
   companyName,
   decisions,
   activeAddedBullets,
+  isGuest = false,
+  isProPlan = false,
+  onExportGate,
+  onKeepFormattingGate,
 }: UseResumeExportOptions): UseResumeExportResult => {
   const [isExporting, setIsExporting] = useState(false);
   const [manualScale, setManualScale] = useState(EXPORT_SCALE_DEFAULT);
@@ -331,6 +339,16 @@ export const useResumeExport = ({
 
   const handleExport = async (variant: 'keep' | 'clean', format: 'docx' | 'pdf') => {
     if (!result || isExample || isExporting) return false;
+    if (isGuest) {
+      trackEvent(AnalyticsEvents.ExportGateShown, { tier: 'guest', source: 'resume' });
+      onExportGate?.();
+      return false;
+    }
+    if (variant === 'keep' && !isProPlan) {
+      trackEvent(AnalyticsEvents.KeepFormattingGateShown, { tier: 'free' });
+      onKeepFormattingGate?.();
+      return false;
+    }
     const scale = scaleForExport(variant);
     trackEvent(AnalyticsEvents.ResumeExport, {
       variant,

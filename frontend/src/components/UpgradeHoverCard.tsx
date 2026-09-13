@@ -68,7 +68,7 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
                   {displayedPrice}
                 </Text>
                 <Text size="xs" c="dimmed">
-                  / month
+                  {annualMonthlyPrice ? '/ month, billed annually' : '/ month'}
                 </Text>
               </Group>
             ) : isLoadingProPrice ? (

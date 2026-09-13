@@ -101,6 +101,16 @@ export const AnalyticsEvents = {
   PdfUnavailable: 'pdf_unavailable',
   CopySuccess: 'copy_success',
   CopyFailure: 'copy_failure',
+  SignupBannerShown: 'signup_banner_shown',
+  SignupBannerClick: 'signup_banner_click',
+  SignupBannerDismiss: 'signup_banner_dismiss',
+  ExportGateShown: 'export_gate_shown',
+  KeepFormattingGateShown: 'keep_formatting_gate_shown',
+  RunsListOpen: 'runs_list_open',
+  RunReopen: 'run_reopen',
+  RunDelete: 'run_delete',
+  RunClaimed: 'run_claimed',
+  CreditsExhausted: 'credits_exhausted',
 } as const;
 
 export type AnalyticsEventName = (typeof AnalyticsEvents)[keyof typeof AnalyticsEvents];

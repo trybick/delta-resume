@@ -16,6 +16,7 @@ type UseCoverLetterResult = {
   errorMessage: string | null;
   runCoverLetter: (resumeText: string, jobDescription: string, runId?: string) => Promise<void>;
   retryCoverLetter: () => void;
+  hydrate: (result: CoverLetterResult | null) => void;
 };
 
 export const useCoverLetter = (): UseCoverLetterResult => {
@@ -78,5 +79,13 @@ export const useCoverLetter = (): UseCoverLetterResult => {
     void runCoverLetter(inputs.resumeText, inputs.jobDescription, inputs.runId);
   };
 
-  return { status, result, errorMessage, runCoverLetter, retryCoverLetter };
+  const hydrate = (nextResult: CoverLetterResult | null) => {
+    abortControllerRef.current?.abort();
+    requestIdRef.current += 1;
+    setResult(nextResult);
+    setErrorMessage(null);
+    setStatus(nextResult ? 'done' : 'idle');
+  };
+
+  return { status, result, errorMessage, runCoverLetter, retryCoverLetter, hydrate };
 };

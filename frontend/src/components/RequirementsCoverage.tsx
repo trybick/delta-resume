@@ -9,6 +9,7 @@ type RequirementsCoverageProps = {
   coveredByChangesCount: number;
   coveredByAddedCount: number;
   availableFillerCount: number;
+  lockedGapCount?: number;
   unresolvedGapCount?: number;
   open?: boolean;
   onToggle?: () => void;
@@ -22,6 +23,7 @@ const RequirementsCoverage = ({
   coveredByChangesCount,
   coveredByAddedCount,
   availableFillerCount,
+  lockedGapCount = 0,
   unresolvedGapCount = 0,
   open = false,
   onToggle,
@@ -33,6 +35,7 @@ const RequirementsCoverage = ({
   const changesPercent = (coveredByChangesCount / totalCount) * 100;
   const addedPercent = (coveredByAddedCount / totalCount) * 100;
   const potentialPercent = (availableFillerCount / totalCount) * 100;
+  const lockedPercent = (lockedGapCount / totalCount) * 100;
   const expandable = onToggle !== undefined;
 
   const tooltipParts = [
@@ -42,6 +45,7 @@ const RequirementsCoverage = ({
     availableFillerCount > 0
       ? `+${availableFillerCount} more if you add the suggested bullets`
       : null,
+    lockedGapCount > 0 ? `+${lockedGapCount} more with Pro's draft bullets` : null,
   ].filter((part) => part !== null);
 
   const header = (
@@ -62,6 +66,14 @@ const RequirementsCoverage = ({
           striped
           style={{ opacity: 0.45 }}
         />
+        {lockedGapCount > 0 && (
+          <Progress.Section
+            value={lockedPercent}
+            color="orange.5"
+            striped
+            style={{ opacity: 0.55 }}
+          />
+        )}
       </Progress.Root>
       <Text size="xs" lh={1} style={{ flexShrink: 0 }}>
         <Text component="span" size="xs" fw={700} c="green.5">

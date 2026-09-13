@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
-import { FocusTrap, Modal, Paper, Stack, Text, Title } from '@mantine/core';
+import { FocusTrap, List, Modal, Paper, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { SignUp, useAuth, useUser } from '@clerk/clerk-react';
+import { IconCheck } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import { extraFreeRunsAfterSignup } from '../lib/constants';
 import type { PaywallReason } from '../lib/types';
 import ProFeatureList from './ProFeatureList';
 import ProPlanShowcase from './ProPlanShowcase';
@@ -87,17 +89,20 @@ const PaywallModal = ({
 
   useEffect(() => {
     if (!opened) return;
-    if ((reason === 'savedLimit' || reason === 'coverLetter' || reason === 'gaps') && hasProPlan) {
+    if ((reason === 'savedLimit' || reason === 'coverLetter' || reason === 'gaps' || reason === 'keepFormatting') && hasProPlan) {
       onClose();
     }
   }, [opened, reason, hasProPlan, onClose]);
 
   useEffect(() => {
     if (!opened || !isSignedIn) return;
-    if (reason === 'signUp') {
+    if (reason === 'signUp' || reason === 'export') {
       onClose();
     }
   }, [opened, isSignedIn, reason, onClose]);
+
+  const extraFreeRuns =
+    freeCreditTotal !== null ? extraFreeRunsAfterSignup(freeCreditTotal) : 3;
 
   const signedInTitle =
     reason === 'savedLimit'
@@ -106,29 +111,35 @@ const PaywallModal = ({
         ? 'Upgrade to customize cover letters'
         : reason === 'gaps'
           ? 'Upgrade to unlock missing requirements'
-          : reason === 'upgrade'
-            ? 'Upgrade to Pro'
-            : 'Upgrade to keep tailoring';
+          : reason === 'keepFormatting'
+            ? 'Upgrade to keep your formatting'
+            : reason === 'upgrade'
+              ? 'Upgrade to Pro'
+              : 'Upgrade to keep tailoring';
   const signedInHeading =
     reason === 'savedLimit'
       ? 'You\u2019ve reached your saved resume limit'
       : reason === 'coverLetter'
         ? 'Cover letter length and tone are a Pro feature'
         : reason === 'gaps'
-          ? 'Missing requirements are a Pro feature'
-          : reason === 'upgrade'
-            ? 'Get the most out of Delta Resume'
-            : 'You\u2019re out of credits';
+          ? 'See exactly what the job asks for that you\u2019re missing'
+          : reason === 'keepFormatting'
+            ? 'Keep your Word formatting on every export'
+            : reason === 'upgrade'
+              ? 'Never send an untailored resume again'
+              : 'You\u2019re out of credits';
   const signedInDescription =
     reason === 'savedLimit'
-      ? 'Go Pro to save up to 10 resumes and keep tailoring all month.'
+      ? 'Go Pro to save up to 10 resumes and keep every application in one place.'
       : reason === 'coverLetter'
         ? 'Go Pro to pick the length and tone of every cover letter.'
         : reason === 'gaps'
-          ? 'Go Pro to unlock every job requirement your resume doesn\u2019t show yet, plus where a bullet would fit.'
-          : reason === 'upgrade'
-            ? 'Everything you need to land more interviews, in one plan.'
-            : 'Go Pro to keep tailoring without interruption.';
+          ? 'Pro shows the full requirements list, not just the first gap, plus a ready-to-edit bullet for each.'
+          : reason === 'keepFormatting'
+            ? 'Go Pro to export DOCX and PDF that look exactly like the resume you uploaded, fit to one page.'
+            : reason === 'upgrade'
+              ? 'Tailor every application, fill every gap, and keep your Word formatting.'
+              : 'Go Pro to keep tailoring without interruption.';
   const signedOutHeading =
     reason === 'savedLimit'
       ? 'Save more resumes with Pro'
@@ -139,26 +150,34 @@ const PaywallModal = ({
           : reason === 'upgrade'
             ? 'Go Pro with Delta Resume'
             : reason === 'credits'
-              ? freeCreditTotal !== null
-                ? `You\u2019ve used your ${freeCreditTotal} free ${freeCreditTotal === 1 ? 'credit' : 'credits'}`
-                : 'You\u2019ve used your free credits'
-              : reason === 'signUp'
-                ? 'Create a free account'
-                : null;
+              ? 'You\u2019ve used your free run'
+              : reason === 'export'
+                ? 'Export as DOCX or PDF with a free account'
+                : reason === 'signUp'
+                  ? 'Create a free account'
+                  : null;
   const signedOutDescription =
     reason === 'savedLimit'
       ? 'Create a free account and upgrade to Pro to save up to 10 resumes.'
       : reason === 'coverLetter'
         ? 'Create a free account and upgrade to Pro to pick the length and tone of every cover letter.'
         : reason === 'gaps'
-          ? 'Create a free account and upgrade to Pro to unlock every job requirement your resume doesn\u2019t cover yet.'
+          ? 'Create a free account and upgrade to Pro to see every job requirement your resume doesn\u2019t cover yet.'
           : reason === 'upgrade'
             ? 'Sign in to continue \u2014 it takes seconds with Google.'
             : reason === 'credits'
-              ? 'Create a free account, then upgrade to Pro to keep tailoring. Signing in with Google takes seconds.'
-              : reason === 'signUp'
-                ? 'It takes seconds with Google. Upgrade anytime for cover letters, missing requirements, and more.'
-                : null;
+              ? `Create a free account for ${extraFreeRuns} more.`
+              : reason === 'export'
+                ? 'Export as DOCX or PDF with a free account.'
+                : reason === 'signUp'
+                  ? `Want ${extraFreeRuns} more free runs? Create a free account. This result is saved to Your applications and you can export it as DOCX or PDF.`
+                  : null;
+  const showFreeAccountBenefits = reason === 'signUp' || reason === 'export' || reason === 'credits';
+  const freeAccountBenefits = [
+    `${extraFreeRuns} more free runs`,
+    'Saved history in Your applications',
+    'DOCX and PDF export',
+  ];
 
   const handleSubscriptionComplete = () => {
     trackEvent(AnalyticsEvents.SubscriptionComplete, { reason });
@@ -219,9 +238,25 @@ const PaywallModal = ({
                 tt="uppercase"
                 style={{ letterSpacing: '0.06em' }}
               >
-                Everything included with Pro
+                {showFreeAccountBenefits ? 'With a free account' : 'Everything included with Pro'}
               </Text>
-              <ProFeatureList columns={{ base: 1, xs: 2 }} />
+              {showFreeAccountBenefits ? (
+                <List
+                  spacing="xs"
+                  size="sm"
+                  icon={
+                    <ThemeIcon size={20} radius="xl" variant="light" color="teal">
+                      <IconCheck size={12} />
+                    </ThemeIcon>
+                  }
+                >
+                  {freeAccountBenefits.map((benefit) => (
+                    <List.Item key={benefit}>{benefit}</List.Item>
+                  ))}
+                </List>
+              ) : (
+                <ProFeatureList columns={{ base: 1, xs: 2 }} />
+              )}
             </Stack>
           </Paper>
           <SignUp routing="hash" appearance={embeddedSignUpAppearance} />

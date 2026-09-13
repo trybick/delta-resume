@@ -34,4 +34,13 @@ module Routes =
               >=> routef "/api/saved-resumes/%s" (fun resumeId -> RateLimit.loosePolicy >=> Handlers.renameSavedResume resumeId)
               DELETE
               >=> routef "/api/saved-resumes/%s" (fun resumeId -> RateLimit.loosePolicy >=> Handlers.deleteSavedResume resumeId)
+              GET >=> route "/api/runs" >=> RateLimit.loosePolicy >=> Handlers.hydrateClerkPublicUser >=> Handlers.listTailorRuns
+              POST >=> route "/api/runs/claim" >=> RateLimit.loosePolicy >=> Handlers.hydrateClerkPublicUser >=> Handlers.claimTailorRun
+              GET
+              >=> routef "/api/runs/%s" (fun runId ->
+                  RateLimit.loosePolicy >=> Handlers.hydrateClerkPublicUser >=> Handlers.getTailorRun runId)
+              PATCH
+              >=> routef "/api/runs/%s" (fun runId -> RateLimit.loosePolicy >=> Handlers.patchTailorRun runId)
+              DELETE
+              >=> routef "/api/runs/%s" (fun runId -> RateLimit.loosePolicy >=> Handlers.deleteTailorRun runId)
               setStatusCode 404 >=> json {| Message = "Not found" |} ]

@@ -1,6 +1,8 @@
 namespace DeltaResume.Api
 
 open System
+open System.Text.Json
+open System.Text.Json.Serialization
 open DeltaResume.Application
 open DeltaResume.Domain
 
@@ -23,6 +25,7 @@ type CoverLetterRequestDto =
       CandidateName: string option
       RunId: Guid option }
 
+[<CLIMutable>]
 type CoverLetterResponseDto =
     { JobTitle: string
       CompanyName: string
@@ -45,6 +48,7 @@ type SavedResumeDto =
       ResumeLayout: string option
       CreatedAt: DateTimeOffset }
 
+[<CLIMutable>]
 type BulletChangeDto =
     { Id: Guid
       TargetId: string
@@ -53,6 +57,7 @@ type BulletChangeDto =
       Tailored: string
       Kind: string }
 
+[<CLIMutable>]
 type JobRequirementDto =
     { Text: string
       Importance: string
@@ -72,20 +77,80 @@ type TailorResponseDto =
       Document: string option
       ResumeLayout: string option }
 
+[<CLIMutable>]
+type AddedBulletDto =
+    { Id: Guid
+      RequirementText: string
+      Text: string
+      AfterId: string }
+
+[<CLIMutable>]
+type RunDecisionsDto =
+    { Decisions: Map<string, string>
+      AddedBullets: AddedBulletDto list }
+
+[<CLIMutable>]
+type StoredTailorResultDto =
+    { Summary: string
+      Changes: BulletChangeDto list
+      Requirements: JobRequirementDto list
+      Document: string option
+      ResumeLayout: string option }
+
+type TailorRunSummaryDto =
+    { Id: Guid
+      CompanyName: string option
+      JobTitle: string option
+      ResumeName: string
+      CreatedAt: DateTimeOffset
+      ChangeCount: int
+      CoveredCount: int
+      TotalCount: int }
+
+type TailorRunListDto =
+    { Runs: TailorRunSummaryDto list
+      HiddenOlderCount: int }
+
+type TailorRunDetailDto =
+    { Id: Guid
+      ResumeName: string
+      CompanyName: string option
+      JobTitle: string option
+      JobDescription: string
+      CreatedAt: DateTimeOffset
+      Result: TailorResponseDto
+      CoverLetter: CoverLetterResponseDto option
+      Decisions: RunDecisionsDto }
+
+[<CLIMutable>]
+type ClaimRunRequestDto =
+    { RunId: Guid
+      ResumeName: string option
+      ResumeText: string
+      JobDescription: string
+      Result: StoredTailorResultDto
+      CoverLetter: CoverLetterResponseDto option
+      Decisions: RunDecisionsDto }
+
+[<CLIMutable>]
+type PatchRunDecisionsRequestDto = { Decisions: RunDecisionsDto }
+
 type ErrorResponseDto = { Message: string }
 
 type CreditStatusDto =
     { Remaining: int
       Total: int
       Plan: string
-      IsAuthenticated: bool }
+      IsAuthenticated: bool
+      FreeAccountTotal: int }
 
 module Mapping =
     let toCreditStatusDto (status: CreditStatus) : CreditStatusDto =
         { Remaining = status.Remaining
           Total = status.Total
           Plan = CreditPlan.toString status.Plan
-          IsAuthenticated = status.IsAuthenticated }
+          IsAuthenticated = status.IsAuthenticated
+          FreeAccountTotal = status.FreeAccountTotal }
 
     let toChangeDto (change: BulletChange) : BulletChangeDto =
         let (ChangeId id) = change.Id
@@ -170,3 +235,151 @@ module Mapping =
           ResumeDocument = resume.ResumeDocument |> Option.map ResumeDocumentJson.serialize
           ResumeLayout = resume.ResumeLayout
           CreatedAt = resume.CreatedAt }
+
+    let emptyDecisions: RunDecisionsDto =
+        { Decisions = Map.empty
+          AddedBullets = [] }
+
+    let private jsonOptions =
+        let options = JsonSerializerOptions(PropertyNamingPolicy = JsonNamingPolicy.CamelCase)
+        options.Converters.Add(JsonFSharpConverter())
+        options
+
+    let private orEmpty (list: 'a list) : 'a list =
+        if obj.ReferenceEquals(list, null) then [] else list
+
+    let serializeDecisions (decisions: RunDecisionsDto) : string =
+        let normalized =
+            { Decisions =
+                if obj.ReferenceEquals(decisions.Decisions, null) then
+                    Map.empty
+                else
+                    decisions.Decisions
+              AddedBullets = orEmpty decisions.AddedBullets }
+
+        JsonSerializer.Serialize(normalized, jsonOptions)
+
+    let parseDecisions (json: string) : RunDecisionsDto =
+        if String.IsNullOrWhiteSpace json then
+            emptyDecisions
+        else
+            try
+                let parsed = JsonSerializer.Deserialize<RunDecisionsDto>(json, jsonOptions)
+
+                { Decisions =
+                    if obj.ReferenceEquals(parsed.Decisions, null) then
+                        Map.empty
+                    else
+                        parsed.Decisions
+                  AddedBullets = orEmpty parsed.AddedBullets }
+            with _ ->
+                emptyDecisions
+
+    let toStoredResultDto (resumeLayout: string option) (run: TailorRun) : StoredTailorResultDto =
+        { Summary = run.Summary
+          Changes = run.Changes |> List.map toChangeDto
+          Requirements = run.Requirements |> List.map toRequirementDto
+          Document = run.Document |> Option.map ResumeDocumentJson.serialize
+          ResumeLayout = resumeLayout }
+
+    let serializeStoredResult (dto: StoredTailorResultDto) : string =
+        let normalized =
+            { Summary = if isNull dto.Summary then "" else dto.Summary
+              Changes = orEmpty dto.Changes
+              Requirements = orEmpty dto.Requirements
+              Document = dto.Document
+              ResumeLayout = dto.ResumeLayout }
+
+        JsonSerializer.Serialize(normalized, jsonOptions)
+
+    let tryParseStoredResult (json: string) : StoredTailorResultDto option =
+        if String.IsNullOrWhiteSpace json then
+            None
+        else
+            try
+                JsonSerializer.Deserialize<StoredTailorResultDto>(json, jsonOptions) |> Some
+            with _ ->
+                None
+
+    let serializeCoverLetter (letter: CoverLetterResponseDto) : string =
+        JsonSerializer.Serialize(letter, jsonOptions)
+
+    let tryParseCoverLetter (json: string option) : CoverLetterResponseDto option =
+        json
+        |> Option.filter (String.IsNullOrWhiteSpace >> not)
+        |> Option.bind (fun value ->
+            try
+                JsonSerializer.Deserialize<CoverLetterResponseDto>(value, jsonOptions) |> Some
+            with _ ->
+                None)
+
+    let private toDomainChange (dto: BulletChangeDto) : BulletChange =
+        { Id = ChangeId dto.Id
+          TargetId = if isNull dto.TargetId then "" else dto.TargetId
+          SourceLines = orEmpty dto.SourceLines
+          Original = if isNull dto.Original then "" else dto.Original
+          Tailored = if isNull dto.Tailored then "" else dto.Tailored
+          Kind = LineKind.tryParse dto.Kind |> Option.defaultValue LineKind.Bullet }
+
+    let private toDomainRequirement (dto: JobRequirementDto) : JobRequirement =
+        { Text = if isNull dto.Text then "" else dto.Text
+          Importance = RequirementImportance.tryParse dto.Importance |> Option.defaultValue Must
+          SatisfiedBy = orEmpty dto.SatisfiedBy
+          SatisfiedByChanges = orEmpty dto.SatisfiedByChanges
+          GapHint = dto.GapHint
+          DraftBullet = dto.DraftBullet
+          InsertAfterId = dto.InsertAfterId }
+
+    let toTailorRunFromStored (record: TailorRunRecord) (stored: StoredTailorResultDto) : TailorRun =
+        { Id = RunId record.Id
+          ResumeText = record.ResumeText
+          JobDescription = record.JobDescription
+          CreatedAt = record.CreatedAt
+          Summary = if isNull stored.Summary then "" else stored.Summary
+          Changes = orEmpty stored.Changes |> List.map toDomainChange
+          Requirements = orEmpty stored.Requirements |> List.map toDomainRequirement
+          Document = stored.Document |> Option.bind ResumeDocumentJson.tryParse }
+
+    let coverageCounts (stored: StoredTailorResultDto) : int * int =
+        let requirements = orEmpty stored.Requirements
+        let covered =
+            requirements
+            |> List.filter (fun requirement ->
+                not (List.isEmpty (orEmpty requirement.SatisfiedBy))
+                || not (List.isEmpty (orEmpty requirement.SatisfiedByChanges)))
+            |> List.length
+
+        covered, requirements.Length
+
+    let toRunSummaryDto (record: TailorRunRecord) : TailorRunSummaryDto =
+        let changeCount, coveredCount, totalCount =
+            match tryParseStoredResult record.ResultJson with
+            | Some stored ->
+                let covered, total = coverageCounts stored
+                (orEmpty stored.Changes).Length, covered, total
+            | None -> 0, 0, 0
+
+        { Id = record.Id
+          CompanyName = record.CompanyName
+          JobTitle = record.JobTitle
+          ResumeName = record.ResumeName
+          CreatedAt = record.CreatedAt
+          ChangeCount = changeCount
+          CoveredCount = coveredCount
+          TotalCount = totalCount }
+
+    let toRunDetailDto (isProPlan: bool) (record: TailorRunRecord) : TailorRunDetailDto option =
+        tryParseStoredResult record.ResultJson
+        |> Option.map (fun stored ->
+            let run = toTailorRunFromStored record stored
+            let result = toResponseDto isProPlan stored.ResumeLayout run
+
+            { Id = record.Id
+              ResumeName = record.ResumeName
+              CompanyName = record.CompanyName
+              JobTitle = record.JobTitle
+              JobDescription = record.JobDescription
+              CreatedAt = record.CreatedAt
+              Result = result
+              CoverLetter = tryParseCoverLetter record.CoverLetterJson
+              Decisions = parseDecisions record.DecisionsJson })

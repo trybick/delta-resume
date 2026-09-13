@@ -15,6 +15,7 @@
     <Compile Include="Application/Identity.fs" />
     <Compile Include="Application/CreditService.fs" />
     <Compile Include="Application/SavedResumeService.fs" />
+    <Compile Include="Application/TailorRunService.fs" />
     <Compile Include="Infrastructure/PostgresRepository.fs" />
     <Compile Include="Infrastructure/CreditStore.fs" />
     <Compile Include="Infrastructure/ClerkUsers.fs" />

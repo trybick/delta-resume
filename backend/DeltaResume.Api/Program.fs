@@ -217,6 +217,14 @@ let main args =
         SavedResumeService(provider.GetRequiredService<SavedResumeRepository>(), identityOptions))
     |> ignore
 
+    builder.Services.AddSingleton<TailorRunRepository>(fun _ ->
+        PostgresTailorRunRepository(connectionString) :> TailorRunRepository)
+    |> ignore
+
+    builder.Services.AddSingleton<TailorRunService>(fun provider ->
+        TailorRunService(provider.GetRequiredService<TailorRunRepository>(), identityOptions))
+    |> ignore
+
     let app = builder.Build()
 
     app.UseCors() |> ignore
