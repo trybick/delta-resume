@@ -3,7 +3,7 @@ export const getClerkPublishableKey = (): string => {
 
   if (!key) {
     throw new Error(
-      'Missing VITE_CLERK_PUBLISHABLE_KEY. Add it to frontend/.env.development and restart the dev server.',
+      'Missing VITE_CLERK_PUBLISHABLE_KEY. Add it to frontend/.env and restart the dev server.',
     );
   }
 

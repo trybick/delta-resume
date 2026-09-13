@@ -1,16 +1,22 @@
-import { Accordion, Stack, Text, Title } from '@mantine/core';
+import { Accordion, Anchor, Stack, Text, Title } from '@mantine/core';
+import type { ReactNode } from 'react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 
 type FaqItem = {
   question: string;
-  answer: string;
+  answer: ReactNode;
 };
 
 const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'Why not just paste my resume into ChatGPT?',
-    answer:
-      'A chat window hands back a rewritten wall of text and leaves you to spot what changed. Delta Resume shows every edit as an inline diff you accept or revert one by one, keeps your document formatting for export, and can automatically fit your resume to one page by scaling the sizing. Every tailor run also writes a matching cover letter. On Pro it flags job requirements your resume doesn\u2019t cover yet.',
+    answer: (
+      <>
+        ChatGPT hands back a rewritten wall of text. Delta Resume shows every edit as a diff, keeps
+        your Word formatting, and asks for your approval on every word.{' '}
+        <Anchor href="#why-not-chatgpt">See the comparison above.</Anchor>
+      </>
+    ),
   },
   {
     question: 'Will the rewrites sound like me?',
@@ -20,17 +26,17 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'Is my resume stored or used to train AI?',
     answer:
-      'Guest runs are processed in memory and discarded as soon as your suggestions are ready. They are never stored and never used to train AI models. With an account, your resume is saved so you can reuse it, and you can rename or delete it anytime.',
+      'Guest runs are processed in memory and discarded as soon as your suggestions are ready. They are never stored and never used to train AI models. With an account, your resume, results, and cover letter are saved in Your applications, and you can delete them anytime.',
   },
   {
     question: 'What can I upload, and what can I export?',
     answer:
-      'Upload a .docx or .pdf, or paste plain text. Export your tailored resume as a DOCX or PDF, keeping your original formatting or using a clean template, with an option to fit it to one page, or copy it to your clipboard.',
+      'Upload a .docx or .pdf, or paste plain text. Copy is always available. Export as DOCX or PDF with a free account (clean template), or keep your original Word formatting on Pro, with an option to fit it to one page.',
   },
   {
     question: 'Do I need an account to try it?',
     answer:
-      'No. You get free credits the moment you open the app. Paste your resume and a job post and you\u2019ll see suggested rewrites in seconds. No sign-up, no card required.',
+      'No. You get one free tailor run the moment you open the app. Paste your resume and a job post and you\u2019ll see suggested rewrites in seconds. Create a free account for more runs and export. No card required.',
   },
   {
     question: 'Does the free plan include cover letters?',

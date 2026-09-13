@@ -10,7 +10,8 @@ type CreditStatus =
     { Remaining: int
       Total: int
       Plan: CreditPlan
-      IsAuthenticated: bool }
+      IsAuthenticated: bool
+      FreeAccountTotal: int }
 
 type CreditService(store: CreditStore, options: IdentityOptions) =
 
@@ -164,7 +165,8 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
                     { Remaining = total
                       Total = total
                       Plan = plan
-                      IsAuthenticated = isAuthenticated identity }
+                      IsAuthenticated = isAuthenticated identity
+                      FreeAccountTotal = CreditPlan.freeAccountTotal }
             else
 
             let mutable used = 0
@@ -179,7 +181,8 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
                 { Remaining = max 0 (total - used)
                   Total = total
                   Plan = plan
-                  IsAuthenticated = isAuthenticated identity }
+                  IsAuthenticated = isAuthenticated identity
+                  FreeAccountTotal = CreditPlan.freeAccountTotal }
         }
 
     member _.TrySpend

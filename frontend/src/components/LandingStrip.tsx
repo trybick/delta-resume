@@ -43,6 +43,7 @@ type LandingStripProps = {
   showUpgradeButton: boolean;
   onUpgradeClick: () => void;
   onStartClick?: () => void;
+  heroVariant?: string;
 };
 
 type HowItWorksStep = {
@@ -75,7 +76,7 @@ type PrivacyPoint = {
 const PRIVACY_POINTS: PrivacyPoint[] = [
   {
     icon: IconDatabaseOff,
-    title: 'Tailoring runs aren\u2019t stored',
+    title: 'Guest runs stay off our servers',
     description:
       'Your resume and the job post are processed in memory to generate suggestions, then discarded. Guest runs never touch a database.',
   },
@@ -83,7 +84,7 @@ const PRIVACY_POINTS: PrivacyPoint[] = [
     icon: IconFolders,
     title: 'Saved only with an account',
     description:
-      'When you\u2019re signed in, your resume is saved to your account after a run so you can reuse it. Rename or delete it anytime.',
+      'When you\u2019re signed in, we save your resume, tailor results, cover letter, and application history so you can re-open and export later. Rename or delete anytime.',
   },
   {
     icon: IconRobotOff,
@@ -95,12 +96,13 @@ const PRIVACY_POINTS: PrivacyPoint[] = [
 
 const getFreePlanFeatures = (freeCreditTotal: number | null): string[] => [
   freeCreditTotal !== null
-    ? `${freeCreditTotal} free ${freeCreditTotal === 1 ? 'credit' : 'credits'}, no account needed`
-    : 'Free credits, no account needed',
-  'Inline diff review of every change',
-  'Matching cover letter with every tailor run',
-  'Copy or export your tailored resume',
-  'Fit to one page option',
+    ? `1 tailor run as a guest, ${freeCreditTotal} with a free account`
+    : 'Free tailor runs, no card required',
+  'Every change shown as a diff you approve',
+  'Matching cover letter on every run',
+  'DOCX and PDF export on a clean template',
+  'Fit to one page',
+  'Your last 3 applications saved',
 ];
 
 const LandingStrip = ({
@@ -109,11 +111,11 @@ const LandingStrip = ({
   showUpgradeButton,
   onUpgradeClick,
   onStartClick,
+  heroVariant,
 }: LandingStripProps) => {
   const [openDocument, setOpenDocument] = useState<LegalDocument | null>(null);
   const [expanded, setExpanded] = useState(false);
   const { monthlyPrice, annualMonthlyPrice, isLoading: isLoadingProPrice } = useProPlan();
-  const proPrice = annualMonthlyPrice ?? monthlyPrice;
   const showContent = !collapsible || expanded;
   const freePlanFeatures = getFreePlanFeatures(freeCreditTotal);
 
@@ -134,17 +136,26 @@ const LandingStrip = ({
   };
 
   const handleStartClick = () => {
-    trackEvent(AnalyticsEvents.LandingCta, { placement: 'bottom' });
+    trackEvent(AnalyticsEvents.LandingCta, {
+      placement: 'bottom',
+      variant: heroVariant ?? 'default',
+    });
     onStartClick?.();
   };
 
   const handleFreeStartClick = () => {
-    trackEvent(AnalyticsEvents.LandingCta, { placement: 'pricing_free' });
+    trackEvent(AnalyticsEvents.LandingCta, {
+      placement: 'pricing_free',
+      variant: heroVariant ?? 'default',
+    });
     onStartClick?.();
   };
 
   const handleProStartClick = () => {
-    trackEvent(AnalyticsEvents.LandingCta, { placement: 'pricing_pro' });
+    trackEvent(AnalyticsEvents.LandingCta, {
+      placement: 'pricing_pro',
+      variant: heroVariant ?? 'default',
+    });
     onStartClick?.();
   };
 
@@ -178,54 +189,11 @@ const LandingStrip = ({
             <Stack gap="xl" align="center">
               <Stack gap={4} align="center">
                 <Title order={2} ta="center">
-                  How it works
-                </Title>
-                <Text size="sm" c="dimmed" ta="center" maw={520}>
-                  Three steps from job post to tailored resume. Every run also writes a matching
-                  cover letter.
-                </Text>
-              </Stack>
-              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
-                {HOW_IT_WORKS_STEPS.map((step, index) => (
-                  <Card key={step.title} withBorder padding="lg" radius="md" h="100%">
-                    <Stack gap="sm">
-                      <Group gap="sm" wrap="nowrap">
-                        <ThemeIcon size={28} radius="xl" variant="light" color="cyan">
-                          <Text size="sm" fw={700}>
-                            {index + 1}
-                          </Text>
-                        </ThemeIcon>
-                        <Text fw={600}>{step.title}</Text>
-                      </Group>
-                      <Text size="sm" c="dimmed" lh={1.5}>
-                        {step.description}
-                      </Text>
-                    </Stack>
-                  </Card>
-                ))}
-              </SimpleGrid>
-              <Stack gap="xl" align="center" w="100%" hiddenFrom={onStartClick ? 'md' : undefined}>
-                <Stack gap={6} align="center" w="100%">
-                  <DiffMockExample />
-                  <Text size="sm" c="dimmed" ta="center">
-                    Every rewrite is shown as an inline diff. Revert anything you don't like with
-                    one click.
-                  </Text>
-                </Stack>
-                <CoverLetterMockExample />
-              </Stack>
-            </Stack>
-
-            <Divider />
-
-            <Stack gap="xl" align="center">
-              <Stack gap={4} align="center">
-                <Title order={2} ta="center">
                   Your resume stays yours
                 </Title>
                 <Text size="sm" c="dimmed" ta="center" maw={520}>
-                  We built Delta Resume so you never have to put blind trust in AI. Every change is
-                  yours to keep or reject, and your documents stay private.
+                  Never trust the AI blindly: every change is yours to keep or reject, and your
+                  documents stay private.
                 </Text>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
@@ -258,11 +226,56 @@ const LandingStrip = ({
             <Stack gap="xl" align="center">
               <Stack gap={4} align="center">
                 <Title order={2} ta="center">
+                  How it works
+                </Title>
+                <Text size="sm" c="dimmed" ta="center" maw={520}>
+                  Three steps from job post to tailored resume. Every run also writes a matching
+                  cover letter.
+                </Text>
+              </Stack>
+              <SimpleGrid cols={{ base: 1, sm: 3 }} spacing="lg" w="100%">
+                {HOW_IT_WORKS_STEPS.map((step, index) => (
+                  <Card key={step.title} withBorder padding="lg" radius="md" h="100%">
+                    <Stack gap="sm">
+                      <Group gap="sm" wrap="nowrap">
+                        <ThemeIcon size={28} radius="xl" variant="light" color="cyan">
+                          <Text size="sm" fw={700}>
+                            {index + 1}
+                          </Text>
+                        </ThemeIcon>
+                        <Text fw={600}>{step.title}</Text>
+                      </Group>
+                      <Text size="sm" c="dimmed" lh={1.5}>
+                        {step.description}
+                      </Text>
+                    </Stack>
+                  </Card>
+                ))}
+              </SimpleGrid>
+              <Stack gap="xl" align="center" w="100%">
+                {!onStartClick && (
+                  <Stack gap={6} align="center" w="100%">
+                    <DiffMockExample />
+                    <Text size="sm" c="dimmed" ta="center">
+                      Every rewrite is shown as an inline diff. Revert anything you don't like with
+                      one click.
+                    </Text>
+                  </Stack>
+                )}
+                <CoverLetterMockExample />
+              </Stack>
+            </Stack>
+
+            <Divider />
+
+            <Stack gap="xl" align="center">
+              <Stack gap={4} align="center">
+                <Title order={2} ta="center">
                   Simple pricing
                 </Title>
                 <Text size="sm" c="dimmed" ta="center" maw={520}>
-                  Try it free, no account needed. Upgrade when you want gap filling and cover letter
-                  customization on every run.
+                  Try it free, no account needed. Upgrade when you want the full requirements list,
+                  draft bullets, original Word formatting, and unlimited history.
                 </Text>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" w="100%" maw={760}>
@@ -325,22 +338,38 @@ const LandingStrip = ({
                       >
                         Pro
                       </Text>
-                      <Group gap={6} align="baseline">
-                        {proPrice ? (
-                          <Text fw={700} size="1.75rem" lh={1}>
-                            {proPrice}
-                          </Text>
-                        ) : isLoadingProPrice ? (
-                          <Skeleton width={64} height={28} />
-                        ) : null}
-                        {(proPrice || isLoadingProPrice) && (
-                          <Text size="sm" c="dimmed">
-                            / month
-                          </Text>
+                      <Stack gap={6}>
+                        <Group gap={6} align="baseline">
+                          {monthlyPrice ? (
+                            <Text fw={700} size="1.75rem" lh={1}>
+                              {monthlyPrice}
+                            </Text>
+                          ) : isLoadingProPrice ? (
+                            <Skeleton width={64} height={28} />
+                          ) : null}
+                          {(monthlyPrice || isLoadingProPrice) && (
+                            <Text size="sm" c="dimmed">
+                              / month
+                            </Text>
+                          )}
+                        </Group>
+                        {(annualMonthlyPrice || isLoadingProPrice) && (
+                          <Group gap={6} align="baseline">
+                            {annualMonthlyPrice ? (
+                              <Text fw={600} size="md">
+                                {annualMonthlyPrice}
+                              </Text>
+                            ) : (
+                              <Skeleton width={48} height={18} />
+                            )}
+                            <Text size="sm" c="dimmed">
+                              / month, billed annually
+                            </Text>
+                          </Group>
                         )}
-                      </Group>
+                      </Stack>
                     </Stack>
-                    <ProFeatureList />
+                    <ProFeatureList compact={false} />
                     {showUpgradeButton && (
                       <Button
                         mt="auto"
@@ -389,7 +418,7 @@ const LandingStrip = ({
                   Tailor my resume for free
                 </Button>
                 <Text size="xs" c="dimmed" ta="center">
-                  Free credits to start. No sign-up, no card required.
+                  One free run to start. No sign-up, no card required.
                 </Text>
               </Stack>
             )}

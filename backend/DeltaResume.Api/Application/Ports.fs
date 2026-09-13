@@ -117,15 +117,25 @@ module CreditPlan =
 
     let creditLimit (plan: CreditPlan) : int =
         match plan with
-        | GuestPlan
-        | FreePlan -> 3
+        | GuestPlan -> 1
+        | FreePlan -> 4
         | ProPlan -> 100
+
+    let freeAccountTotal : int = creditLimit FreePlan
+
+    let extraFreeRunsAfterSignup : int = creditLimit FreePlan - creditLimit GuestPlan
 
     let savedResumeLimit (plan: CreditPlan) : int =
         match plan with
         | GuestPlan
         | FreePlan -> 1
         | ProPlan -> 10
+
+    let historyVisibleLimit (plan: CreditPlan) : int option =
+        match plan with
+        | GuestPlan -> Some 0
+        | FreePlan -> Some 3
+        | ProPlan -> None
 
 type CreditKind =
     | User
@@ -260,3 +270,32 @@ type SavedResumeRepository =
     abstract member Rename: id: SavedResumeId * ownerKey: OwnerKey * name: string -> Task<bool>
     abstract member Delete: id: SavedResumeId * ownerKey: OwnerKey -> Task<bool>
     abstract member DeleteLeastRecentlyUsed: ownerKey: OwnerKey * keepCount: int -> Task<unit>
+
+type TailorRunRecord =
+    { Id: Guid
+      OwnerKey: OwnerKey
+      SavedResumeId: Guid option
+      ResumeName: string
+      CompanyName: string option
+      JobTitle: string option
+      JobDescription: string
+      ResumeText: string
+      ResultJson: string
+      CoverLetterJson: string option
+      DecisionsJson: string
+      CreatedAt: DateTimeOffset
+      UpdatedAt: DateTimeOffset }
+
+type TailorRunRepository =
+    abstract member GetById: id: Guid * ownerKey: OwnerKey -> Task<TailorRunRecord option>
+    abstract member ListByOwner: ownerKey: OwnerKey -> Task<TailorRunRecord list>
+    abstract member Upsert: record: TailorRunRecord -> Task<unit>
+    abstract member UpsertCoverLetter:
+        id: Guid *
+        ownerKey: OwnerKey *
+        coverLetterJson: string *
+        companyName: string option *
+        jobTitle: string option ->
+            Task<unit>
+    abstract member UpdateDecisions: id: Guid * ownerKey: OwnerKey * decisionsJson: string -> Task<bool>
+    abstract member Delete: id: Guid * ownerKey: OwnerKey -> Task<bool>

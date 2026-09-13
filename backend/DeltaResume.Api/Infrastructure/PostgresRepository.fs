@@ -243,6 +243,25 @@ module Schema =
                         ALTER COLUMN operation_id TYPE uuid USING operation_id::uuid;
                 END IF;
             END $$;
+
+            CREATE TABLE IF NOT EXISTS tailor_runs (
+                id UUID PRIMARY KEY,
+                owner_key TEXT NOT NULL,
+                saved_resume_id UUID,
+                resume_name TEXT NOT NULL,
+                company_name TEXT,
+                job_title TEXT,
+                job_description TEXT NOT NULL,
+                resume_text TEXT NOT NULL,
+                result JSONB NOT NULL,
+                cover_letter JSONB,
+                decisions JSONB NOT NULL DEFAULT '{"decisions":{},"addedBullets":[]}'::jsonb,
+                created_at TIMESTAMPTZ NOT NULL,
+                updated_at TIMESTAMPTZ NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_tailor_runs_owner_created
+                ON tailor_runs (owner_key, created_at DESC);
             """
         )
         |> ignore
@@ -532,4 +551,216 @@ type PostgresSavedResumeRepository(connectionString: string) =
                     )
 
                 return ()
+            }
+
+[<CLIMutable>]
+type private TailorRunRow =
+    { id: Guid
+      owner_key: string
+      saved_resume_id: Nullable<Guid>
+      resume_name: string
+      company_name: string
+      job_title: string
+      job_description: string
+      resume_text: string
+      result: string
+      cover_letter: string
+      decisions: string
+      created_at: DateTimeOffset
+      updated_at: DateTimeOffset }
+
+type PostgresTailorRunRepository(connectionString: string) =
+
+    let selectColumns =
+        "id, owner_key, saved_resume_id, resume_name, company_name, job_title, job_description, \
+         resume_text, result::text AS result, cover_letter::text AS cover_letter, \
+         decisions::text AS decisions, created_at, updated_at"
+
+    let emptyResultJson = """{"summary":"","changes":[],"requirements":[]}"""
+
+    let toDomain (row: TailorRunRow) : TailorRunRecord =
+        { Id = row.id
+          OwnerKey = OwnerKey.ofPersisted row.owner_key
+          SavedResumeId =
+            if row.saved_resume_id.HasValue then
+                Some row.saved_resume_id.Value
+            else
+                None
+          ResumeName = row.resume_name
+          CompanyName = row.company_name |> Option.ofObj
+          JobTitle = row.job_title |> Option.ofObj
+          JobDescription = row.job_description
+          ResumeText = row.resume_text
+          ResultJson = if isNull row.result then emptyResultJson else row.result
+          CoverLetterJson = row.cover_letter |> Option.ofObj
+          DecisionsJson =
+            if isNull row.decisions then
+                TailorRunDecisions.EmptyJson
+            else
+                row.decisions
+          CreatedAt = row.created_at
+          UpdatedAt = row.updated_at }
+
+    interface TailorRunRepository with
+
+        member _.GetById(id: Guid, ownerKey: OwnerKey) : Task<TailorRunRecord option> =
+            task {
+                use connection = new NpgsqlConnection(connectionString)
+                do! connection.OpenAsync()
+
+                let! rows =
+                    connection.QueryAsync<TailorRunRow>(
+                        $"SELECT {selectColumns} FROM tailor_runs \
+                          WHERE id = @Id AND owner_key = @OwnerKey LIMIT 1",
+                        {| Id = id
+                           OwnerKey = OwnerKey.value ownerKey |}
+                    )
+
+                return rows |> Seq.tryHead |> Option.map toDomain
+            }
+
+        member _.ListByOwner(ownerKey: OwnerKey) : Task<TailorRunRecord list> =
+            task {
+                use connection = new NpgsqlConnection(connectionString)
+                do! connection.OpenAsync()
+
+                let! rows =
+                    connection.QueryAsync<TailorRunRow>(
+                        $"SELECT {selectColumns} FROM tailor_runs \
+                          WHERE owner_key = @OwnerKey AND resume_text <> '' \
+                          ORDER BY created_at DESC",
+                        {| OwnerKey = OwnerKey.value ownerKey |}
+                    )
+
+                return rows |> Seq.map toDomain |> List.ofSeq
+            }
+
+        member _.Upsert(record: TailorRunRecord) : Task<unit> =
+            task {
+                use connection = new NpgsqlConnection(connectionString)
+                do! connection.OpenAsync()
+
+                let! _ =
+                    connection.ExecuteAsync(
+                        """
+                        INSERT INTO tailor_runs
+                            (id, owner_key, saved_resume_id, resume_name, company_name, job_title,
+                             job_description, resume_text, result, cover_letter, decisions,
+                             created_at, updated_at)
+                        VALUES
+                            (@Id, @OwnerKey, @SavedResumeId, @ResumeName, @CompanyName, @JobTitle,
+                             @JobDescription, @ResumeText, CAST(@Result AS jsonb),
+                             CAST(@CoverLetter AS jsonb), CAST(@Decisions AS jsonb),
+                             @CreatedAt, @UpdatedAt)
+                        ON CONFLICT (id) DO UPDATE SET
+                            saved_resume_id = COALESCE(EXCLUDED.saved_resume_id, tailor_runs.saved_resume_id),
+                            resume_name = EXCLUDED.resume_name,
+                            company_name = COALESCE(EXCLUDED.company_name, tailor_runs.company_name),
+                            job_title = COALESCE(EXCLUDED.job_title, tailor_runs.job_title),
+                            job_description = EXCLUDED.job_description,
+                            resume_text = EXCLUDED.resume_text,
+                            result = EXCLUDED.result,
+                            cover_letter = COALESCE(EXCLUDED.cover_letter, tailor_runs.cover_letter),
+                            decisions = EXCLUDED.decisions,
+                            updated_at = EXCLUDED.updated_at
+                        WHERE tailor_runs.owner_key = EXCLUDED.owner_key
+                        """,
+                        {| Id = record.Id
+                           OwnerKey = OwnerKey.value record.OwnerKey
+                           SavedResumeId = record.SavedResumeId |> Option.toNullable
+                           ResumeName = record.ResumeName
+                           CompanyName = record.CompanyName |> Option.toObj
+                           JobTitle = record.JobTitle |> Option.toObj
+                           JobDescription = record.JobDescription
+                           ResumeText = record.ResumeText
+                           Result = record.ResultJson
+                           CoverLetter = record.CoverLetterJson |> Option.toObj
+                           Decisions = record.DecisionsJson
+                           CreatedAt = record.CreatedAt
+                           UpdatedAt = record.UpdatedAt |}
+                    )
+
+                return ()
+            }
+
+        member _.UpsertCoverLetter
+            (
+                id: Guid,
+                ownerKey: OwnerKey,
+                coverLetterJson: string,
+                companyName: string option,
+                jobTitle: string option
+            )
+            : Task<unit> =
+            task {
+                use connection = new NpgsqlConnection(connectionString)
+                do! connection.OpenAsync()
+                let now = DateTimeOffset.UtcNow
+
+                let! _ =
+                    connection.ExecuteAsync(
+                        """
+                        INSERT INTO tailor_runs
+                            (id, owner_key, saved_resume_id, resume_name, company_name, job_title,
+                             job_description, resume_text, result, cover_letter, decisions,
+                             created_at, updated_at)
+                        VALUES
+                            (@Id, @OwnerKey, NULL, '', @CompanyName, @JobTitle,
+                             '', '', CAST(@EmptyResult AS jsonb), CAST(@CoverLetter AS jsonb),
+                             CAST(@EmptyDecisions AS jsonb), @CreatedAt, @UpdatedAt)
+                        ON CONFLICT (id) DO UPDATE SET
+                            cover_letter = EXCLUDED.cover_letter,
+                            company_name = COALESCE(EXCLUDED.company_name, tailor_runs.company_name),
+                            job_title = COALESCE(EXCLUDED.job_title, tailor_runs.job_title),
+                            updated_at = EXCLUDED.updated_at
+                        WHERE tailor_runs.owner_key = EXCLUDED.owner_key
+                        """,
+                        {| Id = id
+                           OwnerKey = OwnerKey.value ownerKey
+                           CompanyName = companyName |> Option.toObj
+                           JobTitle = jobTitle |> Option.toObj
+                           CoverLetter = coverLetterJson
+                           EmptyResult = emptyResultJson
+                           EmptyDecisions = TailorRunDecisions.EmptyJson
+                           CreatedAt = now
+                           UpdatedAt = now |}
+                    )
+
+                return ()
+            }
+
+        member _.UpdateDecisions(id: Guid, ownerKey: OwnerKey, decisionsJson: string) : Task<bool> =
+            task {
+                use connection = new NpgsqlConnection(connectionString)
+                do! connection.OpenAsync()
+
+                let! affected =
+                    connection.ExecuteAsync(
+                        """
+                        UPDATE tailor_runs
+                        SET decisions = CAST(@Decisions AS jsonb), updated_at = @UpdatedAt
+                        WHERE id = @Id AND owner_key = @OwnerKey
+                        """,
+                        {| Id = id
+                           OwnerKey = OwnerKey.value ownerKey
+                           Decisions = decisionsJson
+                           UpdatedAt = DateTimeOffset.UtcNow |}
+                    )
+
+                return affected > 0
+            }
+
+        member _.Delete(id: Guid, ownerKey: OwnerKey) : Task<bool> =
+            task {
+                use connection = new NpgsqlConnection(connectionString)
+                do! connection.OpenAsync()
+
+                let! affected =
+                    connection.ExecuteAsync(
+                        "DELETE FROM tailor_runs WHERE id = @Id AND owner_key = @OwnerKey",
+                        {| Id = id
+                           OwnerKey = OwnerKey.value ownerKey |}
+                    )
+
+                return affected > 0
             }

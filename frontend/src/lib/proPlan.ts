@@ -1,11 +1,11 @@
 import {
   IconCoins,
+  IconFileTypeDocx,
   IconFolders,
   IconMail,
   IconPencilPlus,
   IconTargetArrow,
 } from '@tabler/icons-react';
-import { SAVED_RESUME_LIMIT_PRO } from './constants';
 
 export type ProFeature = {
   icon: typeof IconCoins;
@@ -16,30 +16,33 @@ export type ProFeature = {
 export const PRO_FEATURES: ProFeature[] = [
   {
     icon: IconCoins,
-    title: '100 credits / month',
-    description: 'Tailor your resume up to 100 times, refreshed every month',
-  },
-  {
-    icon: IconMail,
-    title: 'Cover letter customization',
-    description: 'Choose the length and tone of every cover letter',
+    title: 'Never send an untailored resume again',
+    description: 'Tailor every application, 100 runs a month.',
   },
   {
     icon: IconTargetArrow,
-    title: 'See missing requirements',
-    description:
-      'See every requirement this job asks for that your resume doesn\u2019t show yet, plus where a bullet would fit',
+    title: 'See exactly what the job asks for that you\u2019re missing',
+    description: 'The full requirements list, not just the first gap.',
   },
   {
     icon: IconPencilPlus,
-    title: 'Fill the gaps in one click',
-    description:
-      'Get a ready-to-edit bullet for each missing requirement, inserted right where it belongs',
+    title: 'Fill every gap in one click',
+    description: 'A ready-to-edit bullet for each, placed where it fits.',
+  },
+  {
+    icon: IconFileTypeDocx,
+    title: 'Keep your Word formatting on every export',
+    description: 'DOCX and PDF that look exactly like the resume you uploaded, fit to one page.',
   },
   {
     icon: IconFolders,
-    title: `${SAVED_RESUME_LIMIT_PRO} saved resumes`,
-    description: 'Keep multiple versions ready for different roles',
+    title: 'Every application in one place',
+    description: 'Full history, re-open and re-export anything.',
+  },
+  {
+    icon: IconMail,
+    title: 'Cover letters in your voice',
+    description: 'Pick length and tone.',
   },
 ];
 

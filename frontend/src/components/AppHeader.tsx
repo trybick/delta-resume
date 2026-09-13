@@ -1,6 +1,6 @@
-import { Badge, Box, Button, Group, Skeleton, Stack, Text, Title, Tooltip } from '@mantine/core';
+import { Badge, Box, Button, Group, Skeleton, Stack, Text, Title, Tooltip, UnstyledButton } from '@mantine/core';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
-import { IconCoins, IconCrown, IconLogin2, IconUser } from '@tabler/icons-react';
+import { IconCoins, IconCrown, IconFolderOpen, IconLogin2, IconUser } from '@tabler/icons-react';
 import ClerkAuthButton from './ClerkAuthButton';
 import DeltaLogo from './DeltaLogo';
 import UpgradeHoverCard from './UpgradeHoverCard';
@@ -23,6 +23,9 @@ type AppHeaderProps = {
   onUpgradeClick: () => void;
   onRetryCredits: () => void;
   onHomeClick: () => void;
+  onApplicationsClick: () => void;
+  onSignInClick?: () => void;
+  applicationsCount: number | null;
 };
 
 const formatCreditsResetAt = (resetsAt: string): string =>
@@ -48,6 +51,9 @@ const AppHeader = ({
   onUpgradeClick,
   onRetryCredits,
   onHomeClick,
+  onApplicationsClick,
+  onSignInClick,
+  applicationsCount,
 }: AppHeaderProps) => {
   const handleRetryCreditsClick = () => {
     trackEvent(AnalyticsEvents.RetryCredits, { source: 'header' });
@@ -143,6 +149,16 @@ const AppHeader = ({
           </Group>
         </a>
         <Group gap="xs" justify="flex-end" align="center" visibleFrom="sm">
+          <Button
+            size="xs"
+            variant="subtle"
+            color="gray"
+            leftSection={<IconFolderOpen size={14} />}
+            onClick={onApplicationsClick}
+          >
+            Applications
+            {applicationsCount !== null ? ` (${applicationsCount})` : ''}
+          </Button>
           {planLoaded && isProPlan && proCreditsBadge(proCreditsLabel, false)}
           {showCreditsBadge && creditsLabel && (
             <Tooltip label={`${creditsLabel} remaining. One credit is used when tailoring starts.`}>
@@ -180,7 +196,10 @@ const AppHeader = ({
                 variant="light"
                 leftSection={<IconLogin2 size={14} />}
                 style={{ border: '1px solid rgba(34, 184, 207, 0.35)' }}
-                onClick={() => trackEvent(AnalyticsEvents.SignIn)}
+                onClick={() => {
+                  onSignInClick?.();
+                  trackEvent(AnalyticsEvents.SignIn);
+                }}
               >
                 Sign in
               </ClerkAuthButton>
@@ -205,6 +224,17 @@ const AppHeader = ({
           hiddenFrom="sm"
           style={{ flexShrink: 0 }}
         >
+          <UnstyledButton
+            aria-label={
+              applicationsCount !== null
+                ? `Applications (${applicationsCount})`
+                : 'Applications'
+            }
+            onClick={onApplicationsClick}
+            style={{ display: 'inline-flex', alignItems: 'center' }}
+          >
+            <IconFolderOpen size={18} />
+          </UnstyledButton>
           {showCreditsBadge && !planLoaded && isLoadingCredits && (
             <Skeleton width={110} height={30} radius="xl" />
           )}
@@ -256,7 +286,10 @@ const AppHeader = ({
                   px={8}
                   aria-label="Sign in"
                   style={{ border: '1px solid rgba(34, 184, 207, 0.35)' }}
-                  onClick={() => trackEvent(AnalyticsEvents.SignIn)}
+                  onClick={() => {
+                    onSignInClick?.();
+                    trackEvent(AnalyticsEvents.SignIn);
+                  }}
                 >
                   <IconUser size={16} />
                 </ClerkAuthButton>
@@ -267,7 +300,10 @@ const AppHeader = ({
                   leftSection={<IconLogin2 size={14} />}
                   styles={{ label: { whiteSpace: 'nowrap' } }}
                   style={{ border: '1px solid rgba(34, 184, 207, 0.35)' }}
-                  onClick={() => trackEvent(AnalyticsEvents.SignIn)}
+                  onClick={() => {
+                    onSignInClick?.();
+                    trackEvent(AnalyticsEvents.SignIn);
+                  }}
                 >
                   Sign in
                 </ClerkAuthButton>

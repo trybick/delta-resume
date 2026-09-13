@@ -23,6 +23,7 @@ type UseResumeDocumentResult = {
   handleClearResume: () => void;
   handleSelectSaved: (resume: SavedResume) => void;
   persistOriginalDocx: () => void;
+  hydrateFromRun: (resumeText: string) => void;
 };
 
 export const useResumeDocument = ({
@@ -128,6 +129,17 @@ export const useResumeDocument = ({
     }
   };
 
+  const hydrateFromRun = (text: string) => {
+    handleSelectSaved({
+      id: 'hydrated-run',
+      name: '',
+      resumeText: text,
+      resumeDocument: null,
+      resumeLayout: null,
+      createdAt: new Date().toISOString(),
+    });
+  };
+
   return {
     resumeText,
     pasteFieldText,
@@ -141,5 +153,6 @@ export const useResumeDocument = ({
     handleClearResume,
     handleSelectSaved,
     persistOriginalDocx,
+    hydrateFromRun,
   };
 };

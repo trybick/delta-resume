@@ -102,6 +102,7 @@ export type AddedBullet = {
 };
 
 export type TailorResult = {
+  runId?: string;
   resumeText: string;
   summary: string;
   changes: BulletChange[];
@@ -158,6 +159,40 @@ export type CreditStatus = {
   total: number;
   plan: string;
   isAuthenticated: boolean;
+  freeAccountTotal: number;
+};
+
+export type TailorRunSummary = {
+  id: string;
+  companyName: string | null;
+  jobTitle: string | null;
+  resumeName: string;
+  createdAt: string;
+  changeCount: number;
+  coveredCount: number;
+  totalCount: number;
+};
+
+export type TailorRunList = {
+  runs: TailorRunSummary[];
+  hiddenOlderCount: number;
+};
+
+export type RunDecisions = {
+  decisions: Record<string, ChangeDecision>;
+  addedBullets: AddedBullet[];
+};
+
+export type TailorRunDetail = {
+  id: string;
+  resumeName: string;
+  companyName: string | null;
+  jobTitle: string | null;
+  jobDescription: string;
+  createdAt: string;
+  result: TailorResult;
+  coverLetter: CoverLetterResult | null;
+  decisions: RunDecisions;
 };
 
 export type SavedResume = {
@@ -179,4 +214,12 @@ export type OriginalDocx = {
   parsedText: string;
 };
 
-export type PaywallReason = 'credits' | 'savedLimit' | 'upgrade' | 'coverLetter' | 'gaps' | 'signUp';
+export type PaywallReason =
+  | 'credits'
+  | 'savedLimit'
+  | 'upgrade'
+  | 'coverLetter'
+  | 'gaps'
+  | 'signUp'
+  | 'export'
+  | 'keepFormatting';

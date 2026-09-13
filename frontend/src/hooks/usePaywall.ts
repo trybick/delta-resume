@@ -10,6 +10,8 @@ const PAYWALL_REASONS: PaywallReason[] = [
   'coverLetter',
   'gaps',
   'signUp',
+  'export',
+  'keepFormatting',
 ];
 
 const readPendingPaywallReason = (): PaywallReason | null => {
@@ -65,8 +67,10 @@ export const usePaywall = ({
     if (!pendingReason) return;
     sessionStorage.removeItem(PENDING_PAYWALL_KEY);
 
-    if (pendingReason === 'signUp') {
-      setPaywallReason((current) => (current === 'signUp' ? null : current));
+    if (pendingReason === 'signUp' || pendingReason === 'export') {
+      setPaywallReason((current) =>
+        current === 'signUp' || current === 'export' ? null : current,
+      );
       return;
     }
 

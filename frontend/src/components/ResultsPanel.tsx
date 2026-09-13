@@ -17,18 +17,14 @@ import {
 } from '@mantine/core';
 import {
   IconChevronDown,
-  IconCopy,
   IconDownload,
   IconEye,
-  IconFileDescription,
   IconFileText,
-  IconFileTypePdf,
   IconLock,
   IconSparkles,
 } from '@tabler/icons-react';
 import { useMediaQuery } from '@mantine/hooks';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
-import { ExportScaleControl } from './ExportScaleControl';
 import { hasDraftBullet } from '../lib/hasDraftBullet';
 import { LOCKED_GAP_PLACEHOLDERS } from '../lib/lockedGapPlaceholders';
 import { proAccent } from '../lib/proAccent';
@@ -45,6 +41,7 @@ import type {
 } from '../lib/types';
 import { useProUpgradeCtaLabel } from '../hooks/useProPlan';
 import { useResumeExport } from '../hooks/useResumeExport';
+import { buildDecisionMap } from '../lib/runDecisions';
 import AddedBulletRow from './AddedBulletRow';
 import RequirementsCoverage from './RequirementsCoverage';
 import CollapsedContext from './CollapsedContext';
@@ -52,6 +49,7 @@ import ContextLine from './ContextLine';
 import DiffBullet from './DiffBullet';
 import GapRow from './GapRow';
 import IdleStep from './IdleStep';
+import ResumeExportMenu from './ResumeExportMenu';
 import TailoringLoader from './TailoringLoader';
 
 type ResultsPanelProps = {
@@ -63,13 +61,16 @@ type ResultsPanelProps = {
   isGuest?: boolean;
   originalDocx?: OriginalDocx | null;
   companyName?: string;
+  initialDecisions?: Record<string, ChangeDecision>;
+  initialAddedBullets?: AddedBullet[];
   onShowExample?: () => void;
   onUpgradeClick: () => void;
-};
-
-const buildDecisionMap = (result: TailorResult | null): Record<string, ChangeDecision> => {
-  if (!result) return {};
-  return Object.fromEntries(result.changes.map((change) => [change.id, 'accepted']));
+  onExportGate?: () => void;
+  onKeepFormattingGate?: () => void;
+  onReviewStateChange?: (
+    decisions: Record<string, ChangeDecision>,
+    addedBullets: AddedBullet[],
+  ) => void;
 };
 
 const CONTEXT_LINES_PER_SIDE = 2;
@@ -140,16 +141,24 @@ const ResultsPanel = ({
   result,
   isExample = false,
   exportMenuKey = null,
+  isProPlan,
   isGuest = false,
   originalDocx = null,
   companyName,
+  initialDecisions,
+  initialAddedBullets,
   onShowExample,
   onUpgradeClick,
+  onExportGate,
+  onKeepFormattingGate,
+  onReviewStateChange,
 }: ResultsPanelProps) => {
-  const [decisions, setDecisions] = useState<Record<string, ChangeDecision>>(() =>
-    buildDecisionMap(result),
+  const [decisions, setDecisions] = useState<Record<string, ChangeDecision>>(
+    () => initialDecisions ?? buildDecisionMap(result),
   );
-  const [addedBullets, setAddedBullets] = useState<AddedBullet[]>([]);
+  const [addedBullets, setAddedBullets] = useState<AddedBullet[]>(
+    () => initialAddedBullets ?? [],
+  );
   const [expandedSegments, setExpandedSegments] = useState<Set<string>>(new Set());
   const [gapsOpen, setGapsOpen] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
@@ -160,6 +169,10 @@ const ResultsPanel = ({
     setExpandedSegments(new Set());
     setSummaryOpen(false);
   }, [result]);
+
+  useEffect(() => {
+    onReviewStateChange?.(decisions, addedBullets);
+  }, [addedBullets, decisions, onReviewStateChange]);
 
   const handleExpandSegment = (nodeId: string, hiddenCount: number) => {
     trackEvent(AnalyticsEvents.ShowHiddenLines, { hidden_count: hiddenCount });
@@ -230,6 +243,10 @@ const ResultsPanel = ({
     companyName,
     decisions,
     activeAddedBullets,
+    isGuest,
+    isProPlan,
+    onExportGate,
+    onKeepFormattingGate,
   });
 
   const requirements = result?.requirements ?? [];
@@ -300,18 +317,13 @@ const ResultsPanel = ({
             </ThemeIcon>
             <Title order={4}>Your tailored resume will appear here</Title>
             <Text size="sm" c="dimmed" ta="center" maw={360}>
-              AI-suggested rewrites show up as inline diffs you can accept, tweak, or revert.
+              You&apos;ll see every change as a diff. Nothing changes unless you approve it.
             </Text>
             <Group gap="xs" justify="center">
               <IdleStep index={1} label="Add your resume" />
               <IdleStep index={2} label="Paste the job post" />
               <IdleStep index={3} label="Review changes" />
             </Group>
-            <Text size="xs" c="dimmed" ta="center" maw={360}>
-              {isGuest
-                ? 'You stay in control of every change, and your resume is never stored.'
-                : 'You stay in control of every change. Saved to your account after each run — delete anytime.'}
-            </Text>
             {onShowExample && (
               <Button
                 mt="xs"
@@ -418,75 +430,20 @@ const ResultsPanel = ({
             </Button>
           </Menu.Target>
         <Menu.Dropdown>
-          <Menu.Item leftSection={<IconCopy size={16} />} disabled={isExample} onClick={handleCopy}>
-            Copy to clipboard
-          </Menu.Item>
-          <Menu.Divider />
-          {isExample && (
-            <>
-              <Menu.Label>Example preview — export unavailable</Menu.Label>
-              <Menu.Divider />
-            </>
-          )}
-          <Menu.Label>Settings</Menu.Label>
-          <ExportScaleControl
-            scale={exportScale}
-            onChange={setExportScale}
+          <ResumeExportMenu
+            isExample={isExample}
+            isGuest={isGuest}
+            isProPlan={isProPlan}
+            canPatchOriginal={canPatchOriginal}
+            exportScale={exportScale}
+            onExportScaleChange={setExportScale}
             fitToOnePage={fitToOnePage}
             onFitToOnePageChange={setFitToOnePage}
             isComputingFit={isComputingFit}
-            disabled={isExample}
+            onCopy={() => void handleCopy()}
+            onExport={(variant, format) => void handleExport(variant, format)}
+            onExportGate={() => onExportGate?.()}
           />
-          <Menu.Divider />
-          {canPatchOriginal && (
-            <>
-              <Menu.Label>Keep my formatting</Menu.Label>
-              <Menu.Item
-                leftSection={<IconFileDescription size={16} />}
-                rightSection={
-                  <Badge size="xs" variant="light" color="teal">
-                    Recommended
-                  </Badge>
-                }
-                disabled={isExample}
-                onClick={() => handleExport('keep', 'docx')}
-              >
-                Word (.docx)
-              </Menu.Item>
-              <Menu.Item
-                leftSection={<IconFileTypePdf size={16} />}
-                disabled={isExample}
-                onClick={() => handleExport('keep', 'pdf')}
-              >
-                PDF (.pdf)
-              </Menu.Item>
-              <Menu.Divider />
-            </>
-          )}
-          {!canPatchOriginal && !isExample && (
-            <>
-              <Menu.Label>Keep my formatting</Menu.Label>
-              <Text size="xs" c="dimmed" px={12} pb={8} maw={240}>
-                Upload your resume as a .docx to export with your original formatting preserved.
-              </Text>
-              <Menu.Divider />
-            </>
-          )}
-          <Menu.Label>Clean template</Menu.Label>
-          <Menu.Item
-            leftSection={<IconFileDescription size={16} />}
-            disabled={isExample}
-            onClick={() => handleExport('clean', 'docx')}
-          >
-            Word (.docx)
-          </Menu.Item>
-          <Menu.Item
-            leftSection={<IconFileTypePdf size={16} />}
-            disabled={isExample}
-            onClick={() => handleExport('clean', 'pdf')}
-          >
-            PDF (.pdf)
-          </Menu.Item>
         </Menu.Dropdown>
         </Menu>
       </Box>
@@ -508,6 +465,7 @@ const ResultsPanel = ({
                   coveredByChangesCount={coveredByChangesCount}
                   coveredByAddedCount={coveredByAddedCount}
                   availableFillerCount={availableFillerCount}
+                  lockedGapCount={lockedGaps.length}
                   unresolvedGapCount={unresolvedGapCount}
                   open={gaps.length > 0 ? gapsOpen : undefined}
                   onToggle={gaps.length > 0 ? handleGapsToggle : undefined}
@@ -554,8 +512,16 @@ const ResultsPanel = ({
                             <Stack align="center" gap={6} p="xs">
                               <Group gap={6}>
                                 <IconLock size={16} color="var(--mantine-primary-color-filled)" />
-                                <Text size="sm" fw={600}>
-                                  See all {gaps.length} missing requirements with Pro
+                                <Text size="sm" fw={600} ta="center">
+                                  Pro found{' '}
+                                  <Text span inherit fw={800}>
+                                    {lockedGaps.length} more
+                                  </Text>{' '}
+                                  requirements this job asks for and drafted{' '}
+                                  <Text span inherit fw={800}>
+                                    {lockedGaps.length} bullets
+                                  </Text>{' '}
+                                  for them.
                                 </Text>
                                 <Badge
                                   variant="gradient"

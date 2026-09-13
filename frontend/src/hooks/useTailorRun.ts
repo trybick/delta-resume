@@ -25,6 +25,7 @@ type UseTailorRunResult = {
     resumeLayout?: DocxCleanLayout | null,
     runId?: string,
   ) => Promise<boolean>;
+  hydrate: (result: TailorResult, options?: { countAsRun?: boolean }) => void;
 };
 
 export const useTailorRun = ({
@@ -48,6 +49,16 @@ export const useTailorRun = ({
   );
 
   const clearError = () => setErrorMessage(null);
+
+  const hydrate = (nextResult: TailorResult, options?: { countAsRun?: boolean }) => {
+    resultRef.current = nextResult;
+    setResult(nextResult);
+    setStatus('done');
+    setErrorMessage(null);
+    if (options?.countAsRun) {
+      setRunCount((count) => Math.max(count, 1));
+    }
+  };
 
   const runTailor = async (
     resumeText: string,
@@ -101,5 +112,5 @@ export const useTailorRun = ({
     }
   };
 
-  return { status, result, runCount, errorMessage, clearError, runTailor };
+  return { status, result, runCount, errorMessage, clearError, runTailor, hydrate };
 };

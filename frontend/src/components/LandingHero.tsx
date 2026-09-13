@@ -1,110 +1,138 @@
-import { Button, Grid, Stack, Text, Title, useMantineTheme } from '@mantine/core';
+import { Box, Button, Grid, Group, Stack, Text, Title, useMantineTheme } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconEye, IconSparkles } from '@tabler/icons-react';
-import CoverLetterMockExample from './CoverLetterMockExample';
-import DiffMockExample from './DiffMockExample';
+import {
+  IconCheck,
+  IconEye,
+  IconFileTypeDocx,
+  IconGitCompare,
+  IconMail,
+  IconSparkles,
+} from '@tabler/icons-react';
+import HeroProductMock from './HeroProductMock';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
+import type { HeroCopy } from '../lib/heroVariants';
 import { appTheme } from '../lib/theme';
 
 type LandingHeroProps = {
+  copy: HeroCopy;
+  variant: string;
   onStartClick: () => void;
   onExampleClick: () => void;
 };
 
-const LandingHero = ({ onStartClick, onExampleClick }: LandingHeroProps) => {
+type TrustPoint = {
+  icon: typeof IconCheck;
+  label: string;
+};
+
+const TRUST_POINTS: TrustPoint[] = [
+  { icon: IconGitCompare, label: 'Word-level diffs' },
+  { icon: IconMail, label: 'Matching cover letter' },
+  { icon: IconFileTypeDocx, label: 'Keeps your Word formatting' },
+];
+
+const LandingHero = ({ copy, variant, onStartClick, onExampleClick }: LandingHeroProps) => {
   const theme = useMantineTheme();
-  const isDesktopHeading = useMediaQuery(`(min-width: ${theme.breakpoints.md})`, false, {
+  const isDesktop = useMediaQuery(`(min-width: ${theme.breakpoints.md})`, false, {
     getInitialValueInEffect: false,
   });
 
   const handleStartClick = () => {
-    trackEvent(AnalyticsEvents.LandingCta, { placement: 'hero' });
+    trackEvent(AnalyticsEvents.LandingCta, { placement: 'hero', variant });
     onStartClick();
   };
 
   const handleExampleClick = () => {
-    trackEvent(AnalyticsEvents.LandingCta, { placement: 'hero_example' });
+    trackEvent(AnalyticsEvents.LandingCta, { placement: 'hero_example', variant });
     onExampleClick();
   };
 
   return (
-    <Grid gap="xl" align="center" py={{ base: 'md', md: 'xl' }}>
+    <Grid gap={{ base: 'xl', md: 48 }} align="center" py={{ base: 'md', md: 'xl' }}>
       <Grid.Col span={{ base: 12, md: 6 }}>
-        <Stack gap="lg" align="center">
-          <Stack gap="sm" align="center">
+        <Stack gap="xl" align={isDesktop ? 'flex-start' : 'center'}>
+          <Stack gap="md" align={isDesktop ? 'flex-start' : 'center'}>
+            <Text size="xs" fw={700} tt="uppercase" c="cyan.4" style={{ letterSpacing: '0.08em' }}>
+              AI resume tailoring you can audit
+            </Text>
             <Title
               order={1}
-              ta="center"
+              ta={isDesktop ? 'left' : 'center'}
               fw={800}
-              maw={{ base: '100%', md: 520 }}
-              fz={{ base: '1.75rem', md: '2.375rem' }}
+              fz={{ base: '2rem', sm: '2.375rem', md: '2.75rem' }}
               style={{
-                lineHeight: 1.2,
-                letterSpacing: '-0.02em',
-                textWrap: isDesktopHeading ? 'balance' : 'wrap',
+                lineHeight: 1.12,
+                letterSpacing: '-0.025em',
+                textWrap: 'balance',
               }}
             >
-              Tailor your{' '}
+              {copy.headlineLead}{' '}
               <Text span inherit variant="gradient" gradient={{ ...appTheme.gradient, deg: 45 }}>
-                resume
-              </Text>{' '}
-              and{' '}
-              <Text
-                span
-                inherit
-                variant="gradient"
-                gradient={{ ...appTheme.gradient, deg: 45 }}
-                style={{ whiteSpace: 'nowrap' }}
-              >
-                cover letter
-              </Text>{' '}
-              to any job in seconds
+                {copy.headlineEmphasis}
+              </Text>
             </Title>
             <Text
-              size="md"
+              size="lg"
               c="dimmed"
-              ta="center"
-              maw={480}
-              lh={1.5}
-              style={{ textWrap: 'balance' }}
+              ta={isDesktop ? 'left' : 'center'}
+              maw={520}
+              lh={1.55}
+              style={{ textWrap: 'pretty' }}
             >
-              Paste a job post. Your bullets are rewritten for the skills and keywords it asks for,
-              plus a cover letter to match.
+              {copy.subhead}
             </Text>
           </Stack>
-          <Button
-            size="lg"
-            fullWidth
-            maw={420}
-            leftSection={<IconSparkles size={18} />}
-            styles={{ label: { whiteSpace: 'nowrap' } }}
-            onClick={handleStartClick}
-          >
-            Tailor my resume for free
-          </Button>
-          <Text size="xs" c="dimmed" ta="center">
-            No sign-up, no card required.
-          </Text>
-          <Button
-            variant="default"
-            size="md"
-            leftSection={<IconEye size={16} />}
-            onClick={handleExampleClick}
-          >
-            See an example result first
-          </Button>
+
+          <Stack gap="sm" w="100%" maw={isDesktop ? 440 : 420}>
+            <Button
+              size="lg"
+              fullWidth
+              className="tailor-button"
+              leftSection={<IconSparkles size={18} />}
+              styles={{ label: { whiteSpace: 'nowrap' } }}
+              onClick={handleStartClick}
+            >
+              Tailor my resume for free
+            </Button>
+            <Group gap="xs" justify={isDesktop ? 'space-between' : 'center'} wrap="wrap">
+              <Text size="xs" c="dimmed">
+                One free run. No sign-up, no card required.
+              </Text>
+              <Button
+                variant="subtle"
+                color="gray"
+                size="compact-sm"
+                leftSection={<IconEye size={14} />}
+                onClick={handleExampleClick}
+              >
+                See an example first
+              </Button>
+            </Group>
+          </Stack>
+
+          <Group gap="md" justify={isDesktop ? 'flex-start' : 'center'} wrap="wrap">
+            {TRUST_POINTS.map((point) => {
+              const PointIcon = point.icon;
+              return (
+                <Group key={point.label} gap={6} wrap="nowrap">
+                  <PointIcon size={15} color="var(--mantine-color-teal-4)" stroke={2} />
+                  <Text size="sm" c="gray.3" fw={500}>
+                    {point.label}
+                  </Text>
+                </Group>
+              );
+            })}
+          </Group>
         </Stack>
       </Grid.Col>
-      <Grid.Col span={6} visibleFrom="md">
-        <Stack gap="xl" align="center">
-          <Stack gap={6} align="center" w="100%">
-            <DiffMockExample />
-            <Text size="xs" c="dimmed" ta="center">
-              Every rewrite is shown as an inline diff. Keep it or revert it with one click.
-            </Text>
-          </Stack>
-          <CoverLetterMockExample />
-        </Stack>
+      <Grid.Col span={{ base: 12, md: 6 }}>
+        <Box style={{ display: 'flex', justifyContent: 'center' }}>
+          <HeroProductMock />
+        </Box>
+        <Text size="xs" c="dimmed" ta="center" mt="sm">
+          Every rewrite is a diff. Revert anything with one click. Watch the coverage bar fill as
+          you go.
+        </Text>
       </Grid.Col>
     </Grid>
   );

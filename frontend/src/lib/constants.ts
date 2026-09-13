@@ -6,6 +6,9 @@ export const NETWORK_ERROR_MESSAGE =
 export const SAVED_RESUME_LIMIT_FREE = 1;
 export const SAVED_RESUME_LIMIT_PRO = 10;
 
+export const extraFreeRunsAfterSignup = (freeAccountTotal: number): number =>
+  Math.max(0, freeAccountTotal - 1);
+
 export const RESUME_TEXT_MAX_LENGTH = 15000;
 
 export const isProPlan = (credits: CreditStatus | null | undefined): boolean =>

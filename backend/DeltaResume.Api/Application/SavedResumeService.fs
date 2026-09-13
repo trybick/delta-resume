@@ -86,6 +86,23 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
                         do! repository.DeleteLeastRecentlyUsed(ownerKey, limit)
         }
 
+    member _.FindIdByContent(ctx: HttpContext, resumeText: string) : Task<Guid option> =
+        task {
+            match Identity.resolve options ctx with
+            | GuestVisitor _ -> return None
+            | AuthenticatedUser _ as identity ->
+                if String.IsNullOrWhiteSpace resumeText then
+                    return None
+                else
+                    let! existing = repository.FindByHash(Identity.ownerKey identity, hashContent resumeText)
+
+                    return
+                        existing
+                        |> Option.map (fun resume ->
+                            let (SavedResumeId id) = resume.Id
+                            id)
+        }
+
     member _.List(ctx: HttpContext) : Task<SavedResume list> =
         let ownerKey = Identity.resolve options ctx |> Identity.ownerKey
         repository.ListByOwner ownerKey

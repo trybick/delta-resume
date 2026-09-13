@@ -7,9 +7,9 @@ alwaysApply: true
 
 Resume + cover letter tailoring app: upload or paste a resume, paste a job description, review Claude-suggested bullet rewrites with inline diffs, accept/reject, copy or export DOCX/PDF. Each tailor run also generates a matching cover letter in a second results tab (no extra credit; Pro can set length and tone). Pro also unlocks missing job-requirement gaps and one-click draft bullets.
 
-Tailor results and cover letter text are not persisted. PostgreSQL stores credit usage, signed-in saved resumes (auto-saved after a successful run), and Pro cover letter settings. Guests use fingerprint + IP credits with no account.
+Tailor results and cover letters are stored for signed-in users as application history. Guests stay unstored. PostgreSQL also stores credit usage, signed-in saved resumes (auto-saved after a successful run), and Pro cover letter settings. Guests use fingerprint + IP credits with no account.
 
-Surfaces: `/` landing (hero + mock examples); `/app` the tailor tool. No React Router — `history.pushState`.
+Surfaces: `/` landing (hero + mock examples); `/app` the tailor tool; `/applications` signed-in run history. No React Router — `history.pushState`.
 
 ## Stack
 

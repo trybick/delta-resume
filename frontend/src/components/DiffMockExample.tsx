@@ -2,10 +2,14 @@ import { ActionIcon, Box, Group, Paper, Text } from '@mantine/core';
 import { useReducedMotion } from '@mantine/hooks';
 import { IconArrowBackUp, IconPointerFilled, IconRefresh } from '@tabler/icons-react';
 import { useEffect, useRef, useState } from 'react';
+import { SAMPLE_TAILOR_RESULT } from '../lib/mockTailor';
+import DiffText from './DiffText';
 
 type Phase = 'diff' | 'pressRevert' | 'reverted' | 'pressReapply';
 
 type Point = { x: number; y: number };
+
+const SAMPLE_CHANGE = SAMPLE_TAILOR_RESULT.changes[0];
 
 const PHASE_DURATIONS: Record<Phase, number> = {
   diff: 2800,
@@ -21,20 +25,7 @@ const NEXT_PHASE: Record<Phase, Phase> = {
   pressReapply: 'diff',
 };
 
-const removedStyle = {
-  backgroundColor: 'rgba(250, 82, 82, 0.14)',
-  color: 'var(--mantine-color-red-3)',
-  textDecoration: 'line-through',
-  borderRadius: 3,
-  padding: '0 2px',
-} as const;
-
-const addedStyle = {
-  backgroundColor: 'rgba(64, 192, 87, 0.16)',
-  color: 'var(--mantine-color-green-3)',
-  borderRadius: 3,
-  padding: '0 2px',
-} as const;
+const stripBullet = (text: string): string => text.replace(/^-\s*/, '');
 
 const DiffMockExample = () => {
   const reducedMotion = useReducedMotion();
@@ -78,9 +69,11 @@ const DiffMockExample = () => {
       radius="md"
       maw={560}
       w="100%"
+      aria-hidden
       style={{
         position: 'relative',
         overflow: 'hidden',
+        pointerEvents: 'none',
         borderLeft: `3px solid ${isReverted ? 'var(--mantine-color-gray-6)' : 'var(--mantine-color-green-6)'}`,
         transition: 'border-color 0.4s ease',
       }}
@@ -94,47 +87,42 @@ const DiffMockExample = () => {
           size="sm"
           variant={isReverted ? 'filled' : 'light'}
           color={isReverted ? 'green' : 'gray'}
-          aria-label={isReverted ? 'Re-apply change' : 'Revert to original'}
-          style={{ transition: 'transform 0.15s ease', transform: isPressing ? 'scale(0.88)' : undefined }}
+          tabIndex={-1}
+          style={{
+            transition: 'transform 0.15s ease',
+            transform: isPressing ? 'scale(0.88)' : undefined,
+          }}
         >
           {isReverted ? <IconRefresh size={14} /> : <IconArrowBackUp size={14} />}
         </ActionIcon>
       </Group>
       <Box style={{ display: 'grid' }}>
-        <Text
-          component="div"
-          size="sm"
-          aria-hidden={isReverted}
+        <Box
           style={{
             gridArea: '1 / 1',
-            lineHeight: 1.6,
             opacity: isReverted ? 0 : 1,
             transition: 'opacity 0.4s ease',
           }}
         >
-          Led a team <span style={removedStyle}>working on internal tools</span>{' '}
-          <span style={addedStyle}>
-            of 5 engineers shipping React dashboards used by 2,000+ internal users
-          </span>
-          , cutting report turnaround
-          <span style={addedStyle}> from days to hours</span>.
-        </Text>
+          <DiffText
+            original={stripBullet(SAMPLE_CHANGE.original)}
+            tailored={stripBullet(SAMPLE_CHANGE.tailored)}
+          />
+        </Box>
         <Text
           component="div"
           size="sm"
-          aria-hidden={!isReverted}
           style={{
             gridArea: '1 / 1',
-            lineHeight: 1.6,
+            lineHeight: 1.55,
             opacity: isReverted ? 1 : 0,
             transition: 'opacity 0.4s ease',
           }}
         >
-          Led a team working on internal tools, cutting report turnaround.
+          {stripBullet(SAMPLE_CHANGE.original)}
         </Text>
       </Box>
       <div
-        aria-hidden
         style={{
           position: 'absolute',
           top: 0,

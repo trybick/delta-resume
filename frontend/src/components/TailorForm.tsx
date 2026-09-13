@@ -3,7 +3,7 @@ import { IconSparkles } from '@tabler/icons-react';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import ResumeInput from './ResumeInput';
 import JobDescriptionInput from './JobDescriptionInput';
-import { getSavedResumeLimit } from '../lib/constants';
+import { extraFreeRunsAfterSignup, getSavedResumeLimit } from '../lib/constants';
 import type { AttachedFile, CreditStatus, SavedResume, TailorStatus } from '../lib/types';
 
 type TailorFormProps = {
@@ -157,9 +157,7 @@ const TailorForm = ({
           <Text size="xs" c="dimmed" ta="center">
             {credits?.isAuthenticated
               ? 'You are out of credits. Subscribe to Pro to keep tailoring.'
-              : credits !== null
-                ? `You have used your ${credits.total} free ${credits.total === 1 ? 'credit' : 'credits'}. Sign up to upgrade and continue.`
-                : 'You have used your free credits. Sign up to upgrade and continue.'}
+              : `Create a free account for ${extraFreeRunsAfterSignup(credits?.freeAccountTotal ?? 4)} more.`}
           </Text>
         )}
         {credits !== null &&

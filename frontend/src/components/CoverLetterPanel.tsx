@@ -18,6 +18,7 @@ import {
   IconDownload,
   IconFileDescription,
   IconFileTypePdf,
+  IconLock,
   IconMail,
   IconRefresh,
 } from '@tabler/icons-react';
@@ -39,6 +40,7 @@ import WritingLoader from './WritingLoader';
 
 type CoverLetterPanelProps = {
   isProPlan: boolean;
+  isGuest?: boolean;
   status: CoverLetterStatus;
   result: CoverLetterResult | null;
   errorMessage: string | null;
@@ -47,10 +49,12 @@ type CoverLetterPanelProps = {
   exampleResult?: CoverLetterResult;
   onRetry: () => void;
   onUpgradeClick: () => void;
+  onExportGate?: () => void;
 };
 
 const CoverLetterPanel = ({
   isProPlan,
+  isGuest = false,
   status,
   result,
   errorMessage,
@@ -59,6 +63,7 @@ const CoverLetterPanel = ({
   exampleResult,
   onRetry,
   onUpgradeClick,
+  onExportGate,
 }: CoverLetterPanelProps) => {
   const { user } = useUser();
   const { has } = useAuth();
@@ -214,6 +219,11 @@ const CoverLetterPanel = ({
 
   const handleExport = async (format: 'docx' | 'pdf') => {
     if (isExporting) return;
+    if (isGuest) {
+      trackEvent(AnalyticsEvents.ExportGateShown, { tier: 'guest', source: 'cover_letter' });
+      onExportGate?.();
+      return;
+    }
     trackEvent(AnalyticsEvents.CoverLetterExport, { format });
     setIsExporting(true);
     try {
@@ -295,13 +305,27 @@ const CoverLetterPanel = ({
                 </Menu.Item>
                 <Menu.Divider />
                 <Menu.Item
-                  leftSection={<IconFileDescription size={16} />}
+                  leftSection={isGuest ? <IconLock size={16} /> : <IconFileDescription size={16} />}
+                  rightSection={
+                    isGuest ? (
+                      <Text size="xs" c="dimmed">
+                        Create a free account to export
+                      </Text>
+                    ) : undefined
+                  }
                   onClick={() => handleExport('docx')}
                 >
                   Word (.docx)
                 </Menu.Item>
                 <Menu.Item
-                  leftSection={<IconFileTypePdf size={16} />}
+                  leftSection={isGuest ? <IconLock size={16} /> : <IconFileTypePdf size={16} />}
+                  rightSection={
+                    isGuest ? (
+                      <Text size="xs" c="dimmed">
+                        Create a free account to export
+                      </Text>
+                    ) : undefined
+                  }
                   onClick={() => handleExport('pdf')}
                 >
                   PDF (.pdf)
