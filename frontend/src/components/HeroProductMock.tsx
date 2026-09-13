@@ -288,78 +288,95 @@ const HeroProductMock = () => {
           reverted={false}
         />
 
-        <Box
-          px="sm"
-          py={8}
-          style={{
-            borderRadius: 10,
-            border: `1px dashed ${
-              draftAdded ? 'var(--mantine-color-green-6)' : 'var(--mantine-color-orange-6)'
-            }`,
-            background: draftAdded ? 'rgba(64, 192, 87, 0.05)' : 'rgba(232, 145, 45, 0.06)',
-            transition: 'border-color 0.4s ease, background-color 0.4s ease',
-          }}
-        >
-          <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
-            <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
-              <IconTargetArrow
-                size={14}
-                stroke={1.8}
-                color={
-                  draftAdded ? 'var(--mantine-color-green-5)' : 'var(--mantine-color-orange-5)'
-                }
-                style={{ flexShrink: 0, transition: 'color 0.4s ease' }}
-              />
-              <Text size="xs" fw={600} truncate>
-                {GAP_TEXT}
-              </Text>
-              <Text size="xs" c="dimmed" truncate visibleFrom="xs">
-                {draftAdded ? 'Draft bullet added' : 'Missing from your resume'}
-              </Text>
+        <Box>
+          <Box
+            px="sm"
+            py={8}
+            style={{
+              borderRadius: 10,
+              border: `1px dashed ${
+                draftAdded ? 'var(--mantine-color-green-6)' : 'var(--mantine-color-orange-6)'
+              }`,
+              background: draftAdded ? 'rgba(64, 192, 87, 0.05)' : 'rgba(232, 145, 45, 0.06)',
+              transition: 'border-color 0.4s ease, background-color 0.4s ease',
+            }}
+          >
+            <Group justify="space-between" align="center" wrap="nowrap" gap="sm">
+              <Group gap={8} wrap="nowrap" style={{ minWidth: 0 }}>
+                <IconTargetArrow
+                  size={14}
+                  stroke={1.8}
+                  color={
+                    draftAdded ? 'var(--mantine-color-green-5)' : 'var(--mantine-color-orange-5)'
+                  }
+                  style={{ flexShrink: 0, transition: 'color 0.4s ease' }}
+                />
+                <Text size="xs" fw={600} truncate>
+                  {GAP_TEXT}
+                </Text>
+                <Text size="xs" c="dimmed" truncate visibleFrom="xs">
+                  {draftAdded ? 'Draft bullet added' : 'Missing from your resume'}
+                </Text>
+              </Group>
+              <ActionIcon
+                ref={addRef}
+                size="sm"
+                variant={draftAdded ? 'filled' : 'light'}
+                color={draftAdded ? 'green' : 'orange'}
+                aria-hidden
+                tabIndex={-1}
+                style={{
+                  flexShrink: 0,
+                  transition: 'transform 0.15s ease',
+                  transform: pressingAdd ? 'scale(0.85)' : undefined,
+                }}
+              >
+                {draftAdded ? <IconCheck size={13} /> : <IconPlus size={13} />}
+              </ActionIcon>
             </Group>
-            <ActionIcon
-              ref={addRef}
-              size="sm"
-              variant={draftAdded ? 'filled' : 'light'}
-              color={draftAdded ? 'green' : 'orange'}
-              aria-hidden
-              tabIndex={-1}
+            <Box
               style={{
-                flexShrink: 0,
-                transition: 'transform 0.15s ease',
-                transform: pressingAdd ? 'scale(0.85)' : undefined,
+                display: 'grid',
+                gridTemplateRows: draftAdded ? '1fr' : '0fr',
+                transition: 'grid-template-rows 0.4s ease',
               }}
             >
-              {draftAdded ? <IconCheck size={13} /> : <IconPlus size={13} />}
-            </ActionIcon>
-          </Group>
+              <Box style={{ overflow: 'hidden' }}>
+                <Text
+                  size="sm"
+                  pt={8}
+                  style={{
+                    lineHeight: 1.55,
+                    opacity: draftAdded ? 1 : 0,
+                    transition: 'opacity 0.4s ease 0.15s',
+                  }}
+                >
+                  <span
+                    style={{
+                      backgroundColor: 'rgba(64, 192, 87, 0.16)',
+                      color: 'var(--mantine-color-green-3)',
+                      borderRadius: 3,
+                      padding: '0 2px',
+                    }}
+                  >
+                    {stripBullet(DRAFT_BULLET)}
+                  </span>
+                </Text>
+              </Box>
+            </Box>
+          </Box>
           <Box
+            aria-hidden
+            px="sm"
             style={{
               display: 'grid',
-              gridTemplateRows: draftAdded ? '1fr' : '0fr',
+              gridTemplateRows: draftAdded ? '0fr' : '1fr',
               transition: 'grid-template-rows 0.4s ease',
             }}
           >
             <Box style={{ overflow: 'hidden' }}>
-              <Text
-                size="sm"
-                pt={8}
-                style={{
-                  lineHeight: 1.55,
-                  opacity: draftAdded ? 1 : 0,
-                  transition: 'opacity 0.4s ease 0.15s',
-                }}
-              >
-                <span
-                  style={{
-                    backgroundColor: 'rgba(64, 192, 87, 0.16)',
-                    color: 'var(--mantine-color-green-3)',
-                    borderRadius: 3,
-                    padding: '0 2px',
-                  }}
-                >
-                  {stripBullet(DRAFT_BULLET)}
-                </span>
+              <Text size="sm" pt={8} style={{ lineHeight: 1.55, visibility: 'hidden' }}>
+                <span style={{ padding: '0 2px' }}>{stripBullet(DRAFT_BULLET)}</span>
               </Text>
             </Box>
           </Box>
