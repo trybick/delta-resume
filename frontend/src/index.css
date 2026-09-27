@@ -88,16 +88,6 @@ body {
   transform: translateY(0);
 }
 
-.hero-example-button {
-  color: var(--mantine-color-dimmed);
-  font-weight: 500;
-  transition: color 120ms ease;
-}
-
-.hero-example-button:hover {
-  color: var(--mantine-color-gray-0);
-}
-
 .tailoring-loader-topbar {
   position: absolute;
   top: 0;

@@ -36,6 +36,7 @@ type AppHeaderProps = {
   onHomeClick: () => void;
   onApplicationsClick: () => void;
   onSignInClick?: () => void;
+  onTryFreeClick?: () => void;
   applicationsCount: number | null;
 };
 
@@ -64,8 +65,32 @@ const AppHeader = ({
   onHomeClick,
   onApplicationsClick,
   onSignInClick,
+  onTryFreeClick,
   applicationsCount,
 }: AppHeaderProps) => {
+  const isLandingHeader = onTryFreeClick !== undefined;
+
+  const handleSignInClick = () => {
+    onSignInClick?.();
+    trackEvent(AnalyticsEvents.SignIn);
+  };
+
+  const signInButtonProps = isLandingHeader
+    ? { variant: 'subtle', color: 'gray' }
+    : { variant: 'light', style: { border: '1px solid rgba(34, 184, 207, 0.35)' } };
+
+  const tryFreeButton = isLandingHeader && (
+    <Button
+      size="xs"
+      className="tailor-button"
+      styles={{ label: { whiteSpace: 'nowrap' } }}
+      onClick={onTryFreeClick}
+    >
+      <SignedOut>Try it free</SignedOut>
+      <SignedIn>Open app</SignedIn>
+    </Button>
+  );
+
   const handleRetryCreditsClick = () => {
     trackEvent(AnalyticsEvents.RetryCredits, { source: 'header' });
     onRetryCredits();
@@ -116,6 +141,9 @@ const AppHeader = ({
       py="sm"
       px={{ base: 'sm', sm: 'xl' }}
       style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 100,
         borderBottom: '1px solid var(--mantine-color-dark-4)',
         backgroundColor: 'color-mix(in srgb, var(--mantine-color-dark-7) 82%, transparent)',
         backdropFilter: 'blur(12px)',
@@ -206,18 +234,15 @@ const AppHeader = ({
             <SignInButton mode="modal">
               <ClerkAuthButton
                 size="xs"
-                variant="light"
+                {...signInButtonProps}
                 leftSection={<IconLogin2 size={14} />}
-                style={{ border: '1px solid rgba(34, 184, 207, 0.35)' }}
-                onClick={() => {
-                  onSignInClick?.();
-                  trackEvent(AnalyticsEvents.SignIn);
-                }}
+                onClick={handleSignInClick}
               >
                 Sign in
               </ClerkAuthButton>
             </SignInButton>
           </SignedOut>
+          {tryFreeButton}
           <SignedIn>
             <Box
               component="span"
@@ -299,30 +324,24 @@ const AppHeader = ({
                   px={8}
                   aria-label="Sign in"
                   style={{ border: '1px solid rgba(34, 184, 207, 0.35)' }}
-                  onClick={() => {
-                    onSignInClick?.();
-                    trackEvent(AnalyticsEvents.SignIn);
-                  }}
+                  onClick={handleSignInClick}
                 >
                   <IconUser size={16} />
                 </ClerkAuthButton>
               ) : (
                 <ClerkAuthButton
                   size="xs"
-                  variant="light"
-                  leftSection={<IconLogin2 size={14} />}
+                  {...signInButtonProps}
+                  px={isLandingHeader ? 6 : undefined}
                   styles={{ label: { whiteSpace: 'nowrap' } }}
-                  style={{ border: '1px solid rgba(34, 184, 207, 0.35)' }}
-                  onClick={() => {
-                    onSignInClick?.();
-                    trackEvent(AnalyticsEvents.SignIn);
-                  }}
+                  onClick={handleSignInClick}
                 >
                   Sign in
                 </ClerkAuthButton>
               )}
             </SignInButton>
           </SignedOut>
+          {tryFreeButton}
           <SignedIn>
             <Box
               component="span"

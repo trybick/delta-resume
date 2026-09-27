@@ -24,7 +24,6 @@ import { AnalyticsEvents, trackEvent } from './lib/analytics';
 import { claimTailorRun, getTailorRun, patchTailorRunDecisions } from './lib/api';
 import { registerTokenGetter } from './lib/authToken';
 import { isProPlan as checkIsProPlan } from './lib/constants';
-import { heroCopyForVariant, resolveHeroVariant } from './lib/heroVariants';
 import { clearPendingRun, readPendingRun, writePendingRun } from './lib/pendingRunStash';
 import { subscribeToRateLimit } from './lib/rateLimitNotice';
 import { buildDecisionMap } from './lib/runDecisions';
@@ -132,7 +131,6 @@ const App = () => {
     if (fromPath !== 'landing') return fromPath;
     return readHasUsedTool() ? 'tool' : 'landing';
   });
-  const [heroVariant] = useState(() => resolveHeroVariant(window.location.search));
   const [decisions, setDecisions] = useState<Record<string, ChangeDecision>>({});
   const [addedBullets, setAddedBullets] = useState<AddedBullet[]>([]);
   const [signupBannerDismissed, setSignupBannerDismissed] = useState(readSignupBannerDismissed);
@@ -280,8 +278,8 @@ const App = () => {
 
   useEffect(() => {
     if (!showLanding) return;
-    trackEvent(AnalyticsEvents.LandingView, { variant: heroVariant });
-  }, [heroVariant, showLanding]);
+    trackEvent(AnalyticsEvents.LandingView);
+  }, [showLanding]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -436,6 +434,11 @@ const App = () => {
     navigateTo('tool', TOOL_PATH);
   };
 
+  const handleHeaderTryFreeClick = () => {
+    trackEvent(AnalyticsEvents.LandingCta, { placement: 'header' });
+    handleRevealTool();
+  };
+
   const handleShowExampleFromLanding = () => {
     handleRevealTool();
     setShowingExample(true);
@@ -559,6 +562,7 @@ const App = () => {
         onHomeClick={handleGoHome}
         onApplicationsClick={handleApplicationsClick}
         onSignInClick={stashCurrentRun}
+        onTryFreeClick={showLanding ? handleHeaderTryFreeClick : undefined}
         applicationsCount={isSignedIn === true ? runs.length + hiddenOlderCount : null}
       />
 
@@ -581,12 +585,10 @@ const App = () => {
         {showLanding ? (
           <>
             <LandingHero
-              copy={heroCopyForVariant(heroVariant)}
-              variant={heroVariant}
               onStartClick={handleRevealTool}
               onExampleClick={handleShowExampleFromLanding}
             />
-            <WhyNotChatGpt />
+            <WhyNotChatGpt onStartClick={handleRevealTool} />
           </>
         ) : showApplications ? (
           <ApplicationsList
@@ -673,7 +675,6 @@ const App = () => {
         showUpgradeButton={showUpgradeCta}
         onUpgradeClick={() => openPaywall('upgrade')}
         onStartClick={showLanding ? handleRevealTool : undefined}
-        heroVariant={heroVariant}
       />
 
       <AppFooter />

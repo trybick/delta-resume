@@ -1,11 +1,16 @@
 import { Box, Group, Stack, Text, ThemeIcon, Title } from '@mantine/core';
 import { IconCheck, IconX } from '@tabler/icons-react';
 import DeltaLogo from './DeltaLogo';
+import LandingCtaBlock from './LandingCtaBlock';
 
 type ComparisonRow = {
   label: string;
   chatGpt: string;
   deltaResume: string;
+};
+
+type WhyNotChatGptProps = {
+  onStartClick: () => void;
 };
 
 const ROWS: ComparisonRow[] = [
@@ -41,7 +46,7 @@ const ROWS: ComparisonRow[] = [
   },
 ];
 
-const WhyNotChatGpt = () => (
+const WhyNotChatGpt = ({ onStartClick }: WhyNotChatGptProps) => (
   <Stack id="why-not-chatgpt" gap="xl" align="center" py={{ base: 'xl', md: 48 }}>
     <Stack gap={6} align="center">
       <Title order={2} ta="center" fw={700} style={{ letterSpacing: '-0.015em' }}>
@@ -128,6 +133,8 @@ const WhyNotChatGpt = () => (
         </Box>
       ))}
     </Box>
+
+    <LandingCtaBlock placement="comparison" onStartClick={onStartClick} />
   </Stack>
 );
 

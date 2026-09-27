@@ -28,6 +28,7 @@ import {
 } from '@tabler/icons-react';
 import CoverLetterMockExample from './CoverLetterMockExample';
 import DiffMockExample from './DiffMockExample';
+import LandingCtaBlock from './LandingCtaBlock';
 import LandingFaqSection from './LandingFaqSection';
 import LegalModal from './LegalModal';
 import ProFeatureList from './ProFeatureList';
@@ -43,7 +44,6 @@ type LandingStripProps = {
   showUpgradeButton: boolean;
   onUpgradeClick: () => void;
   onStartClick?: () => void;
-  heroVariant?: string;
 };
 
 type HowItWorksStep = {
@@ -111,14 +111,12 @@ const LandingStrip = ({
   showUpgradeButton,
   onUpgradeClick,
   onStartClick,
-  heroVariant,
 }: LandingStripProps) => {
   const [openDocument, setOpenDocument] = useState<LegalDocument | null>(null);
   const [expanded, setExpanded] = useState(false);
   const { monthlyPrice, annualMonthlyPrice, isLoading: isLoadingProPrice } = useProPlan();
   const showContent = !collapsible || expanded;
   const freePlanFeatures = getFreePlanFeatures(freeCreditTotal);
-
   useEffect(() => {
     if (collapsible) {
       setExpanded(false);
@@ -135,27 +133,13 @@ const LandingStrip = ({
     onUpgradeClick();
   };
 
-  const handleStartClick = () => {
-    trackEvent(AnalyticsEvents.LandingCta, {
-      placement: 'bottom',
-      variant: heroVariant ?? 'default',
-    });
-    onStartClick?.();
-  };
-
   const handleFreeStartClick = () => {
-    trackEvent(AnalyticsEvents.LandingCta, {
-      placement: 'pricing_free',
-      variant: heroVariant ?? 'default',
-    });
+    trackEvent(AnalyticsEvents.LandingCta, { placement: 'pricing_free' });
     onStartClick?.();
   };
 
   const handleProStartClick = () => {
-    trackEvent(AnalyticsEvents.LandingCta, {
-      placement: 'pricing_pro',
-      variant: heroVariant ?? 'default',
-    });
+    trackEvent(AnalyticsEvents.LandingCta, { placement: 'pricing_pro' });
     onStartClick?.();
   };
 
@@ -264,6 +248,9 @@ const LandingStrip = ({
                 )}
                 <CoverLetterMockExample />
               </Stack>
+              {onStartClick && (
+                <LandingCtaBlock placement="how_it_works" onStartClick={onStartClick} />
+              )}
             </Stack>
 
             <Divider />
@@ -406,22 +393,7 @@ const LandingStrip = ({
 
             <LandingFaqSection />
 
-            {onStartClick && (
-              <Stack gap="sm" align="center">
-                <Button
-                  size="lg"
-                  fullWidth
-                  maw={420}
-                  leftSection={<IconSparkles size={18} />}
-                  onClick={handleStartClick}
-                >
-                  Tailor my resume for free
-                </Button>
-                <Text size="xs" c="dimmed" ta="center">
-                  One free run to start. No sign-up, no card required.
-                </Text>
-              </Stack>
-            )}
+            {onStartClick && <LandingCtaBlock placement="bottom" onStartClick={onStartClick} />}
           </Stack>
         </Collapse>
       </Container>

@@ -1,31 +1,25 @@
 import { Box, Button, Grid, Group, Stack, Text, Title, useMantineTheme } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import { IconEye, IconSparkles } from '@tabler/icons-react';
+import { IconEye } from '@tabler/icons-react';
 import HeroProductMock from './HeroProductMock';
+import LandingCtaButton from './LandingCtaButton';
+import LandingTrustRow from './LandingTrustRow';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
-import type { HeroCopy } from '../lib/heroVariants';
 import { appTheme } from '../lib/theme';
 
 type LandingHeroProps = {
-  copy: HeroCopy;
-  variant: string;
   onStartClick: () => void;
   onExampleClick: () => void;
 };
 
-const LandingHero = ({ copy, variant, onStartClick, onExampleClick }: LandingHeroProps) => {
+const LandingHero = ({ onStartClick, onExampleClick }: LandingHeroProps) => {
   const theme = useMantineTheme();
   const isDesktop = useMediaQuery(`(min-width: ${theme.breakpoints.md})`, false, {
     getInitialValueInEffect: false,
   });
 
-  const handleStartClick = () => {
-    trackEvent(AnalyticsEvents.LandingCta, { placement: 'hero', variant });
-    onStartClick();
-  };
-
   const handleExampleClick = () => {
-    trackEvent(AnalyticsEvents.LandingCta, { placement: 'hero_example', variant });
+    trackEvent(AnalyticsEvents.LandingCta, { placement: 'hero_example' });
     onExampleClick();
   };
 
@@ -34,7 +28,14 @@ const LandingHero = ({ copy, variant, onStartClick, onExampleClick }: LandingHer
       <Grid.Col span={{ base: 12, md: 6 }}>
         <Stack gap="lg" w="100%" align={isDesktop ? 'flex-start' : 'center'}>
           <Stack gap="md" align={isDesktop ? 'flex-start' : 'center'}>
-            <Text size="xs" fw={700} tt="uppercase" c="cyan.4" style={{ letterSpacing: '0.08em' }}>
+            <Text
+              size="xs"
+              fw={700}
+              tt="uppercase"
+              c="cyan.4"
+              ta={isDesktop ? 'left' : 'center'}
+              style={{ letterSpacing: '0.08em' }}
+            >
               AI resume tailoring you can audit
             </Text>
             <Title
@@ -48,9 +49,9 @@ const LandingHero = ({ copy, variant, onStartClick, onExampleClick }: LandingHer
                 textWrap: 'balance',
               }}
             >
-              {copy.headlineLead}{' '}
+              See every change the AI makes to your resume.{' '}
               <Text span inherit variant="gradient" gradient={{ ...appTheme.gradient, deg: 45 }}>
-                {copy.headlineEmphasis}
+                Approve each one.
               </Text>
             </Title>
             <Text
@@ -61,34 +62,37 @@ const LandingHero = ({ copy, variant, onStartClick, onExampleClick }: LandingHer
               lh={1.55}
               style={{ textWrap: 'pretty' }}
             >
-              {copy.subhead}
+              Paste a job post. Get word-level rewrites, a matching cover letter, and your resume
+              back in your original Word formatting.
             </Text>
           </Stack>
 
-          <Stack gap="sm" w="100%" maw={isDesktop ? 440 : 420}>
-            <Button
-              size="lg"
-              fullWidth
-              className="tailor-button"
-              leftSection={<IconSparkles size={18} />}
-              styles={{ label: { whiteSpace: 'nowrap' } }}
-              onClick={handleStartClick}
+          <Stack
+            gap="sm"
+            w="100%"
+            maw={isDesktop ? 540 : 420}
+            align={isDesktop ? 'flex-start' : 'center'}
+          >
+            <Group
+              gap="sm"
+              wrap="wrap"
+              align="flex-start"
+              justify={isDesktop ? 'flex-start' : 'center'}
+              w="100%"
             >
-              Tailor my resume for free
-            </Button>
-            <Group gap="xs" justify={isDesktop ? 'space-between' : 'center'} wrap="wrap">
-              <Text size="xs" c="dimmed">
-                One free run. No sign-up, no card required.
-              </Text>
+              <Stack gap="sm" align="center" style={{ flex: '1 1 auto' }}>
+                <LandingCtaButton placement="hero" onStartClick={onStartClick} fullWidth />
+                <LandingTrustRow />
+              </Stack>
               <Button
-                variant="subtle"
-                color="gray"
-                size="compact-sm"
-                className="hero-example-button"
-                leftSection={<IconEye size={14} />}
+                size="lg"
+                variant="default"
+                leftSection={<IconEye size={18} />}
+                styles={{ label: { whiteSpace: 'nowrap' } }}
+                style={{ flex: '1 1 auto' }}
                 onClick={handleExampleClick}
               >
-                See an example first
+                See an example
               </Button>
             </Group>
           </Stack>
