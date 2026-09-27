@@ -89,7 +89,7 @@ const PaywallModal = ({
 
   useEffect(() => {
     if (!opened) return;
-    if ((reason === 'savedLimit' || reason === 'coverLetter' || reason === 'gaps' || reason === 'keepFormatting') && hasProPlan) {
+    if ((reason === 'savedLimit' || reason === 'coverLetter' || reason === 'gaps') && hasProPlan) {
       onClose();
     }
   }, [opened, reason, hasProPlan, onClose]);
@@ -111,11 +111,9 @@ const PaywallModal = ({
         ? 'Upgrade to customize cover letters'
         : reason === 'gaps'
           ? 'Upgrade to unlock missing requirements'
-          : reason === 'keepFormatting'
-            ? 'Upgrade to keep your formatting'
-            : reason === 'upgrade'
-              ? 'Upgrade to Pro'
-              : 'Upgrade to keep tailoring';
+          : reason === 'upgrade'
+            ? 'Upgrade to Pro'
+            : 'Upgrade to keep tailoring';
   const signedInHeading =
     reason === 'savedLimit'
       ? 'You\u2019ve reached your saved resume limit'
@@ -123,11 +121,9 @@ const PaywallModal = ({
         ? 'Cover letter length and tone are a Pro feature'
         : reason === 'gaps'
           ? 'See exactly what the job asks for that you\u2019re missing'
-          : reason === 'keepFormatting'
-            ? 'Keep your Word formatting on every export'
-            : reason === 'upgrade'
-              ? 'Never send an untailored resume again'
-              : 'You\u2019re out of credits';
+          : reason === 'upgrade'
+            ? 'Never send an untailored resume again'
+            : 'You\u2019re out of credits';
   const signedInDescription =
     reason === 'savedLimit'
       ? 'Go Pro to save up to 10 resumes and keep every application in one place.'
@@ -135,11 +131,9 @@ const PaywallModal = ({
         ? 'Go Pro to pick the length and tone of every cover letter.'
         : reason === 'gaps'
           ? 'Pro shows the full requirements list, not just the first gap, plus a ready-to-edit bullet for each.'
-          : reason === 'keepFormatting'
-            ? 'Go Pro to export DOCX and PDF that look exactly like the resume you uploaded, fit to one page.'
-            : reason === 'upgrade'
-              ? 'Tailor every application, fill every gap, and keep your Word formatting.'
-              : 'Go Pro to keep tailoring without interruption.';
+          : reason === 'upgrade'
+            ? 'Tailor every application, fill every gap, and keep your full history.'
+            : 'Go Pro to keep tailoring without interruption.';
   const signedOutHeading =
     reason === 'savedLimit'
       ? 'Save more resumes with Pro'

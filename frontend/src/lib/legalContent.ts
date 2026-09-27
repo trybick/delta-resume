@@ -31,7 +31,7 @@ export const TERMS_OF_SERVICE: LegalDocument = {
     {
       heading: '3. Accounts and Credits',
       paragraphs: [
-        'You may use the Service as a guest with one free tailor run, or create a free account for additional runs and export. One credit is consumed per tailoring run. Export is included with a free account on a clean template; keeping your original Word formatting is a Pro feature.',
+        'You may use the Service as a guest with one free tailor run, or create a free account for additional runs and export. One credit is consumed per tailoring run. Export is included with a free account, in your original Word formatting or on a clean template.',
         'Paid subscriptions renew automatically until cancelled. You may cancel at any time, and cancellation takes effect at the end of the current billing period. Except where required by law, payments are non-refundable.',
       ],
     },

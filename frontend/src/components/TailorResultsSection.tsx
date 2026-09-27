@@ -41,7 +41,6 @@ type TailorResultsSectionProps = {
   onUpgradeClick: () => void;
   onGapsUpgradeClick: () => void;
   onExportGate: () => void;
-  onKeepFormattingGate: () => void;
   onReviewStateChange?: (
     decisions: Record<string, ChangeDecision>,
     addedBullets: AddedBullet[],
@@ -75,7 +74,6 @@ const TailorResultsSection = ({
   onUpgradeClick,
   onGapsUpgradeClick,
   onExportGate,
-  onKeepFormattingGate,
   onReviewStateChange,
 }: TailorResultsSectionProps) => {
   const resumeTabIndicator = showingExample ? null : status === 'loading' ? (
@@ -177,7 +175,6 @@ const TailorResultsSection = ({
             result={showingExample ? SAMPLE_TAILOR_RESULT : result}
             isExample={showingExample}
             exportMenuKey={activeTab}
-            isProPlan={isProPlan}
             isGuest={isGuest}
             originalDocx={showingExample ? null : originalDocx}
             companyName={showingExample ? undefined : coverLetterResult?.companyName}
@@ -186,7 +183,6 @@ const TailorResultsSection = ({
             onShowExample={status === 'idle' ? onShowExample : undefined}
             onUpgradeClick={onGapsUpgradeClick}
             onExportGate={onExportGate}
-            onKeepFormattingGate={onKeepFormattingGate}
             onReviewStateChange={showingExample ? undefined : onReviewStateChange}
           />
         </Tabs.Panel>

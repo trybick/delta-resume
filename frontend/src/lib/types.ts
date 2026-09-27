@@ -221,5 +221,4 @@ export type PaywallReason =
   | 'coverLetter'
   | 'gaps'
   | 'signUp'
-  | 'export'
-  | 'keepFormatting';
+  | 'export';

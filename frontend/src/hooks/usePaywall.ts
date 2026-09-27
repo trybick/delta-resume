@@ -11,7 +11,6 @@ const PAYWALL_REASONS: PaywallReason[] = [
   'gaps',
   'signUp',
   'export',
-  'keepFormatting',
 ];
 
 const readPendingPaywallReason = (): PaywallReason | null => {

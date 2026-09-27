@@ -105,7 +105,6 @@ export const AnalyticsEvents = {
   SignupBannerClick: 'signup_banner_click',
   SignupBannerDismiss: 'signup_banner_dismiss',
   ExportGateShown: 'export_gate_shown',
-  KeepFormattingGateShown: 'keep_formatting_gate_shown',
   RunsListOpen: 'runs_list_open',
   RunReopen: 'run_reopen',
   RunDelete: 'run_delete',

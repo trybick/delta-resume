@@ -57,7 +57,6 @@ type ResultsPanelProps = {
   result: TailorResult | null;
   isExample?: boolean;
   exportMenuKey?: string | null;
-  isProPlan: boolean;
   isGuest?: boolean;
   originalDocx?: OriginalDocx | null;
   companyName?: string;
@@ -66,7 +65,6 @@ type ResultsPanelProps = {
   onShowExample?: () => void;
   onUpgradeClick: () => void;
   onExportGate?: () => void;
-  onKeepFormattingGate?: () => void;
   onReviewStateChange?: (
     decisions: Record<string, ChangeDecision>,
     addedBullets: AddedBullet[],
@@ -141,7 +139,6 @@ const ResultsPanel = ({
   result,
   isExample = false,
   exportMenuKey = null,
-  isProPlan,
   isGuest = false,
   originalDocx = null,
   companyName,
@@ -150,7 +147,6 @@ const ResultsPanel = ({
   onShowExample,
   onUpgradeClick,
   onExportGate,
-  onKeepFormattingGate,
   onReviewStateChange,
 }: ResultsPanelProps) => {
   const [decisions, setDecisions] = useState<Record<string, ChangeDecision>>(
@@ -244,9 +240,7 @@ const ResultsPanel = ({
     decisions,
     activeAddedBullets,
     isGuest,
-    isProPlan,
     onExportGate,
-    onKeepFormattingGate,
   });
 
   const requirements = result?.requirements ?? [];
@@ -433,7 +427,6 @@ const ResultsPanel = ({
           <ResumeExportMenu
             isExample={isExample}
             isGuest={isGuest}
-            isProPlan={isProPlan}
             canPatchOriginal={canPatchOriginal}
             exportScale={exportScale}
             onExportScaleChange={setExportScale}

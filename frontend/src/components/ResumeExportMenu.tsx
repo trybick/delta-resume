@@ -1,4 +1,4 @@
-import { Badge, Group, Menu, Text } from '@mantine/core';
+import { Badge, Menu, Text } from '@mantine/core';
 import {
   IconCopy,
   IconFileDescription,
@@ -7,12 +7,10 @@ import {
   IconUserPlus,
 } from '@tabler/icons-react';
 import { ExportScaleControl } from './ExportScaleControl';
-import { proAccent } from '../lib/proAccent';
 
 type ResumeExportMenuProps = {
   isExample: boolean;
   isGuest: boolean;
-  isProPlan: boolean;
   canPatchOriginal: boolean;
   exportScale: number;
   onExportScaleChange: (scale: number) => void;
@@ -24,16 +22,9 @@ type ResumeExportMenuProps = {
   onExportGate: () => void;
 };
 
-const proBadge = (
-  <Badge size="xs" variant="gradient" gradient={{ ...proAccent.gradient, deg: 45 }}>
-    Pro
-  </Badge>
-);
-
 const ResumeExportMenu = ({
   isExample,
   isGuest,
-  isProPlan,
   canPatchOriginal,
   exportScale,
   onExportScaleChange,
@@ -97,16 +88,11 @@ const ResumeExportMenu = ({
       <Menu.Divider />
       {canPatchOriginal && (
         <>
-          <Menu.Label>
-            <Group gap={6} wrap="nowrap">
-              Keep my formatting
-              {!isGuest && !isProPlan && proBadge}
-            </Group>
-          </Menu.Label>
+          <Menu.Label>Keep my formatting</Menu.Label>
           <Menu.Item
             leftSection={fileIcon('docx')}
             rightSection={
-              !isGuest && isProPlan ? (
+              !isGuest ? (
                 <Badge size="xs" variant="light" color="teal">
                   Recommended
                 </Badge>
@@ -129,12 +115,7 @@ const ResumeExportMenu = ({
       )}
       {!canPatchOriginal && !isExample && (
         <>
-          <Menu.Label>
-            <Group gap={6} wrap="nowrap">
-              Keep my formatting
-              {!isProPlan && proBadge}
-            </Group>
-          </Menu.Label>
+          <Menu.Label>Keep my formatting</Menu.Label>
           <Text size="xs" c="dimmed" px={12} pb={8} maw={240}>
             Upload your resume as a .docx to export with your original formatting preserved.
           </Text>

@@ -100,7 +100,7 @@ const getFreePlanFeatures = (freeCreditTotal: number | null): string[] => [
     : 'Free tailor runs, no card required',
   'Every change shown as a diff you approve',
   'Matching cover letter on every run',
-  'DOCX and PDF export on a clean template',
+  'DOCX and PDF export in your original Word formatting',
   'Fit to one page',
   'Your last 3 applications saved',
 ];
@@ -262,7 +262,7 @@ const LandingStrip = ({
                 </Title>
                 <Text size="sm" c="dimmed" ta="center" maw={520}>
                   Try it free, no account needed. Upgrade when you want the full requirements list,
-                  draft bullets, original Word formatting, and unlimited history.
+                  draft bullets, cover letter tone, and unlimited history.
                 </Text>
               </Stack>
               <SimpleGrid cols={{ base: 1, sm: 2 }} spacing="lg" w="100%" maw={760}>

@@ -39,12 +39,10 @@ type ApplicationsListProps = {
   runs: TailorRunSummary[];
   hiddenOlderCount: number;
   isLoading: boolean;
-  isProPlan: boolean;
   onReopen: (runId: string) => void;
   onDelete: (runId: string) => void;
   onNewApplication: () => void;
   onUpgradeClick: () => void;
-  onKeepFormattingGate: () => void;
 };
 
 const formatRunDate = (value: string): string =>
@@ -73,11 +71,9 @@ const initialsFor = (label: string): string =>
 
 type RunExportMenuProps = {
   runId: string;
-  isProPlan: boolean;
-  onKeepFormattingGate: () => void;
 };
 
-const RunExportMenu = ({ runId, isProPlan, onKeepFormattingGate }: RunExportMenuProps) => {
+const RunExportMenu = ({ runId }: RunExportMenuProps) => {
   const [detail, setDetail] = useState<TailorRunDetail | null>(null);
   const [originalDocx, setOriginalDocx] = useState<OriginalDocx | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
@@ -109,8 +105,6 @@ const RunExportMenu = ({ runId, isProPlan, onKeepFormattingGate }: RunExportMenu
     decisions,
     activeAddedBullets,
     isGuest: false,
-    isProPlan,
-    onKeepFormattingGate,
   });
 
   const handleOpen = () => {
@@ -148,7 +142,6 @@ const RunExportMenu = ({ runId, isProPlan, onKeepFormattingGate }: RunExportMenu
           <ResumeExportMenu
             isExample={false}
             isGuest={false}
-            isProPlan={isProPlan}
             canPatchOriginal={canPatchOriginal}
             exportScale={exportScale}
             onExportScaleChange={setExportScale}
@@ -211,12 +204,10 @@ const ApplicationsList = ({
   runs,
   hiddenOlderCount,
   isLoading,
-  isProPlan,
   onReopen,
   onDelete,
   onNewApplication,
   onUpgradeClick,
-  onKeepFormattingGate,
 }: ApplicationsListProps) => {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
@@ -373,11 +364,7 @@ const ApplicationsList = ({
                   >
                     Re-open
                   </Button>
-                  <RunExportMenu
-                    runId={run.id}
-                    isProPlan={isProPlan}
-                    onKeepFormattingGate={onKeepFormattingGate}
-                  />
+                  <RunExportMenu runId={run.id} />
                   <Popover
                     opened={confirmDeleteId === run.id}
                     onChange={(open) => setConfirmDeleteId(open ? run.id : null)}

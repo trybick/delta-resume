@@ -596,12 +596,10 @@ const App = () => {
             runs={runs}
             hiddenOlderCount={hiddenOlderCount}
             isLoading={isLoadingRuns}
-            isProPlan={isProPlan}
             onReopen={(runId) => void handleReopenRun(runId)}
             onDelete={(runId) => void deleteRun(runId)}
             onNewApplication={handleRevealTool}
             onUpgradeClick={() => openPaywall('upgrade')}
-            onKeepFormattingGate={() => openPaywall('keepFormatting')}
           />
         ) : (
           <Grid gap="xl">
@@ -662,7 +660,6 @@ const App = () => {
                 onUpgradeClick={() => openPaywall('coverLetter')}
                 onGapsUpgradeClick={() => openPaywall('gaps')}
                 onExportGate={() => openPaywall('export')}
-                onKeepFormattingGate={() => openPaywall('keepFormatting')}
                 onReviewStateChange={handleReviewStateChange}
               />
             </Grid.Col>

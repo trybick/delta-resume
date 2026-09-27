@@ -1,6 +1,5 @@
 import {
   IconCoins,
-  IconFileTypeDocx,
   IconFolders,
   IconMail,
   IconPencilPlus,
@@ -28,11 +27,6 @@ export const PRO_FEATURES: ProFeature[] = [
     icon: IconPencilPlus,
     title: 'Fill every gap in one click',
     description: 'A ready-to-edit bullet for each, placed where it fits.',
-  },
-  {
-    icon: IconFileTypeDocx,
-    title: 'Keep your Word formatting on every export',
-    description: 'DOCX and PDF that look exactly like the resume you uploaded, fit to one page.',
   },
   {
     icon: IconFolders,

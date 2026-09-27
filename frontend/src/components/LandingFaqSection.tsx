@@ -31,7 +31,7 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     question: 'What can I upload, and what can I export?',
     answer:
-      'Upload a .docx or .pdf, or paste plain text. Copy is always available. Export as DOCX or PDF with a free account (clean template), or keep your original Word formatting on Pro, with an option to fit it to one page.',
+      'Upload a .docx or .pdf, or paste plain text. Copy is always available. Create a free account to export as DOCX or PDF, either in your original Word formatting (when you upload a .docx) or on a clean template, with an option to fit it to one page.',
   },
   {
     question: 'Do I need an account to try it?',
