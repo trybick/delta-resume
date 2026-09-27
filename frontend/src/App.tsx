@@ -240,6 +240,7 @@ const App = () => {
   const lowCredits =
     credits !== null &&
     credits.remaining > 0 &&
+    credits.remaining < credits.total &&
     (isProPlan ? credits.remaining <= 10 : credits.remaining <= 1);
 
   const inputsUnchangedSinceLastRun =
