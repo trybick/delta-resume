@@ -1,4 +1,15 @@
-import { Badge, Box, Button, Group, Skeleton, Stack, Text, Title, Tooltip, UnstyledButton } from '@mantine/core';
+import {
+  Badge,
+  Box,
+  Button,
+  Group,
+  Skeleton,
+  Stack,
+  Text,
+  Title,
+  Tooltip,
+  UnstyledButton,
+} from '@mantine/core';
 import { SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/clerk-react';
 import { IconCoins, IconCrown, IconFolderOpen, IconLogin2, IconUser } from '@tabler/icons-react';
 import ClerkAuthButton from './ClerkAuthButton';
@@ -149,16 +160,18 @@ const AppHeader = ({
           </Group>
         </a>
         <Group gap="xs" justify="flex-end" align="center" visibleFrom="sm">
-          <Button
-            size="xs"
-            variant="subtle"
-            color="gray"
-            leftSection={<IconFolderOpen size={14} />}
-            onClick={onApplicationsClick}
-          >
-            Applications
-            {applicationsCount !== null ? ` (${applicationsCount})` : ''}
-          </Button>
+          <SignedIn>
+            <Button
+              size="xs"
+              variant="subtle"
+              color="gray"
+              leftSection={<IconFolderOpen size={14} />}
+              onClick={onApplicationsClick}
+            >
+              Applications
+              {applicationsCount !== null ? ` (${applicationsCount})` : ''}
+            </Button>
+          </SignedIn>
           {planLoaded && isProPlan && proCreditsBadge(proCreditsLabel, false)}
           {showCreditsBadge && creditsLabel && (
             <Tooltip label={`${creditsLabel} remaining. One credit is used when tailoring starts.`}>
@@ -224,17 +237,17 @@ const AppHeader = ({
           hiddenFrom="sm"
           style={{ flexShrink: 0 }}
         >
-          <UnstyledButton
-            aria-label={
-              applicationsCount !== null
-                ? `Applications (${applicationsCount})`
-                : 'Applications'
-            }
-            onClick={onApplicationsClick}
-            style={{ display: 'inline-flex', alignItems: 'center' }}
-          >
-            <IconFolderOpen size={18} />
-          </UnstyledButton>
+          <SignedIn>
+            <UnstyledButton
+              aria-label={
+                applicationsCount !== null ? `Applications (${applicationsCount})` : 'Applications'
+              }
+              onClick={onApplicationsClick}
+              style={{ display: 'inline-flex', alignItems: 'center' }}
+            >
+              <IconFolderOpen size={18} />
+            </UnstyledButton>
+          </SignedIn>
           {showCreditsBadge && !planLoaded && isLoadingCredits && (
             <Skeleton width={110} height={30} radius="xl" />
           )}

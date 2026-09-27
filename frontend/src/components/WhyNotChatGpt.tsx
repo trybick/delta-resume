@@ -88,7 +88,7 @@ const WhyNotChatGpt = () => (
             </Text>
           </Box>
           <Box className="compare-cell">
-            <Group gap={10} wrap="nowrap" align="flex-start">
+            <Group gap={10} wrap="nowrap" align="center">
               <ThemeIcon
                 size={20}
                 radius="xl"
@@ -107,7 +107,7 @@ const WhyNotChatGpt = () => (
             </Group>
           </Box>
           <Box className="compare-cell compare-cell-delta">
-            <Group gap={10} wrap="nowrap" align="flex-start">
+            <Group gap={10} wrap="nowrap" align="center">
               <ThemeIcon
                 size={20}
                 radius="xl"

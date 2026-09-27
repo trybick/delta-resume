@@ -1,13 +1,6 @@
 import { Box, Button, Grid, Group, Stack, Text, Title, useMantineTheme } from '@mantine/core';
 import { useMediaQuery } from '@mantine/hooks';
-import {
-  IconCheck,
-  IconEye,
-  IconFileTypeDocx,
-  IconGitCompare,
-  IconMail,
-  IconSparkles,
-} from '@tabler/icons-react';
+import { IconEye, IconSparkles } from '@tabler/icons-react';
 import HeroProductMock from './HeroProductMock';
 import { AnalyticsEvents, trackEvent } from '../lib/analytics';
 import type { HeroCopy } from '../lib/heroVariants';
@@ -19,17 +12,6 @@ type LandingHeroProps = {
   onStartClick: () => void;
   onExampleClick: () => void;
 };
-
-type TrustPoint = {
-  icon: typeof IconCheck;
-  label: string;
-};
-
-const TRUST_POINTS: TrustPoint[] = [
-  { icon: IconGitCompare, label: 'Word-level diffs' },
-  { icon: IconMail, label: 'Matching cover letter' },
-  { icon: IconFileTypeDocx, label: 'Keeps your Word formatting' },
-];
 
 const LandingHero = ({ copy, variant, onStartClick, onExampleClick }: LandingHeroProps) => {
   const theme = useMantineTheme();
@@ -50,7 +32,7 @@ const LandingHero = ({ copy, variant, onStartClick, onExampleClick }: LandingHer
   return (
     <Grid gap={{ base: 'xl', md: 48 }} align="center" py={{ base: 'md', md: 'xl' }}>
       <Grid.Col span={{ base: 12, md: 6 }}>
-        <Stack gap="xl" align={isDesktop ? 'flex-start' : 'center'}>
+        <Stack gap="lg" w="100%" align={isDesktop ? 'flex-start' : 'center'}>
           <Stack gap="md" align={isDesktop ? 'flex-start' : 'center'}>
             <Text size="xs" fw={700} tt="uppercase" c="cyan.4" style={{ letterSpacing: '0.08em' }}>
               AI resume tailoring you can audit
@@ -102,6 +84,7 @@ const LandingHero = ({ copy, variant, onStartClick, onExampleClick }: LandingHer
                 variant="subtle"
                 color="gray"
                 size="compact-sm"
+                className="hero-example-button"
                 leftSection={<IconEye size={14} />}
                 onClick={handleExampleClick}
               >
@@ -109,20 +92,6 @@ const LandingHero = ({ copy, variant, onStartClick, onExampleClick }: LandingHer
               </Button>
             </Group>
           </Stack>
-
-          <Group gap="md" justify={isDesktop ? 'flex-start' : 'center'} wrap="wrap">
-            {TRUST_POINTS.map((point) => {
-              const PointIcon = point.icon;
-              return (
-                <Group key={point.label} gap={6} wrap="nowrap">
-                  <PointIcon size={15} color="var(--mantine-color-teal-4)" stroke={2} />
-                  <Text size="sm" c="gray.3" fw={500}>
-                    {point.label}
-                  </Text>
-                </Group>
-              );
-            })}
-          </Group>
         </Stack>
       </Grid.Col>
       <Grid.Col span={{ base: 12, md: 6 }}>
