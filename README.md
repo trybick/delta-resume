@@ -4,7 +4,7 @@ Tired of the job application grind? Rewriting your resume for every posting is t
 
 Delta Resume does the tailoring for you. Paste a job description, and it rewrites your resume bullets to fit the role and drafts a matching cover letter, in one run. Every suggestion shows up as an inline word-level diff you can accept or reject, so nothing lands on your resume that you didn't approve:
 
-![Inline word-level diffs on resume bullets](demo/resume-inline-diffs.png)
+![Homepage hero showing word-level diffs, coverage, and a missing requirement](demo/resume-inline-diffs.png)
 
 When you're happy with it, export the resume and cover letter as DOCX or PDF. Minutes per application instead of an hour.
 
