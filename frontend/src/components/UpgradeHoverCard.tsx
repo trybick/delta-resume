@@ -42,7 +42,7 @@ const UpgradeHoverCard = ({ onUpgradeClick }: UpgradeHoverCardProps) => {
             onUpgradeClick();
           }}
         >
-          Upgrade to Pro
+          Upgrade
         </Button>
       </HoverCard.Target>
       <HoverCard.Dropdown
