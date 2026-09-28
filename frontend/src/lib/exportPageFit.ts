@@ -97,7 +97,7 @@ const CLEAN_CELL_GUTTER_PT = twipsToPt(LAYOUT_CELL_GUTTER);
 
 type TabStop = {
   positionPt: number;
-  alignment: 'left' | 'right' | 'center';
+  alignment: 'left' | 'right' | 'center' | 'decimal';
 };
 
 type FlowBlock = {
@@ -221,6 +221,7 @@ const countWrappedLines = (block: FlowBlock): number => {
   block.text.split('\t').forEach((segment, segmentIndex) => {
     const words = segment.split(/\s+/).filter((word) => word.length > 0);
     let needsSpace = false;
+    let anchoredWordCount = 0;
 
     if (segmentIndex > 0) {
       const stop = nextTabStop(block, usedPt);
@@ -230,26 +231,39 @@ const countWrappedLines = (block: FlowBlock): number => {
         lines += 1;
         usedPt = 0;
       } else {
-        const segmentPt = words.reduce(
-          (sum, word, index) => sum + widthOf(word) + (index > 0 ? spacePt : 0),
-          0,
-        );
+        const widthOfWords = (text: string): number =>
+          text
+            .split(/\s+/)
+            .filter((word) => word.length > 0)
+            .reduce((sum, word, index) => sum + widthOf(word) + (index > 0 ? spacePt : 0), 0);
+        const decimalIndex = segment.indexOf('.');
+        // A decimal stop lines up the separator, so only the text before it sits
+        // left of the stop. Without a separator it behaves like a right stop.
         const offsetPt =
           stop.alignment === 'right'
-            ? segmentPt
-            : stop.alignment === 'center'
-              ? segmentPt / 2
-              : 0;
+            ? widthOfWords(segment)
+            : stop.alignment === 'decimal'
+              ? widthOfWords(decimalIndex >= 0 ? segment.slice(0, decimalIndex) : segment)
+              : stop.alignment === 'center'
+                ? widthOfWords(segment) / 2
+                : 0;
         usedPt = Math.max(usedPt, stop.positionPt - offsetPt);
+        // Word and LibreOffice never wrap text that follows a decimal stop; it
+        // runs past the margin instead.
+        if (stop.alignment === 'decimal') anchoredWordCount = words.length;
       }
       lineHasContent = true;
     }
 
-    words.forEach((word) => {
+    words.forEach((word, wordIndex) => {
       const wordPt = widthOf(word);
       const candidatePt = usedPt + (needsSpace ? spacePt : 0) + wordPt;
       needsSpace = true;
-      if (!lineHasContent || candidatePt <= availablePt + ROUNDING_TOLERANCE_PT) {
+      if (
+        !lineHasContent ||
+        wordIndex < anchoredWordCount ||
+        candidatePt <= availablePt + ROUNDING_TOLERANCE_PT
+      ) {
         usedPt = candidatePt;
         lineHasContent = true;
         return;
@@ -694,15 +708,30 @@ type Formatting = {
   tabStops: TabStopTwips[] | null;
 };
 
-type TabStopTwips = { positionTwips: number; alignment: TabStop['alignment'] };
+type TabStopTwips = { positionTwips: number; alignment: TabStop['alignment'] | 'clear' };
 
-const TAB_ALIGNMENTS: Record<string, TabStop['alignment'] | undefined> = {
+const TAB_ALIGNMENTS: Record<string, TabStopTwips['alignment'] | undefined> = {
   left: 'left',
   start: 'left',
-  decimal: 'right',
+  decimal: 'decimal',
   right: 'right',
   end: 'right',
   center: 'center',
+  clear: 'clear',
+};
+
+// Word merges a paragraph's stops into its style's: a stop at the same position
+// replaces the inherited one, and a clear stop removes it.
+const mergeTabStops = (
+  base: TabStopTwips[] | null,
+  override: TabStopTwips[] | null,
+): TabStopTwips[] | null => {
+  if (!override) return base;
+  const overridden = new Set(override.map((stop) => stop.positionTwips));
+  return [
+    ...(base ?? []).filter((stop) => !overridden.has(stop.positionTwips)),
+    ...override.filter((stop) => stop.alignment !== 'clear'),
+  ].sort((left, right) => left.positionTwips - right.positionTwips);
 };
 
 const readTabStops = (paragraphProperties: Element | null): TabStopTwips[] | null => {
@@ -764,7 +793,7 @@ const mergeFormatting = (base: Formatting, override: Formatting): Formatting => 
   lineRule: override.lineRule ?? base.lineRule,
   indentLeftTwips: override.indentLeftTwips ?? base.indentLeftTwips,
   indentRightTwips: override.indentRightTwips ?? base.indentRightTwips,
-  tabStops: override.tabStops ?? base.tabStops,
+  tabStops: mergeTabStops(base.tabStops, override.tabStops),
 });
 
 type StyleSheet = {
@@ -904,10 +933,11 @@ const readParagraph = (
   return {
     text: text.replace(/^[^\S\t]+|[^\S\t]+$/g, ''),
     // Stop positions are measured from the text margin, not the indent.
-    tabStops: (merged.tabStops ?? []).map((stop) => ({
-      positionPt: twipsToPt(stop.positionTwips) - indentLeftPt,
-      alignment: stop.alignment,
-    })),
+    tabStops: (merged.tabStops ?? []).flatMap(({ positionTwips, alignment }) =>
+      alignment === 'clear'
+        ? []
+        : [{ positionPt: twipsToPt(positionTwips) - indentLeftPt, alignment }],
+    ),
     bold: runs.bold ?? merged.bold ?? false,
     fontFamily: runs.fontFamily ?? merged.fontFamily ?? FONT,
     baseHalfPoints: runs.sizeHalfPoints ?? merged.sizeHalfPoints ?? DEFAULT_BODY_HALF_POINTS,
