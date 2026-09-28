@@ -51,6 +51,7 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
                     let limit = CreditPlan.savedResumeLimit (Identity.plan identity)
                     let contentHash = hashContent resumeText
                     let now = DateTimeOffset.UtcNow
+                    let email = Identity.tryGetEmail ctx.User
 
                     let! existing = repository.FindByHash(ownerKey, contentHash)
 
@@ -62,11 +63,15 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
                         let shouldUpdateLayout =
                             existingResume.ResumeLayout.IsNone && resumeLayout.IsSome
 
-                        if shouldUpdateDocument || shouldUpdateLayout then
+                        let shouldUpdateEmail =
+                            email.IsSome && existingResume.Email <> email
+
+                        if shouldUpdateDocument || shouldUpdateLayout || shouldUpdateEmail then
                             do!
                                 repository.UpdateMetadata(
                                     existingResume.Id,
                                     ownerKey,
+                                    email,
                                     resumeDocument,
                                     resumeLayout
                                 )
@@ -75,6 +80,7 @@ type SavedResumeService(repository: SavedResumeRepository, options: IdentityOpti
                             repository.Insert
                                 { Id = SavedResumeId(Guid.NewGuid())
                                   OwnerKey = ownerKey
+                                  Email = email
                                   Name = sanitizeName requestedName now
                                   ResumeText = resumeText
                                   ResumeDocument = resumeDocument

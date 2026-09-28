@@ -137,18 +137,6 @@ module CreditPlan =
         | FreePlan -> Some 3
         | ProPlan -> None
 
-type CreditKind =
-    | User
-    | Fingerprint
-    | Ip
-
-module CreditKind =
-    let toString (kind: CreditKind) : string =
-        match kind with
-        | User -> "user"
-        | Fingerprint -> "fp"
-        | Ip -> "ip"
-
 type CreditFeature =
     | Tailor
 
@@ -219,9 +207,17 @@ module OperationId =
 
     let value (OperationId id) = id
 
-type CreditUsageEntry =
-    { IdentityKey: OwnerKey
-      Kind: CreditKind
+/// One way of counting past spends toward a limit. A spend is allowed only while
+/// every applicable counter is under the limit.
+type CreditCounter =
+    | ByUser of userId: string * period: UsagePeriod
+    /// Lifetime spends from this device, by guests and free users alike.
+    | ByFingerprint of fingerprint: string
+    /// Lifetime guest spends from this IP; signed-in spends don't count.
+    | ByGuestIp of ipHash: string
+
+type CreditCharge =
+    { UserId: string option
       Period: UsagePeriod
       Email: string option
       Plan: CreditPlan
@@ -242,10 +238,10 @@ type CreditUsageOutcome =
 
 type CreditStore =
     abstract member CountUsage:
-        identityKey: OwnerKey * period: UsagePeriod * cancellationToken: CancellationToken -> Task<int>
+        counters: CreditCounter list * cancellationToken: CancellationToken -> Task<int>
 
     abstract member TryRecordUsage:
-        entries: CreditUsageEntry list * creditLimit: int * cancellationToken: CancellationToken ->
+        charge: CreditCharge * counters: CreditCounter list * creditLimit: int * cancellationToken: CancellationToken ->
             Task<CreditSpendResult>
 
     abstract member MarkRefunded:
@@ -264,6 +260,7 @@ type SavedResumeRepository =
     abstract member UpdateMetadata:
         id: SavedResumeId *
         ownerKey: OwnerKey *
+        email: string option *
         document: ResumeDocument option *
         layout: string option ->
             Task<unit>

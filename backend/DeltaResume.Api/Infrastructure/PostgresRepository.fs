@@ -15,21 +15,32 @@ module Schema =
         // Existing DBs ignore CREATE TABLE IF NOT EXISTS; new columns need ALTER + backfill.
         connection.Execute(
             """
+            -- The old layout wrote one row per identity (user/fp/ip) per spend.
+            -- Its history can't be merged into one row per spend, so it is dropped.
+            DO $$
+            BEGIN
+                IF EXISTS (
+                    SELECT 1 FROM information_schema.columns
+                    WHERE table_schema = 'public' AND table_name = 'credit_usage' AND column_name = 'identity_key'
+                ) THEN
+                    DROP TABLE credit_usage;
+                END IF;
+            END $$;
+
+            -- One row per spend; id is the operation id used for refunds.
             CREATE TABLE IF NOT EXISTS credit_usage (
                 id UUID PRIMARY KEY,
-                identity_key TEXT NOT NULL,
-                kind TEXT NOT NULL,
-                period TEXT NOT NULL,
-                used_at TIMESTAMPTZ NOT NULL,
-                operation_id UUID NOT NULL,
+                user_id TEXT,
                 email TEXT,
-                plan TEXT,
-                feature TEXT,
-                ip_hash TEXT,
+                plan TEXT NOT NULL,
+                period TEXT NOT NULL,
+                feature TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'recorded',
+                ip_hash TEXT NOT NULL,
                 fingerprint TEXT,
                 user_agent TEXT,
-                status TEXT NOT NULL DEFAULT 'recorded',
                 run_id UUID,
+                used_at TIMESTAMPTZ NOT NULL,
                 resume_input_tokens INTEGER,
                 resume_output_tokens INTEGER,
                 resume_duration_ms INTEGER,
@@ -38,100 +49,20 @@ module Schema =
                 cover_letter_duration_ms INTEGER
             );
 
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS operation_id UUID;
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS email TEXT;
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS plan TEXT;
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS feature TEXT;
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS ip_hash TEXT;
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS fingerprint TEXT;
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS user_agent TEXT;
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS status TEXT;
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS run_id UUID;
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS resume_input_tokens INTEGER;
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS resume_output_tokens INTEGER;
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS resume_duration_ms INTEGER;
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS cover_letter_input_tokens INTEGER;
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS cover_letter_output_tokens INTEGER;
-
-            ALTER TABLE credit_usage
-                ADD COLUMN IF NOT EXISTS cover_letter_duration_ms INTEGER;
-
-            DO $$
-            BEGIN
-                IF EXISTS (
-                    SELECT 1 FROM information_schema.columns
-                    WHERE table_schema = 'public' AND table_name = 'credit_usage' AND column_name = 'input_tokens'
-                ) THEN
-                    UPDATE credit_usage
-                    SET resume_input_tokens = COALESCE(resume_input_tokens, input_tokens);
-                    ALTER TABLE credit_usage DROP COLUMN input_tokens;
-                END IF;
-
-                IF EXISTS (
-                    SELECT 1 FROM information_schema.columns
-                    WHERE table_schema = 'public' AND table_name = 'credit_usage' AND column_name = 'output_tokens'
-                ) THEN
-                    UPDATE credit_usage
-                    SET resume_output_tokens = COALESCE(resume_output_tokens, output_tokens);
-                    ALTER TABLE credit_usage DROP COLUMN output_tokens;
-                END IF;
-
-                IF EXISTS (
-                    SELECT 1 FROM information_schema.columns
-                    WHERE table_schema = 'public' AND table_name = 'credit_usage' AND column_name = 'duration_ms'
-                ) THEN
-                    UPDATE credit_usage
-                    SET resume_duration_ms = COALESCE(resume_duration_ms, duration_ms);
-                    ALTER TABLE credit_usage DROP COLUMN duration_ms;
-                END IF;
-            END $$;
-
-            UPDATE credit_usage
-            SET status = 'recorded'
-            WHERE status IS NULL;
-
-            ALTER TABLE credit_usage
-                ALTER COLUMN status SET DEFAULT 'recorded';
-
-            ALTER TABLE credit_usage
-                ALTER COLUMN status SET NOT NULL;
-
-            CREATE INDEX IF NOT EXISTS idx_credit_usage_key_period
-                ON credit_usage (identity_key, period);
-
-            CREATE INDEX IF NOT EXISTS idx_credit_usage_key_period_recorded
-                ON credit_usage (identity_key, period)
+            CREATE INDEX IF NOT EXISTS idx_credit_usage_user_period_recorded
+                ON credit_usage (user_id, period)
                 WHERE status = 'recorded';
 
-            CREATE INDEX IF NOT EXISTS idx_credit_usage_operation
-                ON credit_usage (operation_id);
+            CREATE INDEX IF NOT EXISTS idx_credit_usage_fingerprint_recorded
+                ON credit_usage (fingerprint)
+                WHERE status = 'recorded';
+
+            CREATE INDEX IF NOT EXISTS idx_credit_usage_ip_hash_recorded
+                ON credit_usage (ip_hash)
+                WHERE status = 'recorded';
+
+            CREATE INDEX IF NOT EXISTS idx_credit_usage_run_id
+                ON credit_usage (run_id);
 
             CREATE INDEX IF NOT EXISTS idx_credit_usage_used_at
                 ON credit_usage (used_at);
@@ -139,18 +70,10 @@ module Schema =
             CREATE INDEX IF NOT EXISTS idx_credit_usage_email
                 ON credit_usage (email);
 
-            CREATE INDEX IF NOT EXISTS idx_credit_usage_ip_hash
-                ON credit_usage (ip_hash);
-
-            CREATE INDEX IF NOT EXISTS idx_credit_usage_status
-                ON credit_usage (status);
-
-            CREATE INDEX IF NOT EXISTS idx_credit_usage_run_id
-                ON credit_usage (run_id);
-
             CREATE TABLE IF NOT EXISTS saved_resumes (
                 id UUID PRIMARY KEY,
                 owner_key TEXT NOT NULL,
+                email TEXT,
                 name TEXT NOT NULL,
                 resume_text TEXT NOT NULL,
                 content_hash TEXT NOT NULL,
@@ -168,6 +91,9 @@ module Schema =
 
             ALTER TABLE saved_resumes
                 ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;
+
+            ALTER TABLE saved_resumes
+                ADD COLUMN IF NOT EXISTS email TEXT;
 
             UPDATE saved_resumes
             SET updated_at = created_at
@@ -217,30 +143,6 @@ module Schema =
                 ) THEN
                     ALTER TABLE saved_resumes
                         ALTER COLUMN id TYPE uuid USING id::uuid;
-                END IF;
-
-                IF EXISTS (
-                    SELECT 1
-                    FROM information_schema.columns
-                    WHERE table_schema = 'public'
-                      AND table_name = 'credit_usage'
-                      AND column_name = 'id'
-                      AND data_type = 'text'
-                ) THEN
-                    ALTER TABLE credit_usage
-                        ALTER COLUMN id TYPE uuid USING id::uuid;
-                END IF;
-
-                IF EXISTS (
-                    SELECT 1
-                    FROM information_schema.columns
-                    WHERE table_schema = 'public'
-                      AND table_name = 'credit_usage'
-                      AND column_name = 'operation_id'
-                      AND data_type = 'text'
-                ) THEN
-                    ALTER TABLE credit_usage
-                        ALTER COLUMN operation_id TYPE uuid USING operation_id::uuid;
                 END IF;
             END $$;
 
@@ -357,6 +259,7 @@ type PostgresUserSettingsRepository(connectionString: string) =
 type private SavedResumeRow =
     { id: Guid
       owner_key: string
+      email: string
       name: string
       resume_text: string
       resume_document: string
@@ -368,12 +271,13 @@ type private SavedResumeRow =
 type PostgresSavedResumeRepository(connectionString: string) =
 
     let selectColumns =
-        "id, owner_key, name, resume_text, resume_document::text AS resume_document, \
+        "id, owner_key, email, name, resume_text, resume_document::text AS resume_document, \
          resume_layout::text AS resume_layout, content_hash, created_at, updated_at"
 
     let toDomain (row: SavedResumeRow) : SavedResume =
         { Id = SavedResumeId row.id
           OwnerKey = OwnerKey.ofPersisted row.owner_key
+          Email = row.email |> Option.ofObj
           Name = row.name
           ResumeText = row.resume_text
           ResumeDocument =
@@ -430,15 +334,16 @@ type PostgresSavedResumeRepository(connectionString: string) =
                     connection.ExecuteAsync(
                         """
                         INSERT INTO saved_resumes
-                            (id, owner_key, name, resume_text, resume_document, resume_layout, content_hash,
+                            (id, owner_key, email, name, resume_text, resume_document, resume_layout, content_hash,
                              created_at, updated_at)
                         VALUES
-                            (@Id, @OwnerKey, @Name, @ResumeText, CAST(@ResumeDocument AS jsonb),
+                            (@Id, @OwnerKey, @Email, @Name, @ResumeText, CAST(@ResumeDocument AS jsonb),
                              CAST(@ResumeLayout AS jsonb), @ContentHash, @CreatedAt, @UpdatedAt)
                         ON CONFLICT (owner_key, content_hash) DO NOTHING
                         """,
                         {| Id = id
                            OwnerKey = OwnerKey.value resume.OwnerKey
+                           Email = resume.Email |> Option.toObj
                            Name = resume.Name
                            ResumeText = resume.ResumeText
                            ResumeDocument =
@@ -458,6 +363,7 @@ type PostgresSavedResumeRepository(connectionString: string) =
             (
                 id: SavedResumeId,
                 ownerKey: OwnerKey,
+                email: string option,
                 document: ResumeDocument option,
                 layout: string option
             )
@@ -472,13 +378,15 @@ type PostgresSavedResumeRepository(connectionString: string) =
                     connection.ExecuteAsync(
                         """
                         UPDATE saved_resumes
-                        SET resume_document = COALESCE(resume_document, CAST(@ResumeDocument AS jsonb)),
+                        SET email = COALESCE(@Email, email),
+                            resume_document = COALESCE(resume_document, CAST(@ResumeDocument AS jsonb)),
                             resume_layout = COALESCE(resume_layout, CAST(@ResumeLayout AS jsonb)),
                             updated_at = @UpdatedAt
                         WHERE id = @Id AND owner_key = @OwnerKey
                         """,
                         {| Id = resumeId
                            OwnerKey = OwnerKey.value ownerKey
+                           Email = email |> Option.toObj
                            UpdatedAt = DateTimeOffset.UtcNow
                            ResumeDocument =
                             document

@@ -25,120 +25,43 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
         else
             Some(raw.Substring(0, 256))
 
-    let baseEntry
-        (identityKey: OwnerKey)
-        (kind: CreditKind)
-        (period: UsagePeriod)
-        (plan: CreditPlan)
-        (feature: CreditFeature)
-        (email: string option)
-        (fingerprint: string option)
-        (ipHash: string)
-        (userAgent: string option)
-        (runId: Guid option)
-        : CreditUsageEntry =
-        { IdentityKey = identityKey
-          Kind = kind
-          Period = period
-          Email = email
-          Plan = plan
-          Feature = feature
-          IpHash = ipHash
-          Fingerprint = fingerprint
-          UserAgent = userAgent
-          RunId = runId }
+    let period (ctx: HttpContext) (identity: RequestIdentity) : UsagePeriod =
+        match identity with
+        | AuthenticatedUser(_, ProPlan) -> Identity.currentProPeriod ctx
+        | _ -> Lifetime
 
-    let guestUsageEntries
-        (ctx: HttpContext)
-        (feature: CreditFeature)
-        (fingerprint: string option)
-        (ipHash: string)
-        (runId: Guid option)
-        : CreditUsageEntry list =
-        let userAgent = truncateUserAgent ctx
+    let counters (ctx: HttpContext) (identity: RequestIdentity) : CreditCounter list =
+        match identity with
+        | AuthenticatedUser(userId, ProPlan) -> [ ByUser(userId, Identity.currentProPeriod ctx) ]
+        | AuthenticatedUser(userId, _) ->
+            let fingerprint, _ = Identity.guestIdentifiers options ctx
 
-        [ match fingerprint with
-          | Some fp ->
-              baseEntry
-                  (OwnerKey.forFingerprint fp)
-                  Fingerprint
-                  Lifetime
-                  GuestPlan
-                  feature
-                  None
-                  fingerprint
-                  ipHash
-                  userAgent
-                  runId
-          | None -> ()
-          baseEntry
-              (OwnerKey.forIpHash ipHash)
-              Ip
-              Lifetime
-              GuestPlan
-              feature
-              None
-              fingerprint
-              ipHash
-              userAgent
-              runId ]
+            [ ByUser(userId, Lifetime)
+              yield! fingerprint |> Option.map ByFingerprint |> Option.toList ]
+        | GuestVisitor(fingerprint, ipHash) ->
+            [ yield! fingerprint |> Option.map ByFingerprint |> Option.toList
+              ByGuestIp ipHash ]
 
-    let usageEntries
+    let charge
         (ctx: HttpContext)
         (identity: RequestIdentity)
         (feature: CreditFeature)
         (runId: Guid option)
-        : CreditUsageEntry list =
-        match identity with
-        | AuthenticatedUser(userId, ProPlan) ->
-            let fingerprint, ipHash = Identity.guestIdentifiers options ctx
-            let email = Identity.tryGetEmail ctx.User
-            let userAgent = truncateUserAgent ctx
+        : CreditCharge =
+        let fingerprint, ipHash = Identity.guestIdentifiers options ctx
 
-            [ baseEntry
-                  (OwnerKey.forUser userId)
-                  User
-                  (Identity.currentProPeriod ctx)
-                  ProPlan
-                  feature
-                  email
-                  fingerprint
-                  ipHash
-                  userAgent
-                  runId ]
-        | AuthenticatedUser(userId, plan) ->
-            let fingerprint, ipHash = Identity.guestIdentifiers options ctx
-            let email = Identity.tryGetEmail ctx.User
-            let userAgent = truncateUserAgent ctx
-
-            [ yield
-                  baseEntry
-                      (OwnerKey.forUser userId)
-                      User
-                      Lifetime
-                      plan
-                      feature
-                      email
-                      fingerprint
-                      ipHash
-                      userAgent
-                      runId
-              match fingerprint with
-              | Some fp ->
-                  yield
-                      baseEntry
-                          (OwnerKey.forFingerprint fp)
-                          Fingerprint
-                          Lifetime
-                          plan
-                          feature
-                          email
-                          fingerprint
-                          ipHash
-                          userAgent
-                          runId
-              | None -> () ]
-        | GuestVisitor(fingerprint, ipHash) -> guestUsageEntries ctx feature fingerprint ipHash runId
+        { UserId =
+            match identity with
+            | AuthenticatedUser(userId, _) -> Some userId
+            | GuestVisitor _ -> None
+          Period = period ctx identity
+          Email = Identity.tryGetEmail ctx.User
+          Plan = Identity.plan identity
+          Feature = feature
+          IpHash = ipHash
+          Fingerprint = fingerprint
+          UserAgent = truncateUserAgent ctx
+          RunId = runId }
 
     let isUnlimited (identity: RequestIdentity) : bool =
         options.UnlimitedGuestCredits && Identity.plan identity <> ProPlan
@@ -169,12 +92,7 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
                       FreeAccountTotal = CreditPlan.freeAccountTotal }
             else
 
-            let mutable used = 0
-
-            for entry in usageEntries ctx identity Tailor None do
-                let! count = store.CountUsage(entry.IdentityKey, entry.Period, cancellationToken)
-                used <- max used count
-
+            let! used = store.CountUsage(counters ctx identity, cancellationToken)
             let total = CreditPlan.creditLimit plan
 
             return
@@ -194,7 +112,8 @@ type CreditService(store: CreditStore, options: IdentityOptions) =
             Task.FromResult(SpendRecorded(OperationId.create ()))
         else
             store.TryRecordUsage(
-                usageEntries ctx identity feature runId,
+                charge ctx identity feature runId,
+                counters ctx identity,
                 CreditPlan.creditLimit (Identity.plan identity),
                 cancellationToken
             )

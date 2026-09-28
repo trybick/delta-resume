@@ -365,6 +365,8 @@ module OwnerKey =
 type SavedResume =
     { Id: SavedResumeId
       OwnerKey: OwnerKey
+      /// Label for spotting rows by eye; ownership always goes through OwnerKey.
+      Email: string option
       Name: string
       ResumeText: string
       ResumeDocument: ResumeDocument option
