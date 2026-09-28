@@ -50,14 +50,36 @@ const LINE_HEIGHT_BY_FONT: Record<string, number> = {
 
 const lineHeightMultiplier = (family: string): number =>
   LINE_HEIGHT_BY_FONT[family.trim().toLowerCase()] ?? DEFAULT_LINE_HEIGHT_MULTIPLIER;
+
+// Average advance width relative to Arial. Office fonts are often missing from
+// the browser, and its fallback font can be narrower than the real one.
+const WIDTH_RATIO_TO_ARIAL: Record<string, { regular: number; bold: number }> = {
+  aptos: { regular: 0.961, bold: 0.942 },
+  'aptos narrow': { regular: 0.883, bold: 0.853 },
+  'book antiqua': { regular: 1.006, bold: 0.963 },
+  'bookman old style': { regular: 1.11, bold: 1.101 },
+  calibri: { regular: 0.911, bold: 0.866 },
+  carlito: { regular: 0.911, bold: 0.866 },
+  cambria: { regular: 0.959, bold: 0.958 },
+  caladea: { regular: 0.959, bold: 0.958 },
+  candara: { regular: 0.946, bold: 0.894 },
+  'century gothic': { regular: 1.088, bold: 1.01 },
+  corbel: { regular: 0.924, bold: 0.898 },
+  garamond: { regular: 0.883, bold: 0.896 },
+  'times new roman': { regular: 0.912, bold: 0.902 },
+};
 const HEADING_RULE_PT = 4;
-const KEEP_FIT_SAFETY_MARGIN_PT = 1;
+const KEEP_FIT_SAFETY_MARGIN_PT = 6;
 const CLEAN_FIT_SAFETY_MARGIN_PT = 12;
 const MIN_BLOCK_WIDTH_PT = 20;
 const DEFAULT_BODY_HALF_POINTS = 22;
 const MIN_HALF_POINTS = 2;
 const TWIPS_PER_AUTO_LINE = 240;
 const DEFAULT_CELL_MARGIN_TWIPS = 108;
+const DEFAULT_TAB_STOP_PT = 36;
+const LAYOUT_EPSILON_PT = 0.5;
+// Right-aligned tab text is positioned to end exactly on its stop.
+const ROUNDING_TOLERANCE_PT = 0.01;
 
 const twipsToPt = (twips: number): number => twips / 20;
 
@@ -73,8 +95,15 @@ const CLEAN_CONTENT_WIDTH_PT = twipsToPt(RESUME_CONTENT_WIDTH);
 const CLEAN_TITLE_WIDTH_PT = twipsToPt(TITLE_CELL_WIDTH);
 const CLEAN_CELL_GUTTER_PT = twipsToPt(LAYOUT_CELL_GUTTER);
 
+type TabStop = {
+  positionPt: number;
+  alignment: 'left' | 'right' | 'center';
+};
+
 type FlowBlock = {
+  // Tab characters mark w:tab runs, laid out against tabStops.
   text: string;
+  tabStops: TabStop[];
   bold: boolean;
   fontFamily: string;
   fontPt: number;
@@ -128,41 +157,106 @@ const referenceWordWidth = (word: string, bold: boolean, family: string): number
   return width;
 };
 
+// A font-family list makes Chrome's canvas report the wrong metrics, so the
+// declared family is applied on its own and the browser handles fallback.
+const measureInFamily = (
+  context: CanvasRenderingContext2D,
+  text: string,
+  bold: boolean,
+  family: string,
+): number => {
+  context.font = `${bold ? 'bold' : 'normal'} ${MEASURE_FONT_PX}px "${family}"`;
+  return context.measureText(text).width;
+};
+
+const MISSING_FONT_FAMILY = 'delta-resume-missing-font';
+const FONT_PROBE_TEXT = 'The quick brown fox jumps over the lazy dog 0123456789';
+const fontAvailability = new Map<string, boolean>();
+
+// The browser has no font-availability API that works across engines, so a
+// family counts as installed when it measures differently from the fallback.
+const isFontAvailable = (context: CanvasRenderingContext2D, family: string): boolean => {
+  const cached = fontAvailability.get(family);
+  if (cached !== undefined) return cached;
+  const available =
+    measureInFamily(context, FONT_PROBE_TEXT, false, family) !==
+    measureInFamily(context, FONT_PROBE_TEXT, false, MISSING_FONT_FAMILY);
+  fontAvailability.set(family, available);
+  return available;
+};
+
 const measureWithContext = (
   context: CanvasRenderingContext2D,
   word: string,
   bold: boolean,
   family: string,
 ): number => {
-  // A font-family list makes Chrome's canvas report the wrong metrics, so the
-  // declared family is applied on its own and the browser handles fallback.
-  context.font = `${bold ? 'bold' : 'normal'} ${MEASURE_FONT_PX}px "${family}"`;
-  return context.measureText(word).width;
+  if (isFontAvailable(context, family)) return measureInFamily(context, word, bold, family);
+  const ratio = WIDTH_RATIO_TO_ARIAL[family.trim().toLowerCase()];
+  const arialWidth = measureInFamily(context, word, bold, FONT);
+  return ratio ? arialWidth * (bold ? ratio.bold : ratio.regular) : arialWidth;
+};
+
+const nextTabStop = (block: FlowBlock, usedPt: number): TabStop => {
+  const custom = block.tabStops.find(
+    (stop) => stop.positionPt > usedPt + LAYOUT_EPSILON_PT,
+  );
+  if (custom) return custom;
+  return {
+    positionPt: (Math.floor(usedPt / DEFAULT_TAB_STOP_PT) + 1) * DEFAULT_TAB_STOP_PT,
+    alignment: 'left',
+  };
 };
 
 const countWrappedLines = (block: FlowBlock): number => {
-  const words = block.text.split(/\s+/).filter((word) => word.length > 0);
-  if (words.length === 0) return 1;
-
   const pointsPerReferenceUnit = block.fontPt / MEASURE_FONT_PX;
-  const spacePt = referenceWordWidth(' ', block.bold, block.fontFamily) * pointsPerReferenceUnit;
+  const widthOf = (text: string): number =>
+    referenceWordWidth(text, block.bold, block.fontFamily) * pointsPerReferenceUnit;
+  const spacePt = widthOf(' ');
   const availablePt = Math.max(block.widthPt, 1);
   let lines = 1;
   let usedPt = 0;
+  let lineHasContent = false;
 
-  words.forEach((word) => {
-    const wordPt = referenceWordWidth(word, block.bold, block.fontFamily) * pointsPerReferenceUnit;
-    if (usedPt === 0) {
+  block.text.split('\t').forEach((segment, segmentIndex) => {
+    const words = segment.split(/\s+/).filter((word) => word.length > 0);
+    let needsSpace = false;
+
+    if (segmentIndex > 0) {
+      const stop = nextTabStop(block, usedPt);
+      // Word and LibreOffice both move a tab that has no stop left on the line
+      // to a new line, which is how a stray trailing tab adds a blank line.
+      if (stop.positionPt > availablePt + LAYOUT_EPSILON_PT) {
+        lines += 1;
+        usedPt = 0;
+      } else {
+        const segmentPt = words.reduce(
+          (sum, word, index) => sum + widthOf(word) + (index > 0 ? spacePt : 0),
+          0,
+        );
+        const offsetPt =
+          stop.alignment === 'right'
+            ? segmentPt
+            : stop.alignment === 'center'
+              ? segmentPt / 2
+              : 0;
+        usedPt = Math.max(usedPt, stop.positionPt - offsetPt);
+      }
+      lineHasContent = true;
+    }
+
+    words.forEach((word) => {
+      const wordPt = widthOf(word);
+      const candidatePt = usedPt + (needsSpace ? spacePt : 0) + wordPt;
+      needsSpace = true;
+      if (!lineHasContent || candidatePt <= availablePt + ROUNDING_TOLERANCE_PT) {
+        usedPt = candidatePt;
+        lineHasContent = true;
+        return;
+      }
+      lines += 1;
       usedPt = wordPt;
-      return;
-    }
-    const candidatePt = usedPt + spacePt + wordPt;
-    if (candidatePt <= availablePt) {
-      usedPt = candidatePt;
-      return;
-    }
-    lines += 1;
-    usedPt = wordPt;
+    });
   });
 
   return lines;
@@ -204,6 +298,54 @@ const segmentUnits = (segment: FlowSegment): FlowUnit[] =>
         ),
       }));
 
+const keptTogetherHeights = (section: FlowSection): number[] => {
+  const units = section.segments.flatMap(segmentUnits);
+  const heights: number[] = [];
+  let index = 0;
+  while (index < units.length) {
+    let heightPt = units[index].heightPt;
+    let keepNext = units[index].keepNext;
+    index += 1;
+    while (keepNext && index < units.length) {
+      heightPt += units[index].heightPt;
+      keepNext = units[index].keepNext;
+      index += 1;
+    }
+    heights.push(heightPt);
+  }
+  return heights;
+};
+
+const BALANCE_SEARCH_STEPS = 30;
+
+const fitsInColumns = (heights: number[], columnCount: number, limitPt: number): boolean => {
+  let columns = 1;
+  let usedPt = 0;
+  for (const heightPt of heights) {
+    if (usedPt > 0 && usedPt + heightPt > limitPt) {
+      columns += 1;
+      usedPt = 0;
+    }
+    usedPt += heightPt;
+  }
+  return columns <= columnCount;
+};
+
+// Word balances a continuous multi-column section, but a paragraph cannot
+// split across columns, so the tallest column is often taller than the average.
+const balancedColumnHeight = (heights: number[], columnCount: number): number => {
+  const totalPt = heights.reduce((sum, heightPt) => sum + heightPt, 0);
+  let lowPt = Math.max(totalPt / columnCount, ...heights, 0);
+  let highPt = totalPt;
+  if (fitsInColumns(heights, columnCount, lowPt)) return lowPt;
+  for (let step = 0; step < BALANCE_SEARCH_STEPS; step += 1) {
+    const middlePt = (lowPt + highPt) / 2;
+    if (fitsInColumns(heights, columnCount, middlePt)) highPt = middlePt;
+    else lowPt = middlePt;
+  }
+  return highPt;
+};
+
 const countPages = (page: FlowPage, limitPt: number): number => {
   let pages = 1;
   let usedPt = 0;
@@ -218,25 +360,12 @@ const countPages = (page: FlowPage, limitPt: number): number => {
   };
 
   page.sections.forEach((section) => {
-    // Word balances a multi-column section, so its columns end up roughly the
-    // same height rather than stacking one after another.
+    const heights = keptTogetherHeights(section);
     if (section.columnCount > 1) {
-      advance(section.segments.reduce(addSegmentHeight, 0) / section.columnCount);
+      advance(balancedColumnHeight(heights, section.columnCount));
       return;
     }
-    const units = section.segments.flatMap(segmentUnits);
-    let index = 0;
-    while (index < units.length) {
-      let heightPt = units[index].heightPt;
-      let keepNext = units[index].keepNext;
-      index += 1;
-      while (keepNext && index < units.length) {
-        heightPt += units[index].heightPt;
-        keepNext = units[index].keepNext;
-        index += 1;
-      }
-      advance(heightPt);
-    }
+    heights.forEach(advance);
   });
 
   return pages;
@@ -260,6 +389,7 @@ const themeBlock = (text: string, options: ThemeBlockOptions): FlowBlock => {
   const fontPt = halfPointsToPt(options.sizeHalfPoints);
   return {
     text,
+    tabStops: [],
     bold: options.bold ?? false,
     fontFamily: FONT,
     fontPt,
@@ -561,6 +691,31 @@ type Formatting = {
   lineRule: string | null;
   indentLeftTwips: number | null;
   indentRightTwips: number | null;
+  tabStops: TabStopTwips[] | null;
+};
+
+type TabStopTwips = { positionTwips: number; alignment: TabStop['alignment'] };
+
+const TAB_ALIGNMENTS: Record<string, TabStop['alignment'] | undefined> = {
+  left: 'left',
+  start: 'left',
+  decimal: 'right',
+  right: 'right',
+  end: 'right',
+  center: 'center',
+};
+
+const readTabStops = (paragraphProperties: Element | null): TabStopTwips[] | null => {
+  const tabs = firstChildElement(paragraphProperties, 'tabs');
+  if (!tabs) return null;
+  return childElements(tabs)
+    .filter((tab) => tab.localName === 'tab')
+    .flatMap((tab) => {
+      const alignment = TAB_ALIGNMENTS[tab.getAttributeNS(WORD_NS, 'val') ?? ''];
+      const positionTwips = intAttribute(tab, 'pos');
+      return alignment && positionTwips !== null ? [{ positionTwips, alignment }] : [];
+    })
+    .sort((left, right) => left.positionTwips - right.positionTwips);
 };
 
 const EMPTY_FORMATTING: Formatting = {
@@ -573,6 +728,7 @@ const EMPTY_FORMATTING: Formatting = {
   lineRule: null,
   indentLeftTwips: null,
   indentRightTwips: null,
+  tabStops: null,
 };
 
 const readFontFamily = (fonts: Element | null): string | null =>
@@ -594,6 +750,7 @@ const readFormatting = (
     lineRule: spacing?.getAttributeNS(WORD_NS, 'lineRule') ?? null,
     indentLeftTwips: intAttribute(indent, 'left') ?? intAttribute(indent, 'start'),
     indentRightTwips: intAttribute(indent, 'right') ?? intAttribute(indent, 'end'),
+    tabStops: readTabStops(paragraphProperties),
   };
 };
 
@@ -607,6 +764,7 @@ const mergeFormatting = (base: Formatting, override: Formatting): Formatting => 
   lineRule: override.lineRule ?? base.lineRule,
   indentLeftTwips: override.indentLeftTwips ?? base.indentLeftTwips,
   indentRightTwips: override.indentRightTwips ?? base.indentRightTwips,
+  tabStops: override.tabStops ?? base.tabStops,
 });
 
 type StyleSheet = {
@@ -657,6 +815,7 @@ const readStyleSheet = (styles: Document | null): StyleSheet => {
 
 type KeepParagraph = {
   text: string;
+  tabStops: TabStop[];
   bold: boolean;
   fontFamily: string;
   baseHalfPoints: number;
@@ -681,6 +840,19 @@ type KeepDocument = {
   contentHeightPt: number;
   sections: KeepSection[];
 };
+
+// A w:tab inside w:tabs is a stop definition; only the one inside a run is a
+// tab character.
+const paragraphTextWithTabs = (paragraph: Element): string =>
+  Array.from(paragraph.getElementsByTagNameNS(WORD_NS, '*'))
+    .map((node) => {
+      if (node.localName === 't') return node.textContent ?? '';
+      if (node.localName === 'tab' && (node.parentNode as Element | null)?.localName === 'r') {
+        return '\t';
+      }
+      return '';
+    })
+    .join('');
 
 const textRuns = (paragraph: Element): Element[] =>
   Array.from(paragraph.getElementsByTagNameNS(WORD_NS, 'r')).filter(
@@ -726,12 +898,16 @@ const readParagraph = (
 
   // Keep-formatting exports scale type and spacing but leave w:ind untouched, so
   // indents hold their authored width at every scale.
-  const indentPt = twipsToPt(
-    Math.max(0, merged.indentLeftTwips ?? 0) + Math.max(0, merged.indentRightTwips ?? 0),
-  );
+  const indentLeftPt = twipsToPt(Math.max(0, merged.indentLeftTwips ?? 0));
+  const indentPt = indentLeftPt + twipsToPt(Math.max(0, merged.indentRightTwips ?? 0));
 
   return {
-    text: text.trim(),
+    text: text.replace(/^[^\S\t]+|[^\S\t]+$/g, ''),
+    // Stop positions are measured from the text margin, not the indent.
+    tabStops: (merged.tabStops ?? []).map((stop) => ({
+      positionPt: twipsToPt(stop.positionTwips) - indentLeftPt,
+      alignment: stop.alignment,
+    })),
     bold: runs.bold ?? merged.bold ?? false,
     fontFamily: runs.fontFamily ?? merged.fontFamily ?? FONT,
     baseHalfPoints: runs.sizeHalfPoints ?? merged.sizeHalfPoints ?? DEFAULT_BODY_HALF_POINTS,
@@ -766,7 +942,12 @@ const readParagraphNodes = (
   if (!isDeleted) {
     nodes.push({
       kind: 'paragraph',
-      paragraph: readParagraph(paragraph, tailored ?? originalText, context.styleSheet, widthPt),
+      paragraph: readParagraph(
+        paragraph,
+        tailored ?? paragraphTextWithTabs(paragraph),
+        context.styleSheet,
+        widthPt,
+      ),
     });
   }
 
@@ -994,6 +1175,7 @@ const scaleKeepParagraph = (paragraph: KeepParagraph, scale: number): FlowBlock 
   const fontPt = halfPointsToPt(scaleHalfPoints(paragraph.baseHalfPoints, scale));
   return {
     text: paragraph.text,
+    tabStops: paragraph.tabStops,
     bold: paragraph.bold,
     fontFamily: paragraph.fontFamily,
     fontPt,
