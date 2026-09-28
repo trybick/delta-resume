@@ -45,3 +45,18 @@ export const clearPendingRun = (): void => {
     return;
   }
 };
+
+const pageWasReloaded = (): boolean => {
+  const [entry] = performance.getEntriesByType('navigation');
+  return entry instanceof PerformanceNavigationTiming && entry.type === 'reload';
+};
+
+// A refresh should start empty. Signing in can leave the page and come back as a
+// navigation, and that return still needs the stashed run.
+export const readPendingRunForThisLoad = (): PendingRunStash | null => {
+  if (pageWasReloaded()) {
+    clearPendingRun();
+    return null;
+  }
+  return readPendingRun();
+};

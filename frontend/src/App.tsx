@@ -21,10 +21,15 @@ import { useCoverLetter } from './hooks/useCoverLetter';
 import { useResumeDocument } from './hooks/useResumeDocument';
 import { usePaywall } from './hooks/usePaywall';
 import { AnalyticsEvents, trackEvent } from './lib/analytics';
-import { claimTailorRun, getTailorRun, patchTailorRunDecisions } from './lib/api';
+import { ApiError, claimTailorRun, getTailorRun, patchTailorRunDecisions } from './lib/api';
 import { registerTokenGetter } from './lib/authToken';
 import { isProPlan as checkIsProPlan } from './lib/constants';
-import { clearPendingRun, readPendingRun, writePendingRun } from './lib/pendingRunStash';
+import {
+  clearPendingRun,
+  readPendingRun,
+  readPendingRunForThisLoad,
+  writePendingRun,
+} from './lib/pendingRunStash';
 import { subscribeToRateLimit } from './lib/rateLimitNotice';
 import { buildDecisionMap } from './lib/runDecisions';
 import { formatDefaultResumeName } from './lib/formatDefaultResumeName';
@@ -186,6 +191,7 @@ const App = () => {
     clearError,
     runTailor,
     hydrate: hydrateTailor,
+    reset: resetTailor,
   } = useTailorRun({
     onSuccess: () => {
       trackEvent(AnalyticsEvents.TailorResume);
@@ -214,6 +220,7 @@ const App = () => {
     runCoverLetter,
     retryCoverLetter,
     hydrate: hydrateCoverLetter,
+    reset: resetCoverLetter,
   } = useCoverLetter();
 
   const isGuest = isSignedIn === false;
@@ -380,10 +387,35 @@ const App = () => {
     [hydrateCoverLetter, hydrateFromRun, hydrateTailor],
   );
 
+  const resetWorkspace = () => {
+    clearPendingRun();
+    handleClearResume();
+    setJobDescription('');
+    setLastSuccessfulInputs(null);
+    setDecisions({});
+    setAddedBullets([]);
+    setShowingExample(false);
+    setActiveTab('resume');
+    resetTailor();
+    resetCoverLetter();
+  };
+  const resetWorkspaceRef = useRef(resetWorkspace);
+  resetWorkspaceRef.current = resetWorkspace;
+
+  const previousSignedInRef = useRef(isSignedIn);
   useEffect(() => {
-    const stash = readPendingRun();
-    if (!stash || restoredPendingRunRef.current) return;
+    const wasSignedIn = previousSignedInRef.current;
+    previousSignedInRef.current = isSignedIn;
+    if (wasSignedIn === true && isSignedIn === false) {
+      resetWorkspaceRef.current();
+    }
+  }, [isSignedIn]);
+
+  useEffect(() => {
+    if (restoredPendingRunRef.current) return;
     restoredPendingRunRef.current = true;
+    const stash = readPendingRunForThisLoad();
+    if (!stash) return;
     applyRunDetail(
       stash.resumeText,
       stash.jobDescription,
@@ -416,8 +448,11 @@ const App = () => {
         clearPendingRun();
         void loadRuns();
       })
-      .catch(() => {
+      .catch((error: unknown) => {
         claimedPendingRunRef.current = false;
+        if (error instanceof ApiError && error.status === 409) {
+          resetWorkspaceRef.current();
+        }
       });
   }, [isLoaded, isSignedIn, loadRuns]);
 

@@ -26,6 +26,7 @@ type UseTailorRunResult = {
     runId?: string,
   ) => Promise<boolean>;
   hydrate: (result: TailorResult, options?: { countAsRun?: boolean }) => void;
+  reset: () => void;
 };
 
 export const useTailorRun = ({
@@ -40,6 +41,7 @@ export const useTailorRun = ({
   const resultRef = useRef<TailorResult | null>(null);
   const inFlightRef = useRef(false);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const epochRef = useRef(0);
 
   useEffect(
     () => () => {
@@ -49,6 +51,18 @@ export const useTailorRun = ({
   );
 
   const clearError = () => setErrorMessage(null);
+
+  const reset = () => {
+    epochRef.current += 1;
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    inFlightRef.current = false;
+    resultRef.current = null;
+    setResult(null);
+    setStatus('idle');
+    setErrorMessage(null);
+    setRunCount(0);
+  };
 
   const hydrate = (nextResult: TailorResult, options?: { countAsRun?: boolean }) => {
     resultRef.current = nextResult;
@@ -70,6 +84,7 @@ export const useTailorRun = ({
   ): Promise<boolean> => {
     if (inFlightRef.current) return false;
     inFlightRef.current = true;
+    const epoch = epochRef.current;
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
     setStatus('loading');
@@ -84,6 +99,7 @@ export const useTailorRun = ({
         abortController.signal,
         runId,
       );
+      if (epochRef.current !== epoch) return false;
       resultRef.current = tailorResult;
       setResult(tailorResult);
       setRunCount((count) => count + 1);
@@ -91,6 +107,7 @@ export const useTailorRun = ({
       onSuccess();
       return true;
     } catch (error) {
+      if (epochRef.current !== epoch) return false;
       if (error instanceof DOMException && error.name === 'AbortError') {
         setStatus(resultRef.current ? 'done' : 'idle');
         return false;
@@ -104,13 +121,15 @@ export const useTailorRun = ({
       setStatus(resultRef.current ? 'done' : 'idle');
       return false;
     } finally {
-      inFlightRef.current = false;
-      if (abortControllerRef.current === abortController) {
-        abortControllerRef.current = null;
+      if (epochRef.current === epoch) {
+        inFlightRef.current = false;
+        if (abortControllerRef.current === abortController) {
+          abortControllerRef.current = null;
+        }
       }
       onRequestFinished();
     }
   };
 
-  return { status, result, runCount, errorMessage, clearError, runTailor, hydrate };
+  return { status, result, runCount, errorMessage, clearError, runTailor, hydrate, reset };
 };
