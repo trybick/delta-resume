@@ -48,6 +48,14 @@ export const clearPendingRun = (): void => {
 
 const pageWasReloaded = (): boolean => {
   const [entry] = performance.getEntriesByType('navigation');
+  if (!entry) return false;
+
+  // Some browsers return a navigation entry without exposing the constructor.
+  // Referencing it anyway throws ReferenceError and takes down the app.
+  if (typeof globalThis.PerformanceNavigationTiming === 'undefined') {
+    return 'type' in entry && entry.type === 'reload';
+  }
+
   return entry instanceof PerformanceNavigationTiming && entry.type === 'reload';
 };
 
